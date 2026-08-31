@@ -19,12 +19,27 @@ function providerHints(mx: { exchange: string }[], txt: string[][]): string[] {
   return hits;
 }
 
+function certText(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value.join(", ") || undefined;
+  return value || undefined;
+}
+
 async function tlsInfo(hostname: string, port = 443): Promise<DomainIntelligence["tls"]> {
   return new Promise(resolve => {
     const socket = connect({ host: hostname, port, servername: hostname, rejectUnauthorized: false, timeout: 6000 }, () => {
-      const cert = socket.getPeerCertificate(); const cipher = socket.getCipher();
+      const cert = socket.getPeerCertificate();
+      const cipher = socket.getCipher();
       const altNames = typeof cert.subjectaltname === "string" ? cert.subjectaltname.split(",").map(x => x.trim().replace(/^DNS:/, "")) : [];
-      resolve({ authorized: socket.authorized, protocol: socket.getProtocol(), cipher: cipher?.name, validFrom: cert.valid_from, validTo: cert.valid_to, issuer: cert.issuer?.O || cert.issuer?.CN, subject: cert.subject?.CN, altNames });
+      resolve({
+        authorized: socket.authorized,
+        protocol: socket.getProtocol(),
+        cipher: cipher?.name,
+        validFrom: cert.valid_from,
+        validTo: cert.valid_to,
+        issuer: certText(cert.issuer?.O) || certText(cert.issuer?.CN),
+        subject: certText(cert.subject?.CN),
+        altNames
+      });
       socket.end();
     });
     socket.on("timeout", () => { socket.destroy(); resolve(undefined); });
@@ -36,7 +51,13 @@ export async function inspectDomain(rawUrl: string): Promise<DomainIntelligence>
   const url = await assertPublicUrl(rawUrl);
   const hostname = url.hostname;
   const [a, aaaa, mx, ns, txt, caa, tls] = await Promise.all([
-    safe(() => resolve4(hostname), [] as string[]), safe(() => resolve6(hostname), [] as string[]), safe(() => resolveMx(hostname), [] as { exchange: string; priority: number }[]), safe(() => resolveNs(hostname), [] as string[]), safe(() => resolveTxt(hostname), [] as string[][]), safe(() => resolveCaa(hostname), [] as unknown[]), url.protocol === "https:" ? tlsInfo(hostname) : Promise.resolve(undefined)
+    safe(() => resolve4(hostname), [] as string[]),
+    safe(() => resolve6(hostname), [] as string[]),
+    safe(() => resolveMx(hostname), [] as { exchange: string; priority: number }[]),
+    safe(() => resolveNs(hostname), [] as string[]),
+    safe(() => resolveTxt(hostname), [] as string[][]),
+    safe(() => resolveCaa(hostname), [] as unknown[]),
+    url.protocol === "https:" ? tlsInfo(hostname) : Promise.resolve(undefined)
   ]);
   const spf = txt.flat().filter(x => /^v=spf1\b/i.test(x));
   const dmarc = await safe(() => resolveTxt(`_dmarc.${hostname}`), [] as string[][]).then(x => x.flat().filter(v => /^v=dmarc1\b/i.test(v)));
