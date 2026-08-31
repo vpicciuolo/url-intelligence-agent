@@ -1,0 +1,23 @@
+{
+  "name": "url-intelligence-agent",
+  "version": "0.1.0",
+  "description": "Evidence-first AI URL intelligence agent for entity resolution, site mapping, social discovery, SEO auditing, reports, APIs and agent workflows.",
+  "type": "module",
+  "bin": {"url-agent": "dist/cli.js"},
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {"node": ">=18"},
+  "keywords": ["ai-agent","url-intelligence","web-intelligence","entity-resolution","metadata","open-graph","seo","mcp","crawler","social-discovery","typescript","horno"],
+  "author": "Vincenzo Picciuolo / HRN Innovation Technologies Ltd",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
