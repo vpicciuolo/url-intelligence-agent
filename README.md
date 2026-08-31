@@ -43,10 +43,50 @@ The complete agent architecture is available here as open source so developers c
   <a href="https://space.horno.net"><img src="https://img.shields.io/badge/HORNO%20Space-space.horno.net-334155?style=for-the-badge" alt="HORNO Space"></a>
 </p>
 
-Related open-source engine:
+---
 
-**URL Metadata & Social Profile Fetcher**  
-https://github.com/vpicciuolo/url-metadata-social-fetcher
+## ⚡ Full Agent or lightweight standalone version?
+
+The two repositories are complementary and can be used independently.
+
+If you need the complete intelligence layer — multi-page crawling, entity resolution, confidence and provenance, monitoring, reports, MCP, HTTP API, domain intelligence, technology detection, security/SEO analysis and optional AI reasoning — use **URL Intelligence Agent**.
+
+If your application only needs fast, deterministic URL enrichment without the complete agent stack, use the lighter standalone project:
+
+### 🔗 URL Metadata & Social Profile Fetcher
+
+**https://github.com/vpicciuolo/url-metadata-social-fetcher**
+
+It is the lightweight standalone option for applications that mainly need to take a public URL and extract reusable metadata such as titles, descriptions, Open Graph data, canonical URLs, images, social links and profile information with safety-focused fetching.
+
+It is especially useful for:
+
+- link previews and URL unfurling
+- listing/profile autofill
+- directories and marketplaces
+- smart links and digital identity pages
+- creator/product/project cards
+- social-link discovery
+- metadata and Open Graph enrichment
+- applications that do **not** need a full autonomous intelligence agent
+
+| Choose | URL Intelligence Agent | URL Metadata & Social Profile Fetcher |
+| --- | --- | --- |
+| Primary goal | Full evidence-first URL/entity intelligence | Fast lightweight URL enrichment |
+| Multi-page intelligence | ✅ Deep crawl, sitemaps, important-page discovery | Focused lightweight extraction |
+| Entity resolution | ✅ Confidence + evidence + provenance | Basic profile/metadata enrichment |
+| SEO / security / trust / tech intelligence | ✅ | Lightweight metadata focus |
+| Monitoring / snapshots / diffs | ✅ | Not the primary purpose |
+| MCP server | ✅ | Not required |
+| HTTP API / CLI agent workflows | ✅ | Library-oriented integration |
+| Optional AI reasoning | ✅ | Deterministic-first lightweight use |
+| Best for | AI agents, research, automation, intelligence platforms | Previews, directories, autofill, smart links, simple integrations |
+
+<p align="center">
+  <a href="https://github.com/vpicciuolo/url-metadata-social-fetcher"><img src="https://img.shields.io/badge/LIGHTWEIGHT%20VERSION-URL%20Metadata%20%26%20Social%20Profile%20Fetcher-2563eb?style=for-the-badge&logo=github" alt="URL Metadata & Social Profile Fetcher"></a>
+</p>
+
+**Simple rule:** if you only need to understand and enrich a URL, start with the lightweight repository. If you need to investigate, verify, connect, score, monitor and expose that intelligence to applications or AI agents, use this repository.
 
 ---
 
