@@ -1,22 +1,39 @@
 import { creditsBlock, PROJECT } from "./credits.js";
 import type { IntelligenceResult } from "./types.js";
 
-export function renderMarkdown(r:IntelligenceResult): string {
-  const rows=(items:string[])=>items.length?items.map(x=>`- ${x}`).join("\n"):"- None detected";
-  return `# URL Intelligence Report\n\n${creditsBlock()}\n\n---\n\n## Summary\n\n- **Input:** ${r.inputUrl}\n- **Final URL:** ${r.finalUrl}\n- **Profile:** ${r.profile}\n- **Observed:** ${r.observedAt}\n- **Fingerprint:** \`${r.fingerprint}\`\n\n## Entity\n\n- **Type:** ${r.entity.type.value} (${Math.round(r.entity.type.confidence*100)}% confidence)\n- **Name:** ${r.entity.name.value} (${Math.round(r.entity.name.confidence*100)}% confidence)\n- **Description:** ${r.entity.description?.value||"Not detected"}\n\n## SEO\n\n**Score: ${r.seo.score}/100**\n\n${rows(r.seo.issues)}\n\n## Social profiles\n\n${rows(r.socials)}\n\n## Public contacts\n\n${rows(r.contacts.emails)}\n\n## Important pages\n\n${Object.keys(r.importantPages).length?Object.entries(r.importantPages).map(([k,v])=>`- **${k}:** ${v}`).join("\n"):"- None classified"}\n\n## Evidence & contradictions\n\n${rows(r.contradictions.length?r.contradictions:["No high-level contradictions flagged by deterministic checks."])}\n\n---\n\n${creditsBlock()}\n\nExplore the HORNO ecosystem: ${PROJECT.website}\n`;
+const esc = (s: unknown): string => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] || c));
+const rows = (items: string[]): string => items.length ? items.map(x => `- ${x}`).join("\n") : "- None detected";
+const sectionScore = (name: string, score: number): string => `- **${name}:** ${score}/100`;
+
+export function renderMarkdown(r: IntelligenceResult): string {
+  const technologies = r.technologies.length ? r.technologies.map(t => `- **${t.name}** — ${t.category}, ${Math.round(t.confidence * 100)}% confidence${t.version ? `, v${t.version}` : ""}`).join("\n") : "- None confidently detected";
+  const graphSummary = `${r.graph.nodes.length} nodes / ${r.graph.edges.length} relationships`;
+  return `# URL Intelligence Report\n\n${creditsBlock()}\n\n> Evidence-first public URL intelligence. Findings are signals, not legal/security guarantees.\n\n---\n\n## Executive summary\n\n- **Input:** ${r.inputUrl}\n- **Final URL:** ${r.finalUrl}\n- **Profile:** ${r.profile}\n- **Entity:** ${r.entity.name.value}\n- **Entity type:** ${r.entity.type.value}\n- **Confidence:** ${Math.round(Math.min(r.entity.name.confidence, r.entity.type.confidence) * 100)}%\n- **Observed:** ${r.observedAt}\n- **Fingerprint:** \`${r.fingerprint}\`\n\n## Scores\n\n${sectionScore("SEO", r.seo.score)}\n${sectionScore("Security posture", r.security.score)}\n${sectionScore("Quality", r.quality.score)}\n${sectionScore("Trust signals", r.trust.score)}\n\n## Entity evidence\n\n- **Name:** ${r.entity.name.value} — ${Math.round(r.entity.name.confidence * 100)}% via ${r.entity.name.method}\n- **Type:** ${r.entity.type.value} — ${Math.round(r.entity.type.confidence * 100)}% via ${r.entity.type.method}\n- **Description:** ${r.entity.description?.value || "Not detected"}\n- **Name sources:** ${r.entity.name.sources.join(", ")}\n\n## Brand intelligence\n\n- **Brand name:** ${r.brand.name || r.entity.name.value}\n- **Primary image/logo candidate:** ${r.brand.logos[0] || "Not detected"}\n- **Favicons:** ${r.brand.favicons.join(", ") || "None"}\n- **Colors:** ${r.brand.colors.join(", ") || "None extracted"}\n\n## Technologies\n\n${technologies}\n\n## Social profiles\n\n${rows(r.socials)}\n\n## Public contacts\n\n### Emails\n${rows(r.contacts.emails)}\n\n### Phones\n${rows(r.contacts.phones)}\n\n## Important pages\n\n${Object.keys(r.importantPages).length ? Object.entries(r.importantPages).map(([k, v]) => `- **${k}:** ${v}`).join("\n") : "- None classified"}\n\n## Crawl & discovery\n\n- **Pages inspected:** ${r.pages.length}\n- **Sitemap URLs discovered:** ${r.sitemapUrls.length}\n- **RAG documents generated:** ${r.rag.length}\n- **Entity graph:** ${graphSummary}\n\n## SEO findings\n\n${rows([...r.seo.issues, ...r.seo.warnings])}\n\n## Security posture findings\n\n${rows([...r.security.issues, ...r.security.warnings])}\n\n## Quality findings\n\n${rows([...r.quality.issues, ...r.quality.warnings])}\n\n## Trust-signal findings\n\n${rows([...r.trust.issues, ...r.trust.warnings])}\n\n## Competitor/comparison candidates\n\n${r.competitors.length ? r.competitors.map(c => `- ${c.name} — ${c.url} (${Math.round(c.confidence * 100)}%; ${c.reason})`).join("\n") : "- None discovered from public comparison context"}\n\n## Contradictions\n\n${rows(r.contradictions.length ? r.contradictions : ["No high-level deterministic contradictions flagged."])}\n\n## Collection warnings\n\n${rows(r.warnings)}\n\n---\n\n${creditsBlock()}\n\n**Explore the HORNO ecosystem:** ${PROJECT.website}\n`;
 }
 
-export function renderTerminal(r:IntelligenceResult): string {
-  const bar=(n:number)=>"█".repeat(Math.max(0,Math.min(20,Math.round(n/5))))+"░".repeat(Math.max(0,20-Math.round(n/5)));
+export function renderTerminal(r: IntelligenceResult): string {
+  const bar = (n: number) => "█".repeat(Math.max(0, Math.min(10, Math.round(n / 10)))) + "░".repeat(Math.max(0, 10 - Math.round(n / 10)));
+  const cell = (label: string, value: string) => `│ ${label.padEnd(13)}${value.slice(0, 42).padEnd(42)} │`;
   return [
-    "╭──────────────── URL Intelligence ────────────────╮",
-    `│ Entity       ${r.entity.name.value.slice(0,34).padEnd(34)} │`,
-    `│ Type         ${r.entity.type.value.slice(0,34).padEnd(34)} │`,
-    `│ Confidence   ${String(Math.round(r.entity.name.confidence*100)+"%").padEnd(34)} │`,
-    `│ SEO          ${(r.seo.score+"/100 "+bar(r.seo.score)).slice(0,34).padEnd(34)} │`,
-    `│ Pages        ${String(r.pages.length+" inspected").padEnd(34)} │`,
-    `│ Socials      ${String(r.socials.length+" discovered").padEnd(34)} │`,
-    "╰─────────────────────────────────────────────────╯",
+    "╭──────────────────── URL Intelligence ─────────────────────╮",
+    cell("Entity", r.entity.name.value),
+    cell("Type", r.entity.type.value),
+    cell("Confidence", `${Math.round(Math.min(r.entity.name.confidence, r.entity.type.confidence) * 100)}%`),
+    cell("SEO", `${r.seo.score}/100 ${bar(r.seo.score)}`),
+    cell("Trust", `${r.trust.score}/100 ${bar(r.trust.score)}`),
+    cell("Security", `${r.security.score}/100 ${bar(r.security.score)}`),
+    cell("Quality", `${r.quality.score}/100 ${bar(r.quality.score)}`),
+    cell("Pages", `${r.pages.length} inspected · ${r.sitemapUrls.length} sitemap URLs`),
+    cell("Socials", `${r.socials.length} discovered`),
+    cell("Tech", `${r.technologies.length} detected`),
+    cell("Graph", `${r.graph.nodes.length} nodes · ${r.graph.edges.length} edges`),
+    "╰────────────────────────────────────────────────────────────╯",
     `HORNO · ${PROJECT.website} · ${PROJECT.creator}`
   ].join("\n");
+}
+
+export function renderHtml(r: IntelligenceResult): string {
+  const score = (label: string, value: number) => `<div class="score"><strong>${esc(label)}</strong><span>${value}/100</span><div><i style="width:${value}%"></i></div></div>`;
+  const links = (items: string[]) => items.length ? `<ul>${items.map(x => `<li><a href="${esc(x)}">${esc(x)}</a></li>`).join("")}</ul>` : "<p>None detected.</p>";
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>URL Intelligence Report — ${esc(r.entity.name.value)}</title><style>body{font-family:Inter,system-ui,sans-serif;max-width:1100px;margin:0 auto;padding:32px;color:#111827;background:#f8fafc}header,.card{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:24px;margin-bottom:18px}h1{margin:0 0 8px}.muted{color:#64748b}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.score{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px}.score span{float:right}.score div{height:7px;background:#e5e7eb;border-radius:4px;margin-top:10px;overflow:hidden}.score i{display:block;height:100%;background:#111827}a{color:#0f766e;word-break:break-all}code{word-break:break-all}.credit{font-size:13px;color:#475569;border-top:1px solid #e5e7eb;padding-top:18px;margin-top:32px}</style></head><body><header><div class="muted">${esc(PROJECT.name)} v${esc(PROJECT.version)} · ${esc(PROJECT.release)}</div><h1>${esc(r.entity.name.value)}</h1><p>${esc(r.entity.description?.value || r.finalUrl)}</p><p><a href="${esc(r.finalUrl)}">${esc(r.finalUrl)}</a></p></header><div class="grid">${score("SEO", r.seo.score)}${score("Security", r.security.score)}${score("Quality", r.quality.score)}${score("Trust", r.trust.score)}</div><div class="card"><h2>Identity</h2><p><strong>Type:</strong> ${esc(r.entity.type.value)} · <strong>Confidence:</strong> ${Math.round(Math.min(r.entity.name.confidence,r.entity.type.confidence)*100)}%</p><p><strong>Observed:</strong> ${esc(r.observedAt)}</p><p><strong>Fingerprint:</strong> <code>${esc(r.fingerprint)}</code></p></div><div class="card"><h2>Technologies</h2><p>${r.technologies.map(t=>`${esc(t.name)} (${Math.round(t.confidence*100)}%)`).join(" · ") || "None confidently detected"}</p></div><div class="card"><h2>Social profiles</h2>${links(r.socials)}<h2>Public contacts</h2><p>${esc([...r.contacts.emails,...r.contacts.phones].join(" · ") || "None detected")}</p></div><div class="card"><h2>Important pages</h2>${links(Object.values(r.importantPages))}<h2>Findings</h2>${links([...r.seo.issues,...r.security.issues,...r.quality.issues,...r.trust.warnings])}</div><footer class="credit"><strong>${esc(PROJECT.company)}</strong><br>Founder &amp; Lead Engineer: ${esc(PROJECT.creator)}<br>HORNO ecosystem: <a href="${esc(PROJECT.website)}">${esc(PROJECT.website)}</a><br>Open source: <a href="${esc(PROJECT.repo)}">${esc(PROJECT.repo)}</a></footer></body></html>`;
 }

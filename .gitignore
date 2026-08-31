@@ -6,3 +6,9 @@ dist/
 coverage/
 .snapshots/
 reports/
+.url-agent/
+url-intelligence-*.md
+url-intelligence-*.html
+url-intelligence-*.json
+playwright-report/
+test-results/

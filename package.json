@@ -1,20 +1,47 @@
 {
   "name": "url-intelligence-agent",
-  "version": "0.1.0",
-  "description": "Evidence-first AI URL intelligence agent for entity resolution, site mapping, social discovery, SEO auditing, reports, APIs and agent workflows.",
+  "version": "1.0.0",
+  "description": "Evidence-first AI URL intelligence agent: deep crawl, entity resolution, social/contact discovery, technology and brand intelligence, SEO/security/trust audits, monitoring, RAG, MCP, API, batch workers and reports.",
   "type": "module",
-  "bin": {"url-agent": "dist/cli.js"},
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "bin": { "url-agent": "dist/src/cli.js" },
+  "files": ["dist", "README.md", "LICENSE", "SECURITY.md", "docs"],
   "scripts": {
     "dev": "tsx src/cli.ts",
+    "cli": "node dist/src/cli.js",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/cli.js",
+    "prepare": "npm run build",
+    "start": "node dist/src/cli.js",
     "test": "npm run build && node --test dist/tests/*.test.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "benchmark": "npm run build && node dist/src/cli.js benchmark --raw",
+    "mcp": "npm run build && node dist/src/cli.js mcp",
+    "serve": "npm run build && node dist/src/cli.js serve"
   },
-  "engines": {"node": ">=18"},
-  "keywords": ["ai-agent","url-intelligence","web-intelligence","entity-resolution","metadata","open-graph","seo","mcp","crawler","social-discovery","typescript","horno"],
+  "engines": { "node": ">=18" },
+  "keywords": ["ai-agent","url-intelligence","web-intelligence","entity-resolution","metadata","open-graph","seo","mcp","crawler","deep-crawl","social-discovery","technology-detection","brand-intelligence","rag","monitoring","ssrf","typescript","horno"],
   "author": "Vincenzo Picciuolo / HRN Innovation Technologies Ltd",
   "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/vpicciuolo/url-intelligence-agent.git" },
+  "homepage": "https://github.com/vpicciuolo/url-intelligence-agent#readme",
+  "bugs": { "url": "https://github.com/vpicciuolo/url-intelligence-agent/issues" },
+  "peerDependencies": {
+    "pg": ">=8",
+    "playwright": ">=1.50",
+    "redis": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "pg": { "optional": true },
+    "playwright": { "optional": true },
+    "redis": { "optional": true }
+  },
   "devDependencies": {
     "@types/node": "^24.3.0",
     "tsx": "^4.20.5",
