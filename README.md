@@ -16,7 +16,11 @@
   <img src="https://img.shields.io/badge/AI-optional-7c3aed?style=for-the-badge" alt="AI optional">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT">
 </p>
-
+<p align="center">
+  <a href="https://aiagentslisting.com/url-intelligence-agent">
+    <img src="https://aiagentslisting.com/url-intelligence-agent/badge.svg?theme=light" alt="Featured on AI Agents Listing" width="200" height="50" loading="lazy" />
+  </a>
+</p>
 <p align="center">
   <img src="https://storage.mlcdn.com/account_image/2365654/725Q0AzeY15nwDK3JocgKXq5AhxRoNC53LUBchc7.png" alt="URL Intelligence Agent — turn any public URL into verified intelligence" width="100%">
 </p>
