@@ -1,10 +1,12 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { constants } from "node:fs";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { actionNames, runAction } from "./agent.js";
 import { PROJECT, attributionObject, creditsLine } from "./credits.js";
+import { MCP_PROTOCOL_VERSIONS, processMcpMessage, type McpMessage } from "./mcp.js";
+import { exportFilename, generateHtml, generateJson, generateMarkdown, generatePdf, type ExportReport } from "./export-report.js";
 
 const buckets = new Map<string, { count: number; reset: number }>();
 let uiHtml: string | undefined;
@@ -12,7 +14,10 @@ let uiHtml: string | undefined;
 const SESSION_COOKIE = "url_agent_hf_session";
 const STATE_COOKIE = "url_agent_hf_state";
 const DEMO_WINDOW_MS = Math.max(60_000, Number(process.env.URL_AGENT_DEMO_WINDOW_MS || 86_400_000));
-const PUBLIC_DEMO_ACTIONS = new Set([
+const OWNER_USERNAME = String(process.env.URL_AGENT_OWNER_USERNAME || "vpicciuolo").toLowerCase();
+const REPORT_TTL_MS = Math.max(DEMO_WINDOW_MS, Number(process.env.URL_AGENT_REPORT_TTL_MS || 172_800_000));
+
+export const PUBLIC_DEMO_ACTIONS = new Set([
   "investigate_url",
   "audit_seo",
   "audit_security",
@@ -24,14 +29,18 @@ const PUBLIC_DEMO_ACTIONS = new Set([
   "structured_data"
 ]);
 
+const reports = new Map<string, ExportReport>();
+const mcpSessions = new Map<string, { createdAt: number; lastToolAt?: number; ipHash: string; clientName?: string }>();
+
 type SessionUser = { sub: string; username: string; avatar?: string };
-type UsageEntry = { at: number; kind: "anonymous" | "account" };
+type UsageEntry = { at: number; kind: "account" };
 type DemoStatus = {
   allowed: boolean;
   remaining: 0 | 1;
   resetAt?: string;
-  identity: "account" | "ip";
+  identity: "account" | "anonymous";
   authenticated: boolean;
+  unlimited: boolean;
 };
 
 const demoUsage = new Map<string, UsageEntry>();
@@ -46,6 +55,14 @@ function json(res: ServerResponse, status: number, value: unknown): void {
   res.end(JSON.stringify(value, null, 2));
 }
 
+function send(res: ServerResponse, status: number, contentType: string, value: string | Buffer, cache = "no-store"): void {
+  res.statusCode = status;
+  res.setHeader("content-type", contentType);
+  res.setHeader("cache-control", cache);
+  res.setHeader("x-powered-by", `${PROJECT.name}/${PROJECT.version}`);
+  res.end(value);
+}
+
 function redirect(res: ServerResponse, location: string): void {
   res.statusCode = 302;
   res.setHeader("location", location);
@@ -58,11 +75,19 @@ async function serveUi(res: ServerResponse): Promise<boolean> {
   if (!path) return false;
   try {
     uiHtml ??= await readFile(path, "utf8");
-    res.statusCode = 200;
-    res.setHeader("content-type", "text/html; charset=utf-8");
-    res.setHeader("cache-control", "no-cache");
-    res.setHeader("x-powered-by", `${PROJECT.name}/${PROJECT.version}`);
-    res.end(uiHtml);
+    send(res, 200, "text/html; charset=utf-8", uiHtml, "no-cache");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function serveAsset(res: ServerResponse, name: "logo.jpg" | "og.jpg"): Promise<boolean> {
+  const base = process.env.URL_AGENT_ASSET_DIR;
+  if (!base) return false;
+  try {
+    const file = await readFile(join(base, name));
+    send(res, 200, "image/jpeg", file, "public, max-age=86400, immutable");
     return true;
   } catch {
     return false;
@@ -82,12 +107,12 @@ function clientIp(req: IncomingMessage): string {
   return String(req.socket.remoteAddress || "unknown");
 }
 
-function ipUsageKey(req: IncomingMessage): string {
-  return `ip:${createHash("sha256").update(clientIp(req)).digest("hex")}`;
+function ipHash(req: IncomingMessage): string {
+  return createHash("sha256").update(clientIp(req)).digest("hex");
 }
 
 function allowed(req: IncomingMessage): boolean {
-  const limit = Math.max(1, Number(process.env.URL_AGENT_API_RATE_LIMIT || 60));
+  const limit = Math.max(1, Number(process.env.URL_AGENT_API_RATE_LIMIT || 120));
   const windowMs = 60_000;
   const ip = clientIp(req);
   const now = Date.now();
@@ -154,6 +179,10 @@ function sessionUser(req: IncomingMessage): SessionUser | undefined {
   }
 }
 
+function isOwner(user?: SessionUser): boolean {
+  return Boolean(user && user.username.toLowerCase() === OWNER_USERNAME);
+}
+
 function baseUrl(req: IncomingMessage): string {
   if (process.env.SPACE_HOST) return `https://${process.env.SPACE_HOST}`;
   const proto = header(req, "x-forwarded-proto") || "http";
@@ -203,16 +232,8 @@ async function finishOauth(req: IncomingMessage, res: ServerResponse, u: URL): P
   const credentials = Buffer.from(`${process.env.OAUTH_CLIENT_ID}:${process.env.OAUTH_CLIENT_SECRET}`, "utf8").toString("base64");
   const tokenResponse = await fetch(config.token_endpoint, {
     method: "POST",
-    headers: {
-      "content-type": "application/x-www-form-urlencoded",
-      authorization: `Basic ${credentials}`
-    },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      client_id: process.env.OAUTH_CLIENT_ID || "",
-      redirect_uri: redirectUri
-    })
+    headers: { "content-type": "application/x-www-form-urlencoded", authorization: `Basic ${credentials}` },
+    body: new URLSearchParams({ grant_type: "authorization_code", code, client_id: process.env.OAUTH_CLIENT_ID || "", redirect_uri: redirectUri })
   });
   if (!tokenResponse.ok) { redirect(res, "/?auth=failed"); return; }
   const token = await tokenResponse.json() as Record<string, unknown>;
@@ -230,7 +251,7 @@ async function finishOauth(req: IncomingMessage, res: ServerResponse, u: URL): P
   redirect(res, "/");
 }
 
-async function body(req: IncomingMessage, maxBytes = 1_000_000): Promise<Record<string, unknown>> {
+async function body(req: IncomingMessage, maxBytes = 2_000_000): Promise<Record<string, unknown>> {
   let size = 0;
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
@@ -241,6 +262,10 @@ async function body(req: IncomingMessage, maxBytes = 1_000_000): Promise<Record<
   }
   if (!chunks.length) return {};
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>;
+}
+
+async function rawJson(req: IncomingMessage, maxBytes = 2_000_000): Promise<McpMessage> {
+  return await body(req, maxBytes) as McpMessage;
 }
 
 function authorized(req: IncomingMessage): boolean {
@@ -269,30 +294,31 @@ function cleanupDemoUsage(now = Date.now()): void {
   for (const [key, entry] of demoUsage) if (!recent(entry, now)) demoUsage.delete(key);
 }
 
-function currentDemoStatus(req: IncomingMessage, user = sessionUser(req)): DemoStatus {
+function cleanupReports(now = Date.now()): void {
+  for (const [key, report] of reports) if (now - new Date(report.createdAt).getTime() > REPORT_TTL_MS) reports.delete(key);
+}
+
+function cleanupMcpSessions(now = Date.now()): void {
+  for (const [key, session] of mcpSessions) if (now - session.createdAt > DEMO_WINDOW_MS) mcpSessions.delete(key);
+}
+
+function currentDemoStatus(_req: IncomingMessage, user = sessionUser(_req)): DemoStatus {
   cleanupDemoUsage();
-  const now = Date.now();
-  const ipKey = ipUsageKey(req);
-  const ipEntry = demoUsage.get(ipKey);
-  const blockers: number[] = [];
+  if (!user) return { allowed: false, remaining: 0, identity: "anonymous", authenticated: false, unlimited: false };
+  if (isOwner(user)) return { allowed: true, remaining: 1, identity: "account", authenticated: true, unlimited: true };
 
-  if (user) {
-    const accountEntry = demoUsage.get(`account:${user.sub}`);
-    if (recent(accountEntry, now)) blockers.push((accountEntry as UsageEntry).at + DEMO_WINDOW_MS);
-    // Prevent an anonymous user from consuming a request and then signing in for a second one.
-    if (recent(ipEntry, now) && ipEntry?.kind === "anonymous") blockers.push(ipEntry.at + DEMO_WINDOW_MS);
-  } else if (recent(ipEntry, now)) {
-    blockers.push((ipEntry as UsageEntry).at + DEMO_WINDOW_MS);
+  const entry = demoUsage.get(`account:${user.sub}`);
+  if (recent(entry)) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: new Date((entry as UsageEntry).at + DEMO_WINDOW_MS).toISOString(),
+      identity: "account",
+      authenticated: true,
+      unlimited: false
+    };
   }
-
-  const blocked = blockers.length > 0;
-  return {
-    allowed: !blocked,
-    remaining: blocked ? 0 : 1,
-    resetAt: blocked ? new Date(Math.max(...blockers)).toISOString() : undefined,
-    identity: user ? "account" : "ip",
-    authenticated: Boolean(user)
-  };
+  return { allowed: true, remaining: 1, identity: "account", authenticated: true, unlimited: false };
 }
 
 async function resolveDemoRateFile(): Promise<string> {
@@ -309,12 +335,10 @@ async function loadDemoUsage(): Promise<void> {
   demoRateFile = await resolveDemoRateFile();
   try {
     const raw = JSON.parse(await readFile(demoRateFile, "utf8")) as Record<string, UsageEntry>;
-    for (const [key, value] of Object.entries(raw)) {
-      if (value && typeof value.at === "number" && (value.kind === "anonymous" || value.kind === "account")) demoUsage.set(key, value);
-    }
+    for (const [key, value] of Object.entries(raw)) if (value && typeof value.at === "number") demoUsage.set(key, value);
     cleanupDemoUsage();
   } catch {
-    // First boot or ephemeral storage: start with an empty quota store.
+    // First boot or ephemeral storage.
   }
 }
 
@@ -325,21 +349,15 @@ async function persistDemoUsage(): Promise<void> {
     await mkdir(dirname(demoRateFile), { recursive: true });
     await writeFile(demoRateFile, JSON.stringify(Object.fromEntries(demoUsage), null, 2), "utf8");
   } catch {
-    // Rate limiting remains active in memory even when persistence is unavailable.
+    // Memory limiting remains active when persistence is unavailable.
   }
 }
 
 async function reserveDemoRequest(req: IncomingMessage, user = sessionUser(req)): Promise<DemoStatus> {
   const status = currentDemoStatus(req, user);
-  if (!status.allowed) return status;
+  if (!status.allowed || status.unlimited || !user) return status;
   const now = Date.now();
-  const ipKey = ipUsageKey(req);
-  if (user) {
-    demoUsage.set(`account:${user.sub}`, { at: now, kind: "account" });
-    demoUsage.set(ipKey, { at: now, kind: "account" });
-  } else {
-    demoUsage.set(ipKey, { at: now, kind: "anonymous" });
-  }
+  demoUsage.set(`account:${user.sub}`, { at: now, kind: "account" });
   await persistDemoUsage();
   return { ...status, allowed: false, remaining: 0, resetAt: new Date(now + DEMO_WINDOW_MS).toISOString() };
 }
@@ -353,10 +371,145 @@ function rateLimited(res: ServerResponse, status: DemoStatus): void {
   res.setHeader("x-ratelimit-reset", String(Math.ceil(resetMs / 1000)));
   json(res, 429, {
     error: "Hosted demo limit reached",
-    message: "This Hugging Face demo allows one analysis request per Hugging Face account or anonymous IP every 24 hours. Clone or self-host the open-source agent for unrestricted local use.",
+    message: "The hosted web demo allows one analysis request per signed-in Hugging Face account every 24 hours. Clone or self-host for unrestricted local use.",
     demo: status,
     attribution: attributionObject()
   });
+}
+
+function loginRequired(res: ServerResponse): void {
+  json(res, 401, {
+    error: "Hugging Face sign-in required",
+    message: "Sign in with Hugging Face before using the hosted web analysis and export features.",
+    login: "/auth/login",
+    attribution: attributionObject()
+  });
+}
+
+function createReport(user: SessionUser, url: string, action: string, result: unknown): ExportReport {
+  cleanupReports();
+  const report: ExportReport = { id: randomUUID(), userSub: user.sub, username: user.username, url, action, createdAt: new Date().toISOString(), result };
+  reports.set(report.id, report);
+  return report;
+}
+
+async function serveReport(req: IncomingMessage, res: ServerResponse, u: URL, user?: SessionUser): Promise<boolean> {
+  const match = u.pathname.match(/^\/report\/([a-f0-9-]+)$/i);
+  if (!match) return false;
+  if (!user) { loginRequired(res); return true; }
+  cleanupReports();
+  const report = reports.get(match[1]);
+  if (!report || report.userSub !== user.sub) { json(res, 404, { error: "Report not found or expired" }); return true; }
+  const format = (u.searchParams.get("format") || "pdf").toLowerCase();
+  let content: string | Buffer;
+  let type: string;
+  let ext: string;
+  if (format === "pdf") { content = await generatePdf(report); type = "application/pdf"; ext = "pdf"; }
+  else if (format === "json") { content = generateJson(report); type = "application/json; charset=utf-8"; ext = "json"; }
+  else if (format === "md" || format === "markdown") { content = generateMarkdown(report); type = "text/markdown; charset=utf-8"; ext = "md"; }
+  else if (format === "html") { content = generateHtml(report); type = "text/html; charset=utf-8"; ext = "html"; }
+  else { json(res, 400, { error: "Unsupported export format", formats: ["pdf", "json", "md", "html"] }); return true; }
+  res.setHeader("content-disposition", `attachment; filename=\"${exportFilename(report, ext)}\"`);
+  res.setHeader("x-robots-tag", "noindex, nofollow, noarchive");
+  send(res, 200, type, content);
+  return true;
+}
+
+function mcpOriginAllowed(req: IncomingMessage): boolean {
+  const origin = header(req, "origin");
+  if (!origin) return true;
+  try {
+    const host = new URL(origin).hostname.toLowerCase();
+    const own = String(req.headers.host || "").split(":")[0].toLowerCase();
+    return host === own || host === "huggingface.co" || host.endsWith(".hf.space") || host === "chatgpt.com" || host.endsWith(".openai.com") || host === "claude.ai" || host.endsWith(".anthropic.com") || host === "localhost" || host === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+function mcpProtocolAllowed(req: IncomingMessage, isInitialize: boolean): boolean {
+  if (isInitialize) return true;
+  const version = header(req, "mcp-protocol-version");
+  if (!version) return true;
+  return (MCP_PROTOCOL_VERSIONS as readonly string[]).includes(version);
+}
+
+async function handleMcp(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+  if (!req.url) return false;
+  const u = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  if (u.pathname !== "/mcp") return false;
+
+  res.setHeader("access-control-expose-headers", "Mcp-Session-Id,MCP-Protocol-Version");
+  res.setHeader("x-robots-tag", "noindex, nofollow, noarchive");
+  if (!mcpOriginAllowed(req)) { json(res, 403, { error: "Invalid Origin for MCP endpoint" }); return true; }
+
+  if (req.method === "GET") {
+    res.statusCode = 405;
+    res.setHeader("allow", "POST, DELETE");
+    res.end();
+    return true;
+  }
+  if (req.method === "DELETE") {
+    const sessionId = header(req, "mcp-session-id");
+    if (sessionId) mcpSessions.delete(sessionId);
+    res.statusCode = 204;
+    res.end();
+    return true;
+  }
+  if (req.method !== "POST") { res.statusCode = 405; res.end(); return true; }
+
+  let message: McpMessage;
+  try { message = await rawJson(req); } catch (error) { json(res, 400, { jsonrpc: "2.0", id: null, error: { code: -32700, message: error instanceof Error ? error.message : "Invalid JSON" } }); return true; }
+  const isInitialize = message.method === "initialize";
+  if (!mcpProtocolAllowed(req, isInitialize)) { json(res, 400, { error: "Unsupported MCP protocol version", supported: MCP_PROTOCOL_VERSIONS }); return true; }
+
+  cleanupMcpSessions();
+  let sessionId = header(req, "mcp-session-id");
+  if (isInitialize) {
+    sessionId = randomUUID();
+    mcpSessions.set(sessionId, { createdAt: Date.now(), ipHash: ipHash(req), clientName: String(message.params?.clientInfo?.name || "remote-mcp-client") });
+    res.setHeader("Mcp-Session-Id", sessionId);
+  } else {
+    if (!sessionId) { json(res, 400, { error: "Mcp-Session-Id is required after initialize" }); return true; }
+    if (!mcpSessions.has(sessionId)) { json(res, 404, { error: "MCP session not found or expired" }); return true; }
+  }
+
+  try {
+    const result = await processMcpMessage(message, {
+      allowedTools: PUBLIC_DEMO_ACTIONS,
+      callTool: async (name, args) => {
+        if (!sessionId) throw Object.assign(new Error("MCP session is missing"), { code: -32000 });
+        const session = mcpSessions.get(sessionId);
+        if (!session) throw Object.assign(new Error("MCP session expired"), { code: -32000 });
+        if (session.lastToolAt && Date.now() - session.lastToolAt < DEMO_WINDOW_MS) {
+          const resetAt = new Date(session.lastToolAt + DEMO_WINDOW_MS).toISOString();
+          throw Object.assign(new Error(`Public remote MCP demo limit reached. One analysis tool call per MCP session every 24 hours. Reset: ${resetAt}`), { code: -32029 });
+        }
+        const url = validateUrl(args.url);
+        if (!url) throw Object.assign(new Error("Provide a valid public http/https URL"), { code: -32602 });
+        args.url = url;
+        session.lastToolAt = Date.now();
+        return await runAction(name, args as any);
+      }
+    });
+    if (result === undefined || message.id === undefined) { res.statusCode = 202; res.end(); return true; }
+    send(res, 200, "application/json; charset=utf-8", JSON.stringify({ jsonrpc: "2.0", id: message.id ?? null, result }));
+  } catch (error) {
+    const e = error as Error & { code?: number };
+    send(res, 200, "application/json; charset=utf-8", JSON.stringify({ jsonrpc: "2.0", id: message.id ?? null, error: { code: e.code || -32000, message: e.message } }));
+  }
+  return true;
+}
+
+function publicMetadata(req: IncomingMessage): { base: string; canonical: string; mcp: string; github: string; huggingFace: string } {
+  const base = baseUrl(req);
+  return {
+    base,
+    canonical: "https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent",
+    mcp: `${base}/mcp`,
+    github: "https://github.com/vpicciuolo/url-intelligence-agent",
+    huggingFace: "https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"
+  };
 }
 
 export async function startApiServer(port = Number(process.env.PORT || 8787), host = process.env.HOST || "127.0.0.1"): Promise<void> {
@@ -365,18 +518,46 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
   const server = createServer(async (req, res) => {
     if (process.env.URL_AGENT_CORS_ORIGIN) {
       res.setHeader("access-control-allow-origin", process.env.URL_AGENT_CORS_ORIGIN);
-      res.setHeader("access-control-allow-headers", "content-type,authorization");
-      res.setHeader("access-control-allow-methods", "GET,POST,OPTIONS");
+      res.setHeader("access-control-allow-headers", "content-type,authorization,mcp-session-id,mcp-protocol-version");
+      res.setHeader("access-control-allow-methods", "GET,POST,DELETE,OPTIONS");
     }
     if (req.method === "OPTIONS") { res.statusCode = 204; res.end(); return; }
     if (!allowed(req)) { json(res, 429, { error: "Rate limit exceeded", attribution: attributionObject() }); return; }
-    if (!authorized(req)) { json(res, 401, { error: "Unauthorized", attribution: attributionObject() }); return; }
 
     try {
+      if (await handleMcp(req, res)) return;
+      if (!authorized(req)) { json(res, 401, { error: "Unauthorized", attribution: attributionObject() }); return; }
+
       const u = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
       const user = sessionUser(req);
+      const meta = publicMetadata(req);
 
       if (u.pathname === "/" && req.method === "GET" && await serveUi(res)) return;
+      if (u.pathname === "/assets/logo.jpg" && req.method === "GET" && await serveAsset(res, "logo.jpg")) return;
+      if (u.pathname === "/assets/og.jpg" && req.method === "GET" && await serveAsset(res, "og.jpg")) return;
+      if (u.pathname === "/favicon.jpg" && req.method === "GET" && await serveAsset(res, "logo.jpg")) return;
+
+      if (u.pathname === "/robots.txt" && req.method === "GET") {
+        send(res, 200, "text/plain; charset=utf-8", `User-agent: *\nAllow: /\nDisallow: /auth/\nDisallow: /report/\nDisallow: /mcp\nSitemap: ${meta.base}/sitemap.xml\n`, "public, max-age=3600");
+        return;
+      }
+      if (u.pathname === "/sitemap.xml" && req.method === "GET") {
+        send(res, 200, "application/xml; charset=utf-8", `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${meta.base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url></urlset>`, "public, max-age=3600");
+        return;
+      }
+      if (u.pathname === "/llms.txt" && req.method === "GET") {
+        send(res, 200, "text/plain; charset=utf-8", `# URL Intelligence Agent\n\nEvidence-first public URL intelligence for AI agents and developers.\n\nRemote MCP: ${meta.mcp}\nHugging Face: ${meta.huggingFace}\nGitHub: ${meta.github}\nCreator: Vincenzo Picciuolo\nCompany: HRN Innovation Technologies Ltd\n\nCapabilities: deep URL investigation, crawling, entity resolution, social and contact discovery, technology detection, SEO, security, trust, brand intelligence, RAG, monitoring, HTTP API and MCP.\n`, "public, max-age=3600");
+        return;
+      }
+      if (u.pathname === "/.well-known/security.txt" && req.method === "GET") {
+        send(res, 200, "text/plain; charset=utf-8", `Canonical: ${meta.base}/.well-known/security.txt\nPolicy: ${meta.github}/blob/main/SECURITY.md\nExpires: 2027-09-07T00:00:00.000Z\n`, "public, max-age=3600");
+        return;
+      }
+      if (u.pathname === "/.well-known/mcp.json" && req.method === "GET") {
+        json(res, 200, { name: "URL Intelligence Agent", transport: "streamable-http", endpoint: meta.mcp, protocolVersions: MCP_PROTOCOL_VERSIONS, authentication: "none", publicDemoTools: [...PUBLIC_DEMO_ACTIONS], limit: "1 analysis tool call per MCP session / 24h", github: meta.github, huggingFace: meta.huggingFace, creator: "Vincenzo Picciuolo" });
+        return;
+      }
+
       if (u.pathname === "/auth/login" && req.method === "GET") { await beginOauth(req, res); return; }
       if (u.pathname === "/auth/callback" && req.method === "GET") { await finishOauth(req, res, u); return; }
       if (u.pathname === "/auth/logout" && req.method === "GET") {
@@ -384,35 +565,35 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
         redirect(res, "/");
         return;
       }
+
+      if (await serveReport(req, res, u, user)) return;
+
       if (u.pathname === "/me" && req.method === "GET") {
         json(res, 200, {
           oauthEnabled: oauthEnabled(),
-          user: user ? { username: user.username, avatar: user.avatar } : null,
+          user: user ? { username: user.username, avatar: user.avatar, owner: isOwner(user) } : null,
           demo: currentDemoStatus(req, user),
-          demoPolicy: { requests: 1, windowHours: DEMO_WINDOW_MS / 3_600_000 },
+          demoPolicy: { loginRequired: true, requests: 1, windowHours: DEMO_WINDOW_MS / 3_600_000, ownerExempt: true },
+          remoteMcp: { endpoint: meta.mcp, transport: "Streamable HTTP", public: true, tools: [...PUBLIC_DEMO_ACTIONS] },
           attribution: attributionObject()
         });
         return;
       }
       if (u.pathname === "/health") {
-        json(res, 200, { ok: true, uptimeSeconds: Math.round(process.uptime()), actions: actionNames().length, demoLimit: "1 request / 24h", attribution: attributionObject() });
+        json(res, 200, { ok: true, uptimeSeconds: Math.round(process.uptime()), actions: actionNames().length, webDemo: "HF login required · 1 request / 24h · owner exempt", remoteMcp: meta.mcp, attribution: attributionObject() });
         return;
       }
       if (u.pathname === "/actions") {
-        json(res, 200, { actions: actionNames(), publicDemoActions: [...PUBLIC_DEMO_ACTIONS], attribution: attributionObject() });
+        json(res, 200, { actions: actionNames(), publicDemoActions: [...PUBLIC_DEMO_ACTIONS], remoteMcp: meta.mcp, attribution: attributionObject() });
         return;
       }
 
       const actionMatch = u.pathname.match(/^\/action\/([a-z0-9_:-]+)$/i);
       if (actionMatch) {
+        if (!user) { loginRequired(res); return; }
         const action = actionMatch[1];
         if (!PUBLIC_DEMO_ACTIONS.has(action)) {
-          json(res, 403, {
-            error: "Action not enabled in hosted demo",
-            message: "Use the open-source CLI, MCP server, Docker image or self-hosted API for this action.",
-            publicDemoActions: [...PUBLIC_DEMO_ACTIONS],
-            attribution: attributionObject()
-          });
+          json(res, 403, { error: "Action not enabled in hosted web demo", message: "Use the open-source CLI, MCP server, Docker image or self-hosted API for this action.", publicDemoActions: [...PUBLIC_DEMO_ACTIONS], attribution: attributionObject() });
           return;
         }
         const args: Record<string, unknown> = req.method === "POST" ? await body(req) : Object.fromEntries(u.searchParams.entries());
@@ -423,11 +604,13 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
         if (!before.allowed) { rateLimited(res, before); return; }
         const demo = await reserveDemoRequest(req, user);
         const result = await runAction(action, args as any);
-        json(res, 200, { attribution: attributionObject(), demo, result });
+        const report = createReport(user, url, action, result);
+        json(res, 200, { attribution: attributionObject(), demo, report: { id: report.id, expiresAt: new Date(Date.now() + REPORT_TTL_MS).toISOString(), exports: { pdf: `/report/${report.id}?format=pdf`, json: `/report/${report.id}?format=json`, markdown: `/report/${report.id}?format=md`, html: `/report/${report.id}?format=html` } }, result });
         return;
       }
 
       if (u.pathname === "/investigate") {
+        if (!user) { loginRequired(res); return; }
         const args: Record<string, unknown> = req.method === "POST" ? await body(req) : Object.fromEntries(u.searchParams.entries());
         const url = validateUrl(args.url);
         if (!url) { json(res, 400, { error: "Provide a valid public http/https URL", attribution: attributionObject() }); return; }
@@ -436,11 +619,12 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
         if (!before.allowed) { rateLimited(res, before); return; }
         const demo = await reserveDemoRequest(req, user);
         const result = await runAction("investigate_url", args as any);
-        json(res, 200, { attribution: attributionObject(), demo, result });
+        const report = createReport(user, url, "investigate_url", result);
+        json(res, 200, { attribution: attributionObject(), demo, report: { id: report.id, expiresAt: new Date(Date.now() + REPORT_TTL_MS).toISOString(), exports: { pdf: `/report/${report.id}?format=pdf`, json: `/report/${report.id}?format=json`, markdown: `/report/${report.id}?format=md`, html: `/report/${report.id}?format=html` } }, result });
         return;
       }
 
-      json(res, 404, { error: "Not found", available: ["/", "/health", "/me", "/actions", "/investigate", "/action/:name"], attribution: attributionObject() });
+      json(res, 404, { error: "Not found", available: ["/", "/health", "/me", "/actions", "/investigate", "/action/:name", "/mcp", "/.well-known/mcp.json", "/llms.txt"], attribution: attributionObject() });
     } catch (error) {
       json(res, 400, { error: error instanceof Error ? error.message : String(error), attribution: attributionObject() });
     }
@@ -450,5 +634,5 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
     server.once("error", reject);
     server.listen(port, host, () => resolve());
   });
-  console.log(`${creditsLine()}\nAPI listening on http://${host}:${port}`);
+  console.log(`${creditsLine()}\nAPI listening on http://${host}:${port}\nRemote MCP endpoint: http://${host}:${port}/mcp`);
 }
