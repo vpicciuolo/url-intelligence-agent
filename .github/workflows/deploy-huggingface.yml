@@ -51,19 +51,25 @@ jobs:
           cp hf-space/ui-v2.js /tmp/hf-payload/ui-v2.js
           cp hf-space/assets/README.txt /tmp/hf-payload/assets/README.txt
 
-          # Download the exact user-approved production branding assets.
-          # Browser-like headers avoid CDN hotlink restrictions during CI.
-          curl --fail --location --retry 3 --retry-delay 2 \
-            -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36' \
-            -H 'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8' \
-            'https://storage.mlcdn.com/account_image/2365654/uunRmrxG6vCBRo8B4kvrAd40Ut0z0qOAHV2DYpHf.jpg' \
-            -o /tmp/hf-payload/assets/logo.jpg
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          ACCEPT='image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
 
-          curl --fail --location --retry 3 --retry-delay 2 \
-            -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36' \
-            -H 'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8' \
+          curl --fail --location --retry 3 --retry-delay 2 -A "$UA" -H "Accept: $ACCEPT" \
+            'https://storage.mlcdn.com/account_image/2365654/uunRmrxG6vCBRo8B4kvrAd40Ut0z0qOAHV2DYpHf.jpg' \
+            -o /tmp/logo-source
+
+          curl --fail --location --retry 3 --retry-delay 2 -A "$UA" -H "Accept: $ACCEPT" \
             'https://storage.mlcdn.com/account_image/2365654/ceTJNoztKxv1AW3dpdSaf5XSHWNMbhlKAzyFdUJN.jpg' \
-            -o /tmp/hf-payload/assets/og.jpg
+            -o /tmp/og-source
+
+          echo 'Downloaded source formats:'
+          file /tmp/logo-source /tmp/og-source
+
+          # The CDN URLs use a .jpg suffix but may deliver another image format.
+          # Normalize both approved sources to real JPEG files for predictable
+          # browser rendering, Hugging Face thumbnails and social crawlers.
+          ffmpeg -hide_banner -loglevel error -y -i /tmp/logo-source -frames:v 1 -q:v 2 /tmp/hf-payload/assets/logo.jpg
+          ffmpeg -hide_banner -loglevel error -y -i /tmp/og-source -frames:v 1 -q:v 2 /tmp/hf-payload/assets/og.jpg
 
           python3 - <<'PY'
           from pathlib import Path
@@ -100,15 +106,12 @@ jobs:
           expected_thumbnail = 'https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2'
           if value('thumbnail') != expected_thumbnail:
               raise SystemExit('Unexpected thumbnail URL')
-          PY
 
-          python3 - <<'PY'
-          from pathlib import Path
           for name, minimum in [('logo.jpg', 5000), ('og.jpg', 15000)]:
               data = Path('/tmp/hf-payload/assets', name).read_bytes()
               if len(data) < minimum or data[:2] != b'\xff\xd8':
                   raise SystemExit(f'{name} is not a valid JPEG ({len(data)} bytes)')
-              print(f'{name} source OK ({len(data)} bytes)')
+              print(f'{name} normalized JPEG OK ({len(data)} bytes)')
           PY
 
       - name: Sync Docker Space
@@ -142,7 +145,7 @@ jobs:
           failures = {'BUILD_ERROR', 'RUNTIME_ERROR', 'CONFIG_ERROR'}
 
           def request(url, auth=False):
-              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.2'}
+              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.3'}
               if auth:
                   headers['Authorization'] = f"Bearer {os.environ['HF_TOKEN']}"
               return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30)
@@ -171,5 +174,5 @@ jobs:
               page = response.read().decode('utf-8', 'replace')
               if 'assets/logo.jpg?v=20260908-2' not in page or 'assets/og.jpg?v=20260908-2' not in page:
                   raise SystemExit('Live UI is not using the deployed branding assets')
-              print('Live UI references the exact deployed brand assets.')
+              print('Live UI references the approved deployed brand assets.')
           PY
