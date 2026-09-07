@@ -1,0 +1,579 @@
+{
+  "benchmark": "vpicciuolo/url-intelligence-benchmark",
+  "benchmark_cases": 55,
+  "predictions": 55,
+  "missing": [],
+  "generated_at": "2026-09-07T22:36:10Z",
+  "git_sha": "7991a40157a891562f9441ba507b9a5fcc23d7ea",
+  "overall_score": 62.5,
+  "deterministic_score": 62.62,
+  "metrics": {
+    "action": {
+      "ok": 44,
+      "total": 55,
+      "pct": 80.0
+    },
+    "content_kind": {
+      "ok": 22,
+      "total": 26,
+      "pct": 84.62
+    },
+    "overall_assertions": {
+      "ok": 75,
+      "total": 120,
+      "pct": 62.5
+    },
+    "redirects": {
+      "ok": 3,
+      "total": 4,
+      "pct": 75.0
+    },
+    "status_family": {
+      "ok": 6,
+      "total": 35,
+      "pct": 17.14
+    },
+    "case_pass_rate": {
+      "ok": 12,
+      "total": 55,
+      "pct": 21.82
+    },
+    "deterministic_assertions": {
+      "ok": 67,
+      "total": 107,
+      "pct": 62.62
+    },
+    "deterministic_case_pass_rate": {
+      "ok": 12,
+      "total": 50,
+      "pct": 24.0
+    },
+    "security_action_accuracy": {
+      "ok": 7,
+      "total": 18,
+      "pct": 38.89
+    },
+    "full_agent_completion": {
+      "ok": 0,
+      "total": 0,
+      "pct": null
+    }
+  },
+  "groups": {
+    "api_response": {
+      "ok": 0,
+      "total": 1,
+      "pct": 0.0
+    },
+    "http_status": {
+      "ok": 2,
+      "total": 12,
+      "pct": 16.67
+    },
+    "image": {
+      "ok": 0,
+      "total": 1,
+      "pct": 0.0
+    },
+    "invalid_url": {
+      "ok": 4,
+      "total": 4,
+      "pct": 100.0
+    },
+    "normalization": {
+      "ok": 0,
+      "total": 8,
+      "pct": 0.0
+    },
+    "redirect": {
+      "ok": 3,
+      "total": 4,
+      "pct": 75.0
+    },
+    "repository": {
+      "ok": 0,
+      "total": 1,
+      "pct": 0.0
+    },
+    "robots": {
+      "ok": 0,
+      "total": 1,
+      "pct": 0.0
+    },
+    "scheme_upgrade": {
+      "ok": 0,
+      "total": 1,
+      "pct": 0.0
+    },
+    "space": {
+      "ok": 0,
+      "total": 1,
+      "pct": 0.0
+    },
+    "ssrf": {
+      "ok": 0,
+      "total": 10,
+      "pct": 0.0
+    },
+    "structured_document": {
+      "ok": 0,
+      "total": 1,
+      "pct": 0.0
+    },
+    "tracking_params": {
+      "ok": 0,
+      "total": 1,
+      "pct": 0.0
+    },
+    "unicode": {
+      "ok": 0,
+      "total": 1,
+      "pct": 0.0
+    },
+    "unsupported_scheme": {
+      "ok": 3,
+      "total": 4,
+      "pct": 75.0
+    },
+    "web_page": {
+      "ok": 0,
+      "total": 4,
+      "pct": 0.0
+    }
+  },
+  "average_network_elapsed_ms": 32,
+  "failures": [
+    {
+      "id": "web-001",
+      "group": "web_page",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "web-002",
+      "group": "web_page",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "web-003",
+      "group": "web_page",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "web-004",
+      "group": "repository",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "web-005",
+      "group": "space",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "web-006",
+      "group": "web_page",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "web-007",
+      "group": "api_response",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "web-008",
+      "group": "structured_document",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "web-009",
+      "group": "image",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "web-010",
+      "group": "robots",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "redirect-002",
+      "group": "redirect",
+      "failed_checks": [
+        "redirects",
+        "content_kind"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "redirect-005",
+      "group": "scheme_upgrade",
+      "failed_checks": [
+        "content_kind"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-200",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-204",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family",
+        "content_kind"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-400",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-401",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-403",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-404",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-418",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-429",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-500",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "status-503",
+      "group": "http_status",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-001",
+      "group": "normalization",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-002",
+      "group": "normalization",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-003",
+      "group": "normalization",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-004",
+      "group": "normalization",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-005",
+      "group": "tracking_params",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-006",
+      "group": "normalization",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-007",
+      "group": "normalization",
+      "failed_checks": [
+        "content_kind"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-008",
+      "group": "normalization",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-009",
+      "group": "normalization",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "norm-010",
+      "group": "unicode",
+      "failed_checks": [
+        "status_family"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "invalid-008",
+      "group": "unsupported_scheme",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "reject",
+      "actual_action": "error",
+      "error": "fetch failed"
+    },
+    {
+      "id": "ssrf-001",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    },
+    {
+      "id": "ssrf-002",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    },
+    {
+      "id": "ssrf-003",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    },
+    {
+      "id": "ssrf-004",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    },
+    {
+      "id": "ssrf-005",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    },
+    {
+      "id": "ssrf-006",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    },
+    {
+      "id": "ssrf-007",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    },
+    {
+      "id": "ssrf-008",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    },
+    {
+      "id": "ssrf-009",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    },
+    {
+      "id": "ssrf-010",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "reject",
+      "error": "link-preview-js did not receive a valid a url or text"
+    }
+  ]
+}

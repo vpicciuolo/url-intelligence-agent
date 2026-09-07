@@ -1,0 +1,10 @@
+{
+  "id": "link-preview-js",
+  "name": "link-preview-js",
+  "version": "5.0.0",
+  "source": "https://github.com/OP-Engineering/link-preview-js",
+  "package": "https://www.npmjs.com/package/link-preview-js",
+  "license": "MIT",
+  "adapter": "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled.",
+  "generated_at": "2026-09-07T22:36:10.148Z"
+}

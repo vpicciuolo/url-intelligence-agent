@@ -1,0 +1,10 @@
+{
+  "id": "url-metadata",
+  "name": "url-metadata",
+  "version": "5.12.0",
+  "source": "https://github.com/laurengarcia/url-metadata",
+  "package": "https://www.npmjs.com/package/url-metadata",
+  "license": "MIT",
+  "adapter": "Native network-only probe (`fields: ['network']`) using the package's built-in request-filtering-agent SSRF protection.",
+  "generated_at": "2026-09-07T22:36:08.400Z"
+}
