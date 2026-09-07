@@ -21,23 +21,29 @@ jobs:
       - name: Validate embedded brand assets
         run: |
           set -euo pipefail
-          test -s hf-space/assets/logo.base64.txt
-          compgen -G 'hf-space/assets/og.*.b64' >/dev/null
-          tr -d '\n\r\t ' < hf-space/assets/logo.base64.txt | base64 -d > /tmp/logo.jpg
-          : > /tmp/og.jpg
-          for part in $(printf '%s\n' hf-space/assets/og.*.b64 | sort -V); do
-            tr -d '\n\r\t ' < "$part" | base64 -d >> /tmp/og.jpg
-          done
-          python3 - <<'PY'
-          from pathlib import Path
-          checks = [('logo.jpg', 5000, 800000), ('og.jpg', 15000, 800000)]
-          for name, minimum, maximum in checks:
-              p = Path('/tmp') / name
-              data = p.read_bytes()
-              if len(data) < minimum or len(data) > maximum or data[:2] != b'\xff\xd8' or data[-2:] != b'\xff\xd9':
-                  raise SystemExit(f'{name} invalid: {len(data)} bytes')
-              print(f'{name}: {len(data)} bytes, JPEG OK')
-          PY
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const dir = 'hf-space/assets';
+          const clean = value => String(value || '').replace(/\s+/g, '');
+          const decode = name => {
+            const encoded = clean(fs.readFileSync(path.join(dir, name), 'utf8'));
+            const bytes = Buffer.from(encoded, 'base64');
+            console.log(`${name}: ${encoded.length} base64 chars -> ${bytes.length} bytes`);
+            return bytes;
+          };
+          const logo = decode('logo.base64.txt');
+          const parts = fs.readdirSync(dir).filter(n => /^og\.\d+\.b64$/.test(n)).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+          if (!parts.length) throw new Error('No Open Graph chunks');
+          const og = Buffer.concat(parts.map(decode));
+          for (const [name, data, min] of [['logo.jpg', logo, 5000], ['og.jpg', og, 15000]]) {
+            if (data.length < min || data.length > 800000 || data[0] !== 0xff || data[1] !== 0xd8 || data[data.length-2] !== 0xff || data[data.length-1] !== 0xd9) {
+              throw new Error(`${name} invalid: ${data.length} bytes, head=${data.subarray(0,2).toString('hex')}, tail=${data.subarray(-2).toString('hex')}`);
+            }
+            fs.writeFileSync(`/tmp/${name}`, data);
+            console.log(`${name}: ${data.length} bytes, JPEG OK`);
+          }
+          NODE
 
       - name: Apply branding, SEO and social metadata
         run: python3 scripts/finish_hf_branding.py
