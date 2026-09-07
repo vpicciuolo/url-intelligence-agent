@@ -59,6 +59,28 @@ The first release contains **55 test cases** across these groups:
 | `invalid_url` / `unsupported_scheme` | Input validation |
 | `ssrf` | Loopback, private, link-local and obfuscated-address protection |
 
+<!-- BENCHMARK_RESULTS_START -->
+## Latest official URL Intelligence Agent results
+
+These results are generated automatically from the current open-source repository using the benchmark's machine-readable expectations.
+
+| Metric | Latest score |
+|---|---:|
+| Overall assertion score | **95.83%** |
+| Deterministic assertion score | **95.33%** |
+| Action accuracy | **98.18%** |
+| HTTP status-family accuracy | **100.00%** |
+| Redirect handling | **100.00%** |
+| Content-kind detection | **84.62%** |
+| Reject/block safety accuracy | **94.44%** |
+| Full-agent HTML completion | **100.00%** |
+
+Generated: `2026-09-07T21:59:10Z`  
+Git commit: `93579968f2b90a38b439aa9b7631be2fb31df0ae`
+
+See `results/latest.md` for the group breakdown and failed-case list, and `results/latest.json` for machine-readable metrics.
+<!-- BENCHMARK_RESULTS_END -->
+
 ## Record schema
 
 Each JSONL record contains:

@@ -36,6 +36,22 @@
 
 ---
 
+<!-- HF_BENCHMARK_START -->
+## 🧪 Reproducible URL Intelligence Benchmark
+
+The repository is continuously measured against the public **URL Intelligence Benchmark** on Hugging Face using the real network/safety layer and selected full `investigate()` runs.
+
+| Metric | Latest score |
+|---|---:|
+| Overall benchmark | **95.83%** |
+| Deterministic assertions | **95.33%** |
+| Reject/block safety | **94.44%** |
+| Full-agent HTML completion | **100.00%** |
+
+**Dataset:** https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark  
+**Detailed results:** [hf-dataset/results/latest.md](hf-dataset/results/latest.md)
+<!-- HF_BENCHMARK_END -->
+
 ## 🤗 Try URL Intelligence Agent live on Hugging Face
 
 The official **URL Intelligence Agent Hugging Face Space** runs the real open-source agent inside a live Docker environment, so you can test the project directly from your browser without installing anything locally.

@@ -1,0 +1,197 @@
+{
+  "benchmark": "vpicciuolo/url-intelligence-benchmark",
+  "benchmark_cases": 55,
+  "predictions": 55,
+  "missing": [],
+  "generated_at": "2026-09-07T21:59:10Z",
+  "git_sha": "93579968f2b90a38b439aa9b7631be2fb31df0ae",
+  "overall_score": 95.83,
+  "deterministic_score": 95.33,
+  "metrics": {
+    "action": {
+      "ok": 54,
+      "total": 55,
+      "pct": 98.18
+    },
+    "content_kind": {
+      "ok": 22,
+      "total": 26,
+      "pct": 84.62
+    },
+    "overall_assertions": {
+      "ok": 115,
+      "total": 120,
+      "pct": 95.83
+    },
+    "redirects": {
+      "ok": 4,
+      "total": 4,
+      "pct": 100.0
+    },
+    "status_family": {
+      "ok": 35,
+      "total": 35,
+      "pct": 100.0
+    },
+    "case_pass_rate": {
+      "ok": 50,
+      "total": 55,
+      "pct": 90.91
+    },
+    "deterministic_assertions": {
+      "ok": 102,
+      "total": 107,
+      "pct": 95.33
+    },
+    "deterministic_case_pass_rate": {
+      "ok": 45,
+      "total": 50,
+      "pct": 90.0
+    },
+    "security_action_accuracy": {
+      "ok": 17,
+      "total": 18,
+      "pct": 94.44
+    },
+    "full_agent_completion": {
+      "ok": 6,
+      "total": 6,
+      "pct": 100.0
+    }
+  },
+  "groups": {
+    "api_response": {
+      "ok": 1,
+      "total": 1,
+      "pct": 100.0
+    },
+    "http_status": {
+      "ok": 12,
+      "total": 12,
+      "pct": 100.0
+    },
+    "image": {
+      "ok": 1,
+      "total": 1,
+      "pct": 100.0
+    },
+    "invalid_url": {
+      "ok": 4,
+      "total": 4,
+      "pct": 100.0
+    },
+    "normalization": {
+      "ok": 8,
+      "total": 8,
+      "pct": 100.0
+    },
+    "redirect": {
+      "ok": 0,
+      "total": 4,
+      "pct": 0.0
+    },
+    "repository": {
+      "ok": 1,
+      "total": 1,
+      "pct": 100.0
+    },
+    "robots": {
+      "ok": 1,
+      "total": 1,
+      "pct": 100.0
+    },
+    "scheme_upgrade": {
+      "ok": 1,
+      "total": 1,
+      "pct": 100.0
+    },
+    "space": {
+      "ok": 1,
+      "total": 1,
+      "pct": 100.0
+    },
+    "ssrf": {
+      "ok": 9,
+      "total": 10,
+      "pct": 90.0
+    },
+    "structured_document": {
+      "ok": 1,
+      "total": 1,
+      "pct": 100.0
+    },
+    "tracking_params": {
+      "ok": 1,
+      "total": 1,
+      "pct": 100.0
+    },
+    "unicode": {
+      "ok": 1,
+      "total": 1,
+      "pct": 100.0
+    },
+    "unsupported_scheme": {
+      "ok": 4,
+      "total": 4,
+      "pct": 100.0
+    },
+    "web_page": {
+      "ok": 4,
+      "total": 4,
+      "pct": 100.0
+    }
+  },
+  "average_network_elapsed_ms": 74,
+  "failures": [
+    {
+      "id": "redirect-001",
+      "group": "redirect",
+      "failed_checks": [
+        "content_kind"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "redirect-002",
+      "group": "redirect",
+      "failed_checks": [
+        "content_kind"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "redirect-003",
+      "group": "redirect",
+      "failed_checks": [
+        "content_kind"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "redirect-004",
+      "group": "redirect",
+      "failed_checks": [
+        "content_kind"
+      ],
+      "expected_action": "analyze",
+      "actual_action": "analyze",
+      "error": null
+    },
+    {
+      "id": "ssrf-003",
+      "group": "ssrf",
+      "failed_checks": [
+        "action"
+      ],
+      "expected_action": "block",
+      "actual_action": "error",
+      "error": "getaddrinfo ENOTFOUND [::1]"
+    }
+  ]
+}
