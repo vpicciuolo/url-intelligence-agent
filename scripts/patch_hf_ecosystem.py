@@ -33,3 +33,28 @@ if not pattern.search(text):
 text = pattern.sub(new_section + '\n\n    <section class="section" id="actions">', text, count=1)
 p.write_text(text, encoding='utf-8')
 print('Updated hf-space/index.html')
+
+r = Path('hf-space/README.md')
+readme = r.read_text(encoding='utf-8')
+readme_section = '''## Built inside HORNO Network. Now open source.
+
+URL Intelligence Agent was not created as a standalone demo. It was developed, tested and refined inside the **HORNO Network ecosystem**, where its URL intelligence, evidence collection and enrichment workflows run in real production use cases.
+
+After proving the technology in a live ecosystem, **HORNO Network founder Vincenzo Picciuolo** chose to release the project as open source so developers, AI builders, researchers and companies can inspect it, self-host it, extend it and build with it. The project is developed by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd**.
+
+- **URL Metadata & Social Profile Fetcher** — lightweight deterministic companion for URL metadata, Open Graph, canonical URLs, images and social/profile discovery: https://github.com/vpicciuolo/url-metadata-social-fetcher?utm_source=huggingface&utm_medium=referral&utm_campaign=url_intelligence_agent
+- **HORNO Network** — the production ecosystem where the agent has been developed, tested and used: https://horno.net/?utm_source=huggingface&utm_medium=referral&utm_campaign=url_intelligence_agent
+- **HORNO Space** — digital identity and smart-link product connected to the URL enrichment and public-profile intelligence layer: https://space.horno.net/?utm_source=huggingface&utm_medium=referral&utm_campaign=url_intelligence_agent
+
+### Follow Vincenzo Picciuolo
+
+- X: https://x.com/vpicciuolo?utm_source=huggingface&utm_medium=social&utm_campaign=url_intelligence_agent
+- LinkedIn: https://www.linkedin.com/in/vpicciuolo/?utm_source=huggingface&utm_medium=social&utm_campaign=url_intelligence_agent
+'''
+readme_pattern = re.compile(r'## Related open source & HORNO Network ecosystem\n.*?\n\n## Complete runtime action catalog', re.S)
+if readme_pattern.search(readme):
+    readme = readme_pattern.sub(readme_section + '\n\n## Complete runtime action catalog', readme, count=1)
+elif '## Built inside HORNO Network. Now open source.' not in readme:
+    raise SystemExit('README ecosystem section not found')
+r.write_text(readme, encoding='utf-8')
+print('Updated hf-space/README.md')
