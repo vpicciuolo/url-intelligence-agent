@@ -1,0 +1,1 @@
+Brand assets for the Hugging Face Space. logo.jpg is the square project logo; og.jpg is the 1200x630 social preview image.
