@@ -30,8 +30,54 @@
   <a href="docs/MCP.md"><img src="https://img.shields.io/badge/CONNECT-MCP-7c3aed?style=for-the-badge" alt="MCP Guide"></a>
   <a href="docs/DEPLOYMENT.md"><img src="https://img.shields.io/badge/DEPLOY-Docker%20%26%20Server-2563eb?style=for-the-badge" alt="Deployment Guide"></a>
   <a href="docs/API.md"><img src="https://img.shields.io/badge/USE-HTTP%20API-059669?style=for-the-badge" alt="HTTP API Guide"></a>
+  <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/Hugging%20Face-Live%20Space%20%26%20Remote%20MCP-FFD21E?style=for-the-badge" alt="Try URL Intelligence Agent on Hugging Face"></a>
   <a href="https://hrn.ae/githubsupport"><img src="https://img.shields.io/badge/SUPPORT-Donate%20via%20Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white" alt="Support via Stripe"></a>
 </p>
+
+---
+
+## 🤗 Try URL Intelligence Agent live on Hugging Face
+
+The official **URL Intelligence Agent Hugging Face Space** runs the real open-source agent inside a live Docker environment, so you can test the project directly from your browser without installing anything locally.
+
+<p align="center">
+  <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/OPEN%20LIVE%20SPACE-Try%20URL%20Intelligence%20Agent%20on%20Hugging%20Face-FFD21E?style=for-the-badge" alt="Open URL Intelligence Agent Hugging Face Space"></a>
+</p>
+
+### What you can do in the hosted Space
+
+- **Run a full URL investigation** from a normal web interface.
+- **Crawl the target website** and expand into public external evidence, articles, references and eligible social/profile URLs.
+- **Choose the external search/index provider** available in the hosted environment for wider-web discovery.
+- Run focused actions for **SEO, security, trust, social discovery, technology detection, brand intelligence, domain intelligence and structured data**.
+- Inspect **evidence, confidence, source provenance, timestamps and explicit contradictions** instead of receiving only a model-generated summary.
+- Open supporting public sources and see which evidence was actually fetched and verified.
+- Export completed investigations as a **human-readable branded PDF report**, plus **JSON, Markdown and HTML** for technical workflows.
+- Explore the complete action catalog and understand what is available in the hosted demo versus the full self-hosted runtime.
+- Test the project as a **Remote MCP server** from compatible AI clients and agent frameworks.
+
+### Hosted demo access
+
+The public web demo requires a Hugging Face login and is intentionally rate-limited to **1 analysis request per account every 24 hours** to protect the public infrastructure from abuse. The project owner account is exempt. Developers who need unrestricted usage can clone this repository and run the full CLI, HTTP API, Docker service or local MCP server themselves.
+
+### Remote MCP
+
+Compatible AI clients can connect directly to the public Streamable HTTP MCP endpoint:
+
+```text
+https://vpicciuolo-url-intelligence-agent.hf.space/mcp
+```
+
+Machine-readable MCP discovery is also available at:
+
+```text
+https://vpicciuolo-url-intelligence-agent.hf.space/.well-known/mcp.json
+```
+
+**Live Space:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent
+
+**Live app:** https://vpicciuolo-url-intelligence-agent.hf.space/
+
 
 ---
 
