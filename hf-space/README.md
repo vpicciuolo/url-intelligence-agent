@@ -4,7 +4,7 @@ emoji: 🧠
 sdk: docker
 app_port: 7860
 license: mit
-short_description: Evidence-first URL intelligence, SEO, security, trust and Remote MCP.
+short_description: Evidence-first URL intelligence with Remote MCP.
 pinned: false
 hf_oauth: true
 hf_oauth_expiration_minutes: 1440
