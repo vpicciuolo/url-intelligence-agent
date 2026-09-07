@@ -1,0 +1,182 @@
+name: URL Intelligence Benchmark
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/run-hf-benchmark.mjs'
+      - 'hf-dataset/data/**'
+      - 'hf-dataset/evaluate.py'
+      - '.github/workflows/benchmark-huggingface.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: url-intelligence-benchmark
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build agent
+        run: npm run build
+
+      - name: Run real URL Intelligence Benchmark
+        env:
+          URL_AGENT_RENDER_MODE: 'off'
+          URL_AGENT_MAX_PAGES: '1'
+          URL_AGENT_MAX_DEPTH: '0'
+          URL_AGENT_CONCURRENCY: '1'
+          URL_AGENT_TIMEOUT_MS: '15000'
+          URL_AGENT_CACHE: 'memory'
+        run: node scripts/run-hf-benchmark.mjs hf-dataset/data/benchmark.jsonl hf-dataset/results/predictions.jsonl
+
+      - name: Score predictions
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          python3 hf-dataset/evaluate.py \
+            hf-dataset/results/predictions.jsonl \
+            --json-out hf-dataset/results/latest.json \
+            --markdown-out hf-dataset/results/latest.md
+
+      - name: Publish result blocks in READMEs
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('hf-dataset/results/latest.json').read_text(encoding='utf-8'))
+          metrics = data['metrics']
+
+          def fmt(value):
+              return 'n/a' if value is None else f'{value:.2f}%'
+
+          compact = f'''<!-- HF_BENCHMARK_START -->
+          ## 🧪 Reproducible URL Intelligence Benchmark
+
+          The repository is continuously measured against the public **URL Intelligence Benchmark** on Hugging Face using the real network/safety layer and selected full `investigate()` runs.
+
+          | Metric | Latest score |
+          |---|---:|
+          | Overall benchmark | **{fmt(data['overall_score'])}** |
+          | Deterministic assertions | **{fmt(data['deterministic_score'])}** |
+          | Reject/block safety | **{fmt(metrics['security_action_accuracy']['pct'])}** |
+          | Full-agent HTML completion | **{fmt(metrics['full_agent_completion']['pct'])}** |
+
+          **Dataset:** https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark  
+          **Detailed results:** [hf-dataset/results/latest.md](hf-dataset/results/latest.md)
+          <!-- HF_BENCHMARK_END -->'''.replace('          ', '')
+
+          dataset_block = f'''<!-- BENCHMARK_RESULTS_START -->
+          ## Latest official URL Intelligence Agent results
+
+          These results are generated automatically from the current open-source repository using the benchmark's machine-readable expectations.
+
+          | Metric | Latest score |
+          |---|---:|
+          | Overall assertion score | **{fmt(data['overall_score'])}** |
+          | Deterministic assertion score | **{fmt(data['deterministic_score'])}** |
+          | Action accuracy | **{fmt(metrics['action']['pct'])}** |
+          | HTTP status-family accuracy | **{fmt(metrics['status_family']['pct'])}** |
+          | Redirect handling | **{fmt(metrics['redirects']['pct'])}** |
+          | Content-kind detection | **{fmt(metrics['content_kind']['pct'])}** |
+          | Reject/block safety accuracy | **{fmt(metrics['security_action_accuracy']['pct'])}** |
+          | Full-agent HTML completion | **{fmt(metrics['full_agent_completion']['pct'])}** |
+
+          Generated: `{data['generated_at']}`  
+          Git commit: `{data.get('git_sha') or 'unknown'}`
+
+          See `results/latest.md` for the group breakdown and failed-case list, and `results/latest.json` for machine-readable metrics.
+          <!-- BENCHMARK_RESULTS_END -->'''.replace('          ', '')
+
+          def replace_or_insert(path, start, end, block, anchor=None):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if start in text and end in text:
+                  before = text.split(start, 1)[0]
+                  after = text.split(end, 1)[1]
+                  text = before + block + after
+              elif anchor and anchor in text:
+                  text = text.replace(anchor, block + '\n\n' + anchor, 1)
+              else:
+                  text = text.rstrip() + '\n\n' + block + '\n'
+              p.write_text(text, encoding='utf-8')
+
+          replace_or_insert(
+              'README.md',
+              '<!-- HF_BENCHMARK_START -->',
+              '<!-- HF_BENCHMARK_END -->',
+              compact,
+              '## 🤗 Try URL Intelligence Agent live on Hugging Face',
+          )
+          replace_or_insert(
+              'hf-dataset/README.md',
+              '<!-- BENCHMARK_RESULTS_START -->',
+              '<!-- BENCHMARK_RESULTS_END -->',
+              dataset_block,
+              '## Record schema',
+          )
+          PY
+
+      - name: Commit benchmark results to GitHub
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md hf-dataset/README.md hf-dataset/results/
+          if git diff --cached --quiet; then
+            echo "No benchmark result changes to commit."
+          else
+            git commit -m "Publish URL Intelligence Benchmark results [skip ci]"
+            git push origin HEAD:main
+          fi
+
+      - name: Sync scored dataset to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN is missing."
+            exit 1
+          fi
+          rm -rf /tmp/hf-benchmark
+          git clone "https://vpicciuolo:${HF_TOKEN}@huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark" /tmp/hf-benchmark
+          rsync -av --delete --exclude='.git' hf-dataset/ /tmp/hf-benchmark/
+          cd /tmp/hf-benchmark
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Hugging Face dataset already contains current results."
+          else
+            git commit -m "Publish benchmark results from GitHub ${GITHUB_SHA}"
+            git push origin HEAD:main
+          fi
+
+      - name: Job summary
+        if: always()
+        run: |
+          if [ -f hf-dataset/results/latest.md ]; then
+            cat hf-dataset/results/latest.md >> "$GITHUB_STEP_SUMMARY"
+          fi
