@@ -37,7 +37,7 @@ The project is designed around a simple principle: confidence should come from o
 Full investigation therefore uses two distinct evidence layers:
 
 1. **First-party extraction** — crawl the submitted site, sitemaps and prioritized internal pages to understand what the target says about itself.
-2. **External corroboration** — expand into eligible third-party URLs referenced by the target and, when a search provider is configured, discover additional public articles and backlink-style references from a web search index before fetching selected sources.
+2. **External corroboration** — cross the target-domain boundary, expand public outbound/JSON-LD references, search for independent mentions/articles/backlink-style results, fetch selected external pages and verify whether they mention or link back to the target.
 
 The result keeps **extraction confidence** separate from **external corroboration**. Repetition across one domain is not counted as independent-domain confirmation.
 
@@ -65,10 +65,11 @@ The full investigation result surfaces:
 - Evidence-linked extracted claims
 - Extraction confidence and method
 - External web research status
-- Search provider used, when configured
+- Search provider used
 - Search queries used
 - Third-party sources and domains
 - Independent-domain corroboration coverage
+- Verified direct backlink signals from fetched sources
 - External article/source URLs
 - Explicit contradictions / disputed evidence
 - Observation time
@@ -77,9 +78,9 @@ The full investigation result surfaces:
 
 ## Web-wide evidence discovery
 
-External URLs directly referenced by the target are researched without a search API.
+External URLs directly referenced by the target are researched without a search credential. The hosted runtime also includes a **built-in public DuckDuckGo search fallback** for broader entity/article/backlink-style discovery when no commercial search provider is configured.
 
-For broader article and backlink-style discovery, configure one supported search provider:
+For higher-volume or more reproducible discovery, configure one supported provider. When present, these are preferred automatically:
 
 - SearXNG via `URL_AGENT_SEARCH_ENDPOINT`
 - Brave Search via `BRAVE_SEARCH_API_KEY`
@@ -87,9 +88,9 @@ For broader article and backlink-style discovery, configure one supported search
 - Tavily via `TAVILY_API_KEY`
 - Google Custom Search via `GOOGLE_CSE_API_KEY` + `GOOGLE_CSE_CX`
 
-The agent records when no search provider is configured rather than pretending the external search was complete.
+The external stage is intentionally bounded. It does not pretend that any crawler can enumerate the entire public web.
 
-A crawler cannot enumerate every backlink on the entire internet by itself. Broad reverse-link discovery requires a search/backlink index. The runtime uses bounded search-index discovery plus direct source fetching so selected public pages are verified before being treated as evidence.
+A crawler cannot guarantee every backlink on the internet because complete reverse-link discovery requires a global backlink/search index. URL Intelligence Agent combines search-index discovery with direct source fetching, then checks fetched third-party pages for links back to the target before treating those pages as backlink evidence.
 
 Full architecture and configuration:
 
@@ -141,6 +142,12 @@ Extraction confidence describes how strongly the target's observable metadata/co
 
 **What if the same claim appears on 30 pages of one website?**  
 That is still first-party evidence from one domain. It may strengthen extraction reliability, but it does not create 30 independent sources.
+
+**Does Full Investigation go beyond the target website?**  
+Yes. The first stage crawls the target. The second stage crosses the domain boundary, expands public external references, searches the web, fetches independent sources and checks whether third-party pages mention or directly link back to the target.
+
+**Does it find every backlink?**  
+No. No bounded live crawler has a complete reverse-link map of the internet. Coverage depends on what is publicly discoverable and on the search/backlink index available to the runtime.
 
 **What if sources disagree?**  
 Full investigations can return explicit contradictions. The web UI marks disputed evidence and keeps the disagreement visible instead of silently collapsing it into one answer.
