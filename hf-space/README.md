@@ -99,17 +99,20 @@ Full architecture and configuration:
 
 https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/WEB_RESEARCH.md
 
-## Related open source & HORNO Network ecosystem
+## Built inside HORNO Network. Now open source.
 
-This project is one of the open-source intelligence components developed by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd** and used inside the **HORNO Network ecosystem**.
+URL Intelligence Agent was not created as a standalone demo. It was developed, tested and refined inside the **HORNO Network ecosystem**, where its URL intelligence, evidence collection and enrichment workflows run in real production use cases.
 
-- **URL Metadata & Social Profile Fetcher** — lightweight deterministic companion for URL metadata, Open Graph, canonical URLs, images and social/profile discovery: https://github.com/vpicciuolo/url-metadata-social-fetcher
-- **HORNO Network** — ecosystem: https://horno.net
-- **HORNO Space** — digital identity and smart-link platform: https://space.horno.net
-- **Easy HORNO** — onboarding, documentation and account experience: https://easy.horno.net
-- **BeHot.Now** — attention marketplace using the URL-first enrichment pattern: https://behot.now
+After proving the technology in a live ecosystem, **HORNO Network founder Vincenzo Picciuolo** chose to release the project as open source so developers, AI builders, researchers and companies can inspect it, self-host it, extend it and build with it. The project is developed by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd**.
 
-These links are deliberately present on both GitHub and Hugging Face so the relationship between the projects is explicit for developers, search engines and AI indexing systems.
+- **URL Metadata & Social Profile Fetcher** — lightweight deterministic companion for URL metadata, Open Graph, canonical URLs, images and social/profile discovery: https://github.com/vpicciuolo/url-metadata-social-fetcher?utm_source=huggingface&utm_medium=referral&utm_campaign=url_intelligence_agent
+- **HORNO Network** — the production ecosystem where the agent has been developed, tested and used: https://horno.net/?utm_source=huggingface&utm_medium=referral&utm_campaign=url_intelligence_agent
+- **HORNO Space** — digital identity and smart-link product connected to the URL enrichment and public-profile intelligence layer: https://space.horno.net/?utm_source=huggingface&utm_medium=referral&utm_campaign=url_intelligence_agent
+
+### Follow Vincenzo Picciuolo
+
+- X: https://x.com/vpicciuolo?utm_source=huggingface&utm_medium=social&utm_campaign=url_intelligence_agent
+- LinkedIn: https://www.linkedin.com/in/vpicciuolo/?utm_source=huggingface&utm_medium=social&utm_campaign=url_intelligence_agent
 
 
 ## Complete runtime action catalog
