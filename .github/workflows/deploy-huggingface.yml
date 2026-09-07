@@ -36,7 +36,7 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare Docker Space payload
+      - name: Prepare and validate Docker Space payload
         run: |
           set -euo pipefail
           rm -rf /tmp/hf-payload
@@ -50,24 +50,59 @@ jobs:
           cp hf-space/ui-v2.css /tmp/hf-payload/ui-v2.css
           cp hf-space/ui-v2.js /tmp/hf-payload/ui-v2.js
 
-          # Hugging Face rejects Space card metadata when short_description
-          # exceeds 60 characters. Keep the SEO-friendly source copy while
-          # guaranteeing that the deploy payload always satisfies Hub limits.
+          # Validate the Hugging Face Space card metadata before pushing it.
+          # In particular, short_description has a strict 60-character limit.
           python3 - <<'PY'
           from pathlib import Path
           import re
 
-          path = Path('/tmp/hf-payload/README.md')
-          text = path.read_text(encoding='utf-8')
-          replacement = 'short_description: Evidence-first URL intelligence, reports and Remote MCP.'
-          text, count = re.subn(r'^short_description:.*$', replacement, text, count=1, flags=re.M)
-          if count != 1:
-              raise SystemExit('Hugging Face short_description metadata not found')
-          value = replacement.split(':', 1)[1].strip()
-          if len(value) > 60:
-              raise SystemExit(f'Hugging Face short_description is too long: {len(value)}')
-          path.write_text(text, encoding='utf-8')
-          print(f'Hugging Face short_description validated: {len(value)} chars')
+          text = Path('/tmp/hf-payload/README.md').read_text(encoding='utf-8')
+          match = re.match(r'^---\n(.*?)\n---\n', text, re.S)
+          if not match:
+              raise SystemExit('Hugging Face README frontmatter is missing')
+          front = match.group(1)
+
+          def value(name):
+              m = re.search(rf'^{re.escape(name)}:\s*(.*?)\s*$', front, re.M)
+              if not m:
+                  raise SystemExit(f'Missing Hugging Face metadata: {name}')
+              return m.group(1).strip()
+
+          expected = {
+              'title': 'URL Intelligence Agent',
+              'sdk': 'docker',
+              'app_port': '7860',
+              'license': 'mit',
+              'hf_oauth': 'true',
+          }
+          for key, wanted in expected.items():
+              actual = value(key)
+              if actual != wanted:
+                  raise SystemExit(f'Invalid {key}: {actual!r}; expected {wanted!r}')
+
+          short = value('short_description')
+          if len(short) > 60:
+              raise SystemExit(f'Hugging Face short_description is too long: {len(short)} chars')
+          if short != 'Evidence-first URL intelligence, reports and Remote MCP.':
+              raise SystemExit(f'Unexpected short_description: {short!r}')
+
+          thumbnail = value('thumbnail')
+          expected_thumbnail = 'https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-1'
+          if thumbnail != expected_thumbnail:
+              raise SystemExit(f'Unexpected thumbnail URL: {thumbnail!r}')
+
+          required_tags = {
+              'mcp', 'remote-mcp', 'url-intelligence', 'web-intelligence',
+              'web-research', 'source-provenance', 'seo', 'security',
+              'ai-agent', 'web-crawler', 'due-diligence', 'open-graph',
+              'social-discovery', 'competitive-intelligence', 'website-monitoring'
+          }
+          tags = set(re.findall(r'^\s{2}-\s+([^\s]+)\s*$', front, re.M))
+          missing = sorted(required_tags - tags)
+          if missing:
+              raise SystemExit(f'Missing required Hugging Face tags: {missing}')
+
+          print(f'Hugging Face card metadata valid: short_description={len(short)} chars, tags={len(tags)}')
           PY
 
           # Keep the Space git repository text-safe. The Docker build decodes
@@ -103,7 +138,7 @@ jobs:
           git commit -m "Deploy Docker Space from GitHub ${GITHUB_SHA}"
           git push "https://vpicciuolo:${HF_TOKEN}@huggingface.co/spaces/vpicciuolo/url-intelligence-agent" HEAD:main
 
-      - name: Verify Hugging Face runtime
+      - name: Verify Hugging Face runtime and brand assets
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -113,19 +148,20 @@ jobs:
           import time
           import urllib.request
 
-          url = 'https://huggingface.co/api/spaces/vpicciuolo/url-intelligence-agent'
+          api_url = 'https://huggingface.co/api/spaces/vpicciuolo/url-intelligence-agent'
+          app_base = 'https://vpicciuolo-url-intelligence-agent.hf.space'
           terminal_failures = {'BUILD_ERROR', 'RUNTIME_ERROR', 'CONFIG_ERROR'}
           last_stage = None
 
+          def request(url, auth=False):
+              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.1'}
+              if auth:
+                  headers['Authorization'] = f"Bearer {os.environ['HF_TOKEN']}"
+              req = urllib.request.Request(url, headers=headers)
+              return urllib.request.urlopen(req, timeout=30)
+
           for attempt in range(1, 61):
-              req = urllib.request.Request(
-                  url,
-                  headers={
-                      'Authorization': f"Bearer {os.environ['HF_TOKEN']}",
-                      'User-Agent': 'url-intelligence-agent-deploy-check/1.0',
-                  },
-              )
-              with urllib.request.urlopen(req, timeout=20) as response:
+              with request(api_url, auth=True) as response:
                   payload = json.load(response)
               runtime = payload.get('runtime') or {}
               stage = runtime.get('stage') or 'UNKNOWN'
@@ -133,12 +169,47 @@ jobs:
                   print(f'Hugging Face runtime stage: {stage} (attempt {attempt}/60)')
                   last_stage = stage
               if stage == 'RUNNING':
-                  print('Hugging Face Space is RUNNING.')
-                  raise SystemExit(0)
+                  break
               if stage in terminal_failures:
                   print(json.dumps(runtime, indent=2, sort_keys=True))
                   raise SystemExit(f'Hugging Face Space failed with stage {stage}')
               time.sleep(5)
+          else:
+              raise SystemExit(f'Hugging Face Space did not reach RUNNING; last stage={last_stage}')
 
-          raise SystemExit(f'Hugging Face Space did not reach RUNNING; last stage={last_stage}')
+          # Give the public proxy a moment to converge after a rebuild.
+          time.sleep(3)
+
+          with request(f'{app_base}/health') as response:
+              health = response.read()
+              if response.status != 200 or not health:
+                  raise SystemExit('Live /health check failed')
+              print(f'/health OK ({len(health)} bytes)')
+
+          with request(f'{app_base}/assets/logo.jpg?v=20260908-1') as response:
+              logo = response.read()
+              ctype = response.headers.get_content_type()
+              if response.status != 200 or ctype != 'image/jpeg' or len(logo) < 5000 or logo[:2] != b'\xff\xd8':
+                  raise SystemExit(f'Live logo asset invalid: status={response.status}, type={ctype}, bytes={len(logo)}')
+              print(f'logo.jpg OK ({len(logo)} bytes)')
+
+          with request(f'{app_base}/assets/og.jpg?v=20260908-1') as response:
+              og = response.read()
+              ctype = response.headers.get_content_type()
+              if response.status != 200 or ctype != 'image/jpeg' or len(og) < 15000 or og[:2] != b'\xff\xd8':
+                  raise SystemExit(f'Live Open Graph asset invalid: status={response.status}, type={ctype}, bytes={len(og)}')
+              print(f'og.jpg OK ({len(og)} bytes)')
+
+          with request(f'{app_base}/') as response:
+              page = response.read()
+              if response.status != 200:
+                  raise SystemExit(f'Live app root returned {response.status}')
+              # Visible logo and hero image are embedded by patch-ui.mjs so they
+              # remain reliable inside Hugging Face proxy/base-path rendering.
+              embedded_count = page.count(b'data:image/jpeg;base64,')
+              if embedded_count < 2:
+                  raise SystemExit(f'Expected embedded visible brand images; found {embedded_count}')
+              print(f'Live app UI OK; embedded brand images={embedded_count}')
+
+          print('Hugging Face Space is RUNNING and social/visible brand assets are valid.')
           PY
