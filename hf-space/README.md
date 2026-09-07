@@ -4,7 +4,7 @@ emoji: 🧠
 sdk: docker
 app_port: 7860
 license: mit
-short_description: Evidence-first URL intelligence with Remote MCP.
+short_description: Web-wide evidence-first URL intelligence + Remote MCP.
 pinned: false
 hf_oauth: true
 hf_oauth_expiration_minutes: 1440
@@ -13,6 +13,10 @@ tags:
   - remote-mcp
   - url-intelligence
   - web-intelligence
+  - web-research
+  - external-evidence
+  - source-provenance
+  - backlink-discovery
   - seo
   - security
   - entity-resolution
@@ -26,9 +30,16 @@ tags:
 
 **URL in. Evidence, provenance and intelligence out.**
 
-Open-source evidence-first URL intelligence agent by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd**.
+Open-source evidence-first URL and web intelligence agent by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd**.
 
-The project is designed around a simple principle: confidence should come from observable evidence, not from the AI merely sounding confident. Evidence-linked fields retain their value, confidence score, extraction method and source URLs. Full investigations also expose explicit contradictions and an observation timestamp so disagreement and freshness remain visible.
+The project is designed around a simple principle: confidence should come from observable evidence, not from an AI merely sounding confident — and a website should not be allowed to confirm its own claims simply by repeating them across many pages.
+
+Full investigation therefore uses two distinct evidence layers:
+
+1. **First-party extraction** — crawl the submitted site, sitemaps and prioritized internal pages to understand what the target says about itself.
+2. **External corroboration** — expand into eligible third-party URLs referenced by the target and, when a search provider is configured, discover additional public articles and backlink-style references from a web search index before fetching selected sources.
+
+The result keeps **extraction confidence** separate from **external corroboration**. Repetition across one domain is not counted as independent-domain confirmation.
 
 ## Live hosted demo
 
@@ -38,7 +49,7 @@ The public hosted demo is intentionally limited to **1 analysis request per sign
 
 Hosted web actions currently include:
 
-- Full URL investigation
+- Full URL investigation with external web evidence expansion
 - SEO audit
 - Security audit
 - Trust signals
@@ -48,15 +59,41 @@ Hosted web actions currently include:
 - Domain intelligence
 - Structured-data inventory
 
-The result page keeps the complete raw response available while also surfacing:
+The full investigation result surfaces:
 
-- Evidence-linked claims and confidence
-- Extraction methods
-- Openable public source URLs
+- First-party evidence pages
+- Evidence-linked extracted claims
+- Extraction confidence and method
+- External web research status
+- Search provider used, when configured
+- Search queries used
+- Third-party sources and domains
+- Independent-domain corroboration coverage
+- External article/source URLs
 - Explicit contradictions / disputed evidence
-- Observation time when returned
-- Human-readable structured sections
+- Observation time
+- Complete raw response
 - Branded PDF, JSON, Markdown and HTML exports
+
+## Web-wide evidence discovery
+
+External URLs directly referenced by the target are researched without a search API.
+
+For broader article and backlink-style discovery, configure one supported search provider:
+
+- SearXNG via `URL_AGENT_SEARCH_ENDPOINT`
+- Brave Search via `BRAVE_SEARCH_API_KEY`
+- Serper via `SERPER_API_KEY`
+- Tavily via `TAVILY_API_KEY`
+- Google Custom Search via `GOOGLE_CSE_API_KEY` + `GOOGLE_CSE_CX`
+
+The agent records when no search provider is configured rather than pretending the external search was complete.
+
+A crawler cannot enumerate every backlink on the entire internet by itself. Broad reverse-link discovery requires a search/backlink index. The runtime uses bounded search-index discovery plus direct source fetching so selected public pages are verified before being treated as evidence.
+
+Full architecture and configuration:
+
+https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/WEB_RESEARCH.md
 
 ## Complete runtime action catalog
 
@@ -99,8 +136,11 @@ Compatible AI clients can discover the hosted public tool subset through MCP. Th
 
 ## Evidence and uncertainty FAQ
 
-**Where does confidence come from?**  
-Evidence fields carry confidence together with the extraction method and sources. It is not presented as the model's personal certainty.
+**Why are extraction confidence and external corroboration separate?**  
+Extraction confidence describes how strongly the target's observable metadata/content supports an extracted field. External corroboration describes coverage across fetched third-party domains. They answer different questions and are not combined into a fake probability of truth.
+
+**What if the same claim appears on 30 pages of one website?**  
+That is still first-party evidence from one domain. It may strengthen extraction reliability, but it does not create 30 independent sources.
 
 **What if sources disagree?**  
 Full investigations can return explicit contradictions. The web UI marks disputed evidence and keeps the disagreement visible instead of silently collapsing it into one answer.
@@ -109,7 +149,7 @@ Full investigations can return explicit contradictions. The web UI marks dispute
 No. It only means the current analysis did not report an explicit contradiction.
 
 **Can sources be inspected?**  
-Yes. Public source URLs remain attached to evidence and are surfaced as openable links in the result interface.
+Yes. Public source URLs remain attached to evidence and external research sources are surfaced as openable links.
 
 **How current is the result?**  
 Where available, `observedAt` is shown. Public web intelligence is point-in-time evidence and can change later.
@@ -121,6 +161,7 @@ No. They are explainable observations of public signals. Security audit is not p
 
 GitHub: https://github.com/vpicciuolo/url-intelligence-agent  
 Action reference: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/ACTIONS.md  
+Web research: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/WEB_RESEARCH.md  
 MCP guide: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/MCP.md  
 Remote MCP guide: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/REMOTE_MCP.md
 
