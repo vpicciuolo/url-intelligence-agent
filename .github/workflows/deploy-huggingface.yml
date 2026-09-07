@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - 'hf-space/**'
+      - 'src/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'LICENSE'
+      - 'SECURITY.md'
       - '.github/workflows/deploy-huggingface.yml'
   workflow_dispatch:
 
@@ -31,12 +36,22 @@ jobs:
             exit 1
           fi
 
-      - name: Sync Space files
+      - name: Prepare Docker Space payload
+        run: |
+          rm -rf /tmp/hf-payload
+          mkdir -p /tmp/hf-payload
+          cp package.json tsconfig.json LICENSE SECURITY.md /tmp/hf-payload/
+          cp -R src /tmp/hf-payload/src
+          cp hf-space/README.md /tmp/hf-payload/README.md
+          cp hf-space/Dockerfile /tmp/hf-payload/Dockerfile
+          cp hf-space/index.html /tmp/hf-payload/index.html
+
+      - name: Sync Docker Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git clone https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent /tmp/hf-space
-          rsync -av --delete --exclude='.git' hf-space/ /tmp/hf-space/
+          rsync -av --delete --exclude='.git' /tmp/hf-payload/ /tmp/hf-space/
           cd /tmp/hf-space
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -45,5 +60,5 @@ jobs:
             echo "No Hugging Face Space changes to deploy."
             exit 0
           fi
-          git commit -m "Deploy from GitHub ${GITHUB_SHA}"
+          git commit -m "Deploy Docker Space from GitHub ${GITHUB_SHA}"
           git push "https://vpicciuolo:${HF_TOKEN}@huggingface.co/spaces/vpicciuolo/url-intelligence-agent" HEAD:main
