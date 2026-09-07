@@ -57,10 +57,68 @@ function resolveName(pages: PageSignal[]): EvidenceField<string> {
   const host = new URL(pages[0].url).hostname.replace(/^www\./, ""); return field(host, 0.55, "hostname-fallback", [pages[0].url]);
 }
 
+function mapPrimaryEntityType(raw: unknown): string | undefined {
+  const values = Array.isArray(raw) ? raw.map(String) : raw ? [String(raw)] : [];
+  const mapping: [RegExp, string][] = [
+    [/localbusiness/i, "business"],
+    [/organization|corporation|ngo|educationalorganization/i, "organization"],
+    [/person/i, "person"],
+    [/musicgroup|performinggroup/i, "creator"],
+    [/softwareapplication|mobileapplication|webapplication/i, "software"],
+    [/product/i, "product"],
+    [/service/i, "service"],
+    [/event/i, "event"]
+  ];
+  for (const value of values) {
+    for (const [re, mapped] of mapping) if (re.test(value)) return mapped;
+  }
+  return undefined;
+}
+
+function primaryTypeCandidates(pages: PageSignal[]): { type: string; source: string; weight: number; method: string }[] {
+  const out: { type: string; source: string; weight: number; method: string }[] = [];
+  pages.forEach((page, pageIndex) => {
+    const pageWeight = pageIndex === 0 ? 1 : Math.max(0.42, 0.72 - pageIndex * 0.015);
+    for (const doc of page.jsonLd) {
+      const values = Array.isArray(doc) ? doc : [doc];
+      for (const value of values) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+        const record = value as Record<string, unknown>;
+        const direct = mapPrimaryEntityType(record["@type"]);
+        if (direct) out.push({ type: direct, source: page.url, weight: pageWeight, method: "primary-jsonld-type" });
+        const graph = record["@graph"];
+        if (Array.isArray(graph)) {
+          for (const item of graph) {
+            if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+            const mapped = mapPrimaryEntityType((item as Record<string, unknown>)["@type"]);
+            if (mapped) out.push({ type: mapped, source: page.url, weight: pageWeight * 0.84, method: "jsonld-graph-type" });
+          }
+        }
+      }
+    }
+  });
+  return out;
+}
+
 function resolveType(pages: PageSignal[]): EvidenceField<string> {
-  const types = pages.flatMap(x => x.jsonLdTypes).map(x => x.toLowerCase()); const source = pages.filter(p => p.jsonLdTypes.length).map(p => p.url);
-  const mapping: [RegExp, string][] = [[/person/, "person"], [/musicgroup|performinggroup/, "creator"], [/product/, "product"], [/softwareapplication|mobileapplication|webapplication/, "software"], [/localbusiness/, "business"], [/organization|corporation|ngo|educationalorganization/, "organization"], [/event/, "event"], [/service/, "service"]];
-  for (const [re, type] of mapping) if (types.some(x => re.test(x))) return field(type, 0.92, "first-party-extraction:jsonld-type", source);
+  const grouped = new Map<string, { score: number; maxWeight: number; sources: string[]; methods: string[] }>();
+  for (const candidate of primaryTypeCandidates(pages)) {
+    const current = grouped.get(candidate.type) || { score: 0, maxWeight: 0, sources: [], methods: [] };
+    const sourceAlreadyCounted = current.sources.includes(candidate.source);
+    current.score += sourceAlreadyCounted ? candidate.weight * 0.18 : candidate.weight;
+    current.maxWeight = Math.max(current.maxWeight, candidate.weight);
+    current.sources.push(candidate.source);
+    current.methods.push(candidate.method);
+    grouped.set(candidate.type, current);
+  }
+  const best = [...grouped.entries()].sort((a, b) => b[1].score - a[1].score)[0];
+  if (best) {
+    const [type, evidence] = best;
+    const sourceCount = unique(evidence.sources).length;
+    const confidence = Math.min(0.94, 0.68 + evidence.maxWeight * 0.16 + Math.min(0.1, Math.log2(sourceCount + 1) * 0.03));
+    return field(type, confidence, `first-party-extraction:${unique(evidence.methods).join("+")}`, evidence.sources);
+  }
+
   const text = pages.slice(0, 5).map(x => `${x.title || ""} ${x.description || ""} ${x.textSample.slice(0, 2500)}`).join(" ").toLowerCase();
   const heuristics: [RegExp, string, number][] = [[/\b(dj|musician|artist|creator|influencer|author|photographer|producer)\b/, "creator", 0.78], [/\b(startup|saas|software platform|developer tool|artificial intelligence|\bai\b platform)\b/, "startup", 0.76], [/\b(ecommerce|online store|shop now|add to cart)\b/, "commerce", 0.75], [/\b(nonprofit|foundation|association|organization)\b/, "organization", 0.7], [/\b(event|conference|festival|tickets)\b/, "event", 0.68], [/\b(product|buy now|pricing)\b/, "product", 0.62]];
   for (const [re, type, confidence] of heuristics) if (re.test(text)) return field(type, confidence, "first-party-extraction:content-heuristics", [pages[0].url]);
@@ -110,16 +168,16 @@ export async function investigate(rawUrl: string, profileOrOptions: string | Inv
   const technologies = detectTechnologies(pages); const brand = extractBrand(pages); const seo = auditSeo(root, pages, crawl.sitemapUrls); const security = auditSecurity(root); const quality = auditQuality(root); const trust = auditTrust(root, pages, crawl.importantPages, socials, emails); const competitorList = discoverCompetitors(pages); const rag = buildRagDocuments(pages);
   const contentFingerprint = createHash("sha256").update(rag.map(x => x.checksum).sort().join(":" )).digest("hex");
   const fingerprint = createHash("sha256").update(JSON.stringify({ finalUrl: root.url, name: name.value, type: type.value, socials: socials.sort(), contacts: [...emails, ...phones].sort(), importantPages: crawl.importantPages, technologies: technologies.map(x => x.name).sort(), contentFingerprint })).digest("hex");
-  const webWarnings = webResearch.notes.filter(x => /No external search provider|search query failed|unverified/i.test(x)).map(x => `Web research: ${x}`);
+  const webWarnings = webResearch.notes.filter(x => /search query failed|unverified/i.test(x)).map(x => `Web research: ${x}`);
   let result: IntelligenceResult = { meta: projectMeta(), inputUrl: rawUrl, finalUrl: root.url, profile, entity: { type, name, description }, confidenceAssessment, webResearch, seo, security, quality, trust, socials, contacts: { emails, phones }, importantPages: crawl.importantPages, pages, sitemapUrls: crawl.sitemapUrls, technologies, brand, graph: { nodes: [], edges: [] }, competitors: competitorList, rag, contradictions: findContradictions(pages, name), warnings: [...crawl.errors.map(x => `${x.url}: ${x.error}`), ...(crawl.robotsText ? [] : ["robots.txt was not available or could not be read"]), ...webWarnings].slice(0, 100), fingerprint, contentFingerprint, observedAt: new Date().toISOString() };
   result.graph = buildEntityGraph(result); result = await applyPluginEnrichers(result, { profile });
-  if (process.env.URL_AGENT_AI_AUTO === "true") result.meta.ai = await reasonWithOpenAICompatible(result, "Produce a concise evidence-based intelligence summary. Distinguish first-party claims from third-party corroboration and flag uncertainty or disagreement.") as unknown as JsonValue;
+  if (process.env.URL_AGENT_AI_AUTO === "true") result.meta.ai = await reasonWithOpenAICompatible(result, "Produce a concise evidence-based intelligence summary. Distinguish first-party claims from independent third-party corroboration, direct backlinks and public-platform references; flag uncertainty or disagreement.") as unknown as JsonValue;
   await cache.set(cacheKey, result, Number(process.env.URL_AGENT_CACHE_TTL_MS || 300000)); return result;
 }
 
 export function generateListing(result: IntelligenceResult) {
   const keywords = unique([result.entity.type.value, result.profile, ...result.technologies.slice(0, 8).map(x => x.name), ...result.pages[0].jsonLdTypes]).slice(0, 20);
-  return { meta: result.meta, name: result.entity.name.value, tagline: result.brand.taglines[0] || result.entity.description?.value || "", description: result.entity.description?.value || result.brand.taglines[0] || "", category: result.entity.type.value, url: result.finalUrl, logo: result.brand.logos[0] || result.brand.favicons[0] || result.pages[0].ogImage, image: result.pages[0].ogImage, socials: result.socials, contacts: result.contacts, keywords, technologies: result.technologies.map(x => x.name), seoScore: result.seo.score, trustScore: result.trust.score, completeness: profileCompleteness(result), confidence: result.confidenceAssessment, evidence: unique([result.finalUrl, ...Object.values(result.importantPages), ...result.entity.name.sources, ...result.webResearch.sources.filter(x => x.mentionsEntity).map(x => x.finalUrl || x.url)]) };
+  return { meta: result.meta, name: result.entity.name.value, tagline: result.brand.taglines[0] || result.entity.description?.value || "", description: result.entity.description?.value || result.brand.taglines[0] || "", category: result.entity.type.value, url: result.finalUrl, logo: result.brand.logos[0] || result.brand.favicons[0] || result.pages[0].ogImage, image: result.pages[0].ogImage, socials: result.socials, contacts: result.contacts, keywords, technologies: result.technologies.map(x => x.name), seoScore: result.seo.score, trustScore: result.trust.score, completeness: profileCompleteness(result), confidence: result.confidenceAssessment, evidence: unique([result.finalUrl, ...Object.values(result.importantPages), ...result.entity.name.sources, ...result.webResearch.sources.filter(x => x.mentionsEntity || x.discoveredBy.includes("backlink-to-target")).map(x => x.finalUrl || x.url)]) };
 }
 
 export function compareResults(a: IntelligenceResult, b: IntelligenceResult) {
