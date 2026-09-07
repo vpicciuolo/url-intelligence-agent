@@ -1,7 +1,7 @@
 {
   "benchmark": "vpicciuolo/url-intelligence-benchmark",
   "benchmark_version": "v0.1",
-  "generated_at": "2026-09-07T22:39:39.338Z",
+  "generated_at": "2026-09-07T22:40:21.074Z",
   "ranking_policy": "Only entries with 100% reject/block safety accuracy receive a rank. Eligible entries are ordered by overall assertion score; equal scores share the same rank. Full-agent completion is shown separately because library baselines do not implement the full agent pipeline.",
   "entries": [
     {
@@ -178,8 +178,8 @@
         "benchmark_cases": 55,
         "predictions": 55,
         "missing": [],
-        "generated_at": "2026-09-07T22:39:39Z",
-        "git_sha": "d68ad9298e3f2205d72039fbfb26172bacf228f3",
+        "generated_at": "2026-09-07T22:40:20Z",
+        "git_sha": "369f09c344a29a3dd95bc4a4d69d1f16cc8f9c81",
         "overall_score": 100,
         "deterministic_score": 100,
         "metrics": {
@@ -316,7 +316,7 @@
             "pct": 100
           }
         },
-        "average_network_elapsed_ms": 166,
+        "average_network_elapsed_ms": 145,
         "failures": []
       },
       "safety_gate_passed": true,
@@ -331,21 +331,21 @@
       "license": "MIT",
       "type": "link-preview library",
       "independent": true,
-      "adapter": "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled. The library does not expose HTTP response status in its public result, so status-family assertions remain unscored as failures rather than inferred.",
+      "adapter": "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled. The library does not expose HTTP response status in its public result, so status-family assertions remain failures rather than being inferred.",
       "summary": {
         "benchmark": "vpicciuolo/url-intelligence-benchmark",
         "benchmark_cases": 55,
         "predictions": 55,
         "missing": [],
-        "generated_at": "2026-09-07T22:39:39Z",
-        "git_sha": "d68ad9298e3f2205d72039fbfb26172bacf228f3",
-        "overall_score": 70.83,
-        "deterministic_score": 71.96,
+        "generated_at": "2026-09-07T22:40:21Z",
+        "git_sha": "369f09c344a29a3dd95bc4a4d69d1f16cc8f9c81",
+        "overall_score": 71.67,
+        "deterministic_score": 72.9,
         "metrics": {
           "action": {
-            "ok": 54,
+            "ok": 55,
             "total": 55,
-            "pct": 98.18
+            "pct": 100
           },
           "content_kind": {
             "ok": 22,
@@ -353,9 +353,9 @@
             "pct": 84.62
           },
           "overall_assertions": {
-            "ok": 85,
+            "ok": 86,
             "total": 120,
-            "pct": 70.83
+            "pct": 71.67
           },
           "redirects": {
             "ok": 3,
@@ -368,24 +368,24 @@
             "pct": 17.14
           },
           "case_pass_rate": {
-            "ok": 22,
+            "ok": 23,
             "total": 55,
-            "pct": 40
+            "pct": 41.82
           },
           "deterministic_assertions": {
-            "ok": 77,
+            "ok": 78,
             "total": 107,
-            "pct": 71.96
+            "pct": 72.9
           },
           "deterministic_case_pass_rate": {
-            "ok": 22,
+            "ok": 23,
             "total": 50,
-            "pct": 44
+            "pct": 46
           },
           "security_action_accuracy": {
-            "ok": 17,
+            "ok": 18,
             "total": 18,
-            "pct": 94.44
+            "pct": 100
           },
           "full_agent_completion": {
             "ok": 0,
@@ -465,9 +465,9 @@
             "pct": 0
           },
           "unsupported_scheme": {
-            "ok": 3,
+            "ok": 4,
             "total": 4,
-            "pct": 75
+            "pct": 100
           },
           "web_page": {
             "ok": 0,
@@ -475,7 +475,7 @@
             "pct": 0
           }
         },
-        "average_network_elapsed_ms": 129,
+        "average_network_elapsed_ms": 133,
         "failures": [
           {
             "id": "web-001",
@@ -798,21 +798,11 @@
             "expected_action": "analyze",
             "actual_action": "analyze",
             "error": null
-          },
-          {
-            "id": "invalid-008",
-            "group": "unsupported_scheme",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "reject",
-            "actual_action": "error",
-            "error": "fetch failed"
           }
         ]
       },
-      "safety_gate_passed": false,
-      "rank": null
+      "safety_gate_passed": true,
+      "rank": 3
     }
   ]
 }
