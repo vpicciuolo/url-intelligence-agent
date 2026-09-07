@@ -22,6 +22,7 @@
     "test": "npm run build && node --test dist/tests/*.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "benchmark": "npm run build && node dist/src/cli.js benchmark --raw",
+    "benchmark:hf": "npm run build && node scripts/run-hf-benchmark.mjs && python3 hf-dataset/evaluate.py hf-dataset/results/predictions.jsonl --json-out hf-dataset/results/latest.json --markdown-out hf-dataset/results/latest.md",
     "mcp": "npm run build && node dist/src/cli.js mcp",
     "serve": "npm run build && node dist/src/cli.js serve"
   },
