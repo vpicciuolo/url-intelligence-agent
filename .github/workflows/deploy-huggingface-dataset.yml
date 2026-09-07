@@ -1,0 +1,141 @@
+name: Deploy Hugging Face Dataset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'hf-dataset/**'
+      - '.github/workflows/deploy-huggingface-dataset.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huggingface-dataset-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub repository
+        uses: actions/checkout@v4
+
+      - name: Verify Hugging Face token
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN is missing. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Create dataset repository if needed
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --upgrade huggingface_hub
+          python3 - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          url = api.create_repo(
+              repo_id="vpicciuolo/url-intelligence-benchmark",
+              repo_type="dataset",
+              private=False,
+              exist_ok=True,
+          )
+          print(f"Dataset repository ready: {url}")
+          PY
+
+      - name: Validate benchmark payload
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("hf-dataset")
+          required = [
+              root / "README.md",
+              root / "LICENSE",
+              root / "schema.json",
+              root / "evaluate.py",
+              root / "data" / "benchmark.jsonl",
+          ]
+          for path in required:
+              if not path.is_file() or path.stat().st_size == 0:
+                  raise SystemExit(f"Missing or empty dataset file: {path}")
+
+          records = []
+          for line_no, line in enumerate((root / "data" / "benchmark.jsonl").read_text(encoding="utf-8").splitlines(), 1):
+              if not line.strip():
+                  continue
+              try:
+                  records.append(json.loads(line))
+              except json.JSONDecodeError as exc:
+                  raise SystemExit(f"Invalid JSONL at line {line_no}: {exc}")
+
+          if len(records) < 50:
+              raise SystemExit(f"Expected at least 50 benchmark cases, found {len(records)}")
+
+          ids = [row["id"] for row in records]
+          if len(ids) != len(set(ids)):
+              raise SystemExit("Benchmark IDs must be unique")
+
+          actions = {row["expected_action"] for row in records}
+          if not {"analyze", "reject", "block"}.issubset(actions):
+              raise SystemExit(f"Benchmark action coverage incomplete: {sorted(actions)}")
+
+          print(f"Validated {len(records)} benchmark cases.")
+          PY
+
+      - name: Sync Hugging Face dataset
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/hf-dataset
+          git clone "https://vpicciuolo:${HF_TOKEN}@huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark" /tmp/hf-dataset
+          rsync -av --delete --exclude='.git' hf-dataset/ /tmp/hf-dataset/
+          cd /tmp/hf-dataset
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No Hugging Face Dataset changes to deploy."
+          else
+            git commit -m "Deploy URL Intelligence Benchmark from GitHub ${GITHUB_SHA}"
+            git push origin HEAD:main
+          fi
+
+      - name: Verify Hugging Face dataset
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          token = os.environ["HF_TOKEN"]
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "User-Agent": "url-intelligence-benchmark-deploy-check/1.0",
+          }
+
+          api_url = "https://huggingface.co/api/datasets/vpicciuolo/url-intelligence-benchmark"
+          req = urllib.request.Request(api_url, headers=headers)
+          with urllib.request.urlopen(req, timeout=30) as response:
+              data = json.load(response)
+
+          if data.get("id") != "vpicciuolo/url-intelligence-benchmark":
+              raise SystemExit(f"Unexpected dataset response: {data.get('id')}")
+
+          print("Hugging Face dataset verified.")
+          print("https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark")
+          PY
