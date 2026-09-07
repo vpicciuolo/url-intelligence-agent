@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "URL Intelligence Benchmark Record",
+  "type": "object",
+  "required": [
+    "id",
+    "url",
+    "group",
+    "difficulty",
+    "expected_action",
+    "expected_redirects_min",
+    "security_class",
+    "deterministic",
+    "required_checks"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    },
+    "group": {
+      "type": "string"
+    },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ]
+    },
+    "expected_action": {
+      "enum": [
+        "analyze",
+        "reject",
+        "block"
+      ]
+    },
+    "expected_initial_status_family": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "2xx",
+        "3xx",
+        "4xx",
+        "5xx",
+        null
+      ]
+    },
+    "expected_redirects_min": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expected_content_kind": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "security_class": {
+      "type": "string"
+    },
+    "deterministic": {
+      "type": "boolean"
+    },
+    "required_checks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
