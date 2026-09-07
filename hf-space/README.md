@@ -6,27 +6,27 @@ colorTo: purple
 sdk: docker
 app_port: 7860
 license: mit
-short_description: Evidence-first URL intelligence, reports and Remote MCP.
+short_description: Evidence-first URL intelligence agent + Remote MCP.
 thumbnail: https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2
-pinned: false
+pinned: true
+fullWidth: true
 hf_oauth: true
 hf_oauth_expiration_minutes: 1440
+datasets:
+  - vpicciuolo/url-intelligence-benchmark
 tags:
   - mcp
   - remote-mcp
   - url-intelligence
   - web-intelligence
   - web-research
-  - external-evidence
   - source-provenance
-  - backlink-discovery
   - seo
   - security
   - entity-resolution
   - rag
   - open-source
   - typescript
-  - docker
   - ai-agent
   - web-crawler
   - source-verification
@@ -37,29 +37,89 @@ tags:
   - website-monitoring
 ---
 
-# URL Intelligence Agent
+<p align="center">
+  <img src="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2" alt="URL Intelligence Agent — evidence-first web intelligence" width="100%">
+</p>
 
-**URL in. Evidence, provenance and intelligence out.**
+# 🧠 URL Intelligence Agent
 
-Open-source evidence-first URL and web intelligence agent by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd**.
+### Paste any public URL. Get evidence-backed web intelligence.
 
-## Try it live
+**URL in. Identity, evidence, provenance and intelligence out.**
 
-- **Live web app:** https://vpicciuolo-url-intelligence-agent.hf.space/
-- **Hugging Face Space:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent
-- **GitHub source:** https://github.com/vpicciuolo/url-intelligence-agent
-- **Public Remote MCP:** https://vpicciuolo-url-intelligence-agent.hf.space/mcp
-- **MCP discovery:** https://vpicciuolo-url-intelligence-agent.hf.space/.well-known/mcp.json
+Open-source URL and web-intelligence agent by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd**. It crawls public web sources, resolves entities, verifies evidence, audits SEO/security/trust, discovers social and technology signals, exports branded reports, and exposes the same engine through **Remote MCP**.
 
-The hosted Docker Space runs the real URL Intelligence Agent service plus a full web interface. Sign in with Hugging Face to use the hosted analysis UI.
+<p align="center">
+  <a href="https://vpicciuolo-url-intelligence-agent.hf.space/"><img src="https://img.shields.io/badge/TRY%20LIVE-Open%20Web%20Demo-2563EB?style=for-the-badge" alt="Try live"></a>
+  <a href="https://vpicciuolo-url-intelligence-agent.hf.space/mcp"><img src="https://img.shields.io/badge/REMOTE%20MCP-Connect-7C3AED?style=for-the-badge" alt="Remote MCP"></a>
+  <a href="https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark"><img src="https://img.shields.io/badge/BENCHMARK-100%25-059669?style=for-the-badge" alt="Benchmark"></a>
+  <a href="https://github.com/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/GITHUB-Open%20Source-111827?style=for-the-badge&logo=github" alt="GitHub"></a>
+</p>
 
-The public demo is limited to **1 analysis request per signed-in Hugging Face account every 24 hours** to reduce automated abuse. The owner account **vpicciuolo** is exempt from this hosted-demo limit. Clone or self-host the MIT-licensed project for unrestricted usage under your own infrastructure limits.
+## ⚡ What happens after you paste a URL
 
-## What it does
+```text
+Public URL
+   ↓
+Safe fetch + SSRF protection
+   ↓
+Deep crawl + metadata + structured data
+   ↓
+Entity resolution + technology + social discovery
+   ↓
+SEO + security + quality + trust audits
+   ↓
+External evidence + source verification + contradictions
+   ↓
+PDF / JSON / Markdown / HTML / MCP
+```
 
-URL Intelligence Agent performs evidence-first investigation of public URLs and web entities. It combines first-party crawling with external-source discovery and direct verification instead of treating repeated first-party claims as independent confirmation.
+## 🧪 Reproducible benchmark
 
-Core capabilities include:
+The project is continuously tested against the public **URL Intelligence Benchmark** on Hugging Face.
+
+| Metric | Latest official result |
+|---|---:|
+| Benchmark cases | **55 / 55 passed** |
+| Assertions | **120 / 120 passed** |
+| Overall score | **100.00%** |
+| Deterministic assertions | **100.00%** |
+| HTTP status-family handling | **100.00%** |
+| Redirect handling | **100.00%** |
+| Content-kind detection | **100.00%** |
+| Reject / block safety | **100.00%** |
+| Full-agent HTML completion | **100.00%** |
+
+**Dataset:** https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark  
+**Leaderboard:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
+
+The score refers to the current published benchmark version, not a claim of perfect performance on every website on the internet.
+
+## 🚀 Try it live
+
+**Web app:** https://vpicciuolo-url-intelligence-agent.hf.space/
+
+The hosted Docker Space runs the real open-source engine. Sign in with Hugging Face to use the hosted analysis interface.
+
+The public demo is rate-limited to **1 analysis request per signed-in Hugging Face account every 24 hours** to reduce automated abuse. The owner account `vpicciuolo` is exempt. For unrestricted usage, clone or self-host the MIT-licensed project.
+
+## 🔌 Remote MCP
+
+Use the live service from compatible MCP clients and AI agent frameworks.
+
+```text
+https://vpicciuolo-url-intelligence-agent.hf.space/mcp
+```
+
+Machine-readable MCP discovery:
+
+```text
+https://vpicciuolo-url-intelligence-agent.hf.space/.well-known/mcp.json
+```
+
+The repository also includes local stdio MCP for self-hosted workflows.
+
+## 🔎 Core capabilities
 
 - Full URL investigation and deep crawl
 - External article and backlink-style source discovery
@@ -73,34 +133,24 @@ Core capabilities include:
 - Competitive intelligence and website monitoring
 - RAG and knowledge export
 - Branded PDF, JSON, Markdown and HTML reports
-- HTTP API, CLI, Docker and Remote MCP
+- HTTP API, CLI, Docker, local MCP and Remote MCP
 
-## Evidence model
+## 🧠 Evidence-first architecture
 
-The project separates two evidence layers:
+The project deliberately separates two evidence layers:
 
 1. **First-party extraction** — crawls the submitted site, sitemaps and prioritized internal pages to understand what the target says about itself.
-2. **External corroboration** — crosses the target-domain boundary, expands public outbound links, social/profile URLs and structured-data references, then fetches eligible external sources before they can strengthen corroboration.
+2. **External corroboration** — crosses the target-domain boundary, expands public references, social/profile URLs and structured-data relationships, then fetches eligible external sources before they can strengthen corroboration.
 
-**Extraction confidence** and **external corroboration** remain separate. Repetition across one domain is not counted as independent-domain confirmation.
+**Extraction confidence** and **external corroboration** remain separate. Repetition across one domain is not treated as independent confirmation.
 
-## Hosted web actions
+## 🛡️ Safety model
 
-The live interface exposes a safe public subset of the full runtime, including:
+Outbound requests pass through URL validation and SSRF protections before fetching. The benchmark includes malformed URLs, unsupported schemes, loopback, private-network, link-local, cloud-metadata and obfuscated-address cases.
 
-- Full investigation
-- SEO audit
-- Security audit
-- Trust signals
-- Social-profile discovery
-- Technology detection
-- Brand intelligence
-- Domain intelligence
-- Structured-data inventory
+This is public-web intelligence software. Security output is observational auditing, not penetration testing; trust/compliance output is not a legal or financial determination.
 
-The full investigation result can surface first-party evidence, source-linked extracted claims, external research status, search provider and queries, third-party domains, corroboration coverage, verified direct backlink signals, public social/profile verification, source context, contradictions, observation time and complete raw results.
-
-## Reports and exports
+## 📄 Reports and exports
 
 Signed-in users can export completed investigations as:
 
@@ -109,13 +159,11 @@ Signed-in users can export completed investigations as:
 - Markdown
 - HTML
 
-Reports preserve attribution and evidence context and include project branding, repository information, Hugging Face information and creator attribution.
+Reports preserve evidence context and include project, repository, Hugging Face and creator attribution.
 
-## Web-wide discovery
+## 🌐 Web-wide discovery
 
-Direct public external URLs referenced by the target can be researched without a search credential. Broader web discovery can use the built-in public fallback or a configured provider.
-
-Supported providers include:
+Direct external URLs referenced by the target can be researched without a search credential. Broader discovery can use the built-in public fallback or a configured provider:
 
 - SearXNG via `URL_AGENT_SEARCH_ENDPOINT`
 - Brave Search via `BRAVE_SEARCH_API_KEY`
@@ -123,31 +171,15 @@ Supported providers include:
 - Tavily via `TAVILY_API_KEY`
 - Google Custom Search via `GOOGLE_CSE_API_KEY` + `GOOGLE_CSE_CX`
 
-No bounded crawler can guarantee every backlink on the public internet. URL Intelligence Agent combines available search-index discovery with direct source fetching and checks fetched third-party pages before treating them as corroborating or backlink evidence.
+No bounded crawler can guarantee every backlink on the public internet. The agent combines available search-index discovery with direct source fetching before treating third-party pages as corroborating evidence.
 
-## Full runtime action catalog
+## 🧰 Full runtime action catalog
 
 The open-source runtime contains **34 actions**:
 
 `investigate_url`, `probe_url`, `domain_intelligence`, `render_page`, `map_site`, `deep_crawl`, `resolve_entity`, `find_social_profiles`, `find_contacts`, `detect_technologies`, `brand_intelligence`, `audit_seo`, `audit_security`, `audit_quality`, `audit_trust`, `entity_graph`, `competitor_intelligence`, `structured_data`, `api_discovery`, `compliance_signals`, `people_team`, `commerce_intelligence`, `content_freshness`, `link_intelligence`, `check_links`, `generate_listing`, `rag_export`, `knowledge_export`, `compare_urls`, `batch_investigate`, `create_snapshot`, `diff_snapshot`, `ai_reason`, `list_plugins`.
 
-## Remote MCP
-
-Public Streamable HTTP MCP endpoint:
-
-```text
-https://vpicciuolo-url-intelligence-agent.hf.space/mcp
-```
-
-Machine-readable discovery:
-
-```text
-https://vpicciuolo-url-intelligence-agent.hf.space/.well-known/mcp.json
-```
-
-Compatible clients that support Remote MCP / Streamable HTTP custom servers can connect directly. The repository also includes local stdio MCP for self-hosted use.
-
-## Main HTTP endpoints
+## 🔗 Main endpoints
 
 ```text
 /health
@@ -162,55 +194,30 @@ Compatible clients that support Remote MCP / Streamable HTTP custom servers can 
 /sitemap.xml
 ```
 
-## Built inside HORNO Network. Now open source.
+## 🔥 Built inside HORNO Network. Now open source.
 
-URL Intelligence Agent was developed, tested and refined inside the **HORNO Network ecosystem**, where its URL intelligence, evidence collection and enrichment workflows have been used in production-oriented scenarios.
+URL Intelligence Agent was developed and refined inside the **HORNO Network ecosystem** for production-oriented URL intelligence, evidence collection and enrichment workflows. **HORNO Network founder Vincenzo Picciuolo** released the project as open source so developers, researchers and companies can inspect, self-host, extend and build on it.
 
-After proving the technology in a live ecosystem, **HORNO Network founder Vincenzo Picciuolo** released the project as open source so developers, AI builders, researchers and companies can inspect it, self-host it, extend it and build on it.
+Related:
 
-Related projects and ecosystem links:
+- URL Metadata & Social Profile Fetcher: https://github.com/vpicciuolo/url-metadata-social-fetcher
+- HORNO Network: https://horno.net/
+- HORNO Space: https://space.horno.net/
 
-- **URL Metadata & Social Profile Fetcher:** https://github.com/vpicciuolo/url-metadata-social-fetcher
-- **HORNO Network:** https://horno.net/
-- **HORNO Space:** https://space.horno.net/
+## 📚 Documentation
 
-## Documentation
-
-- GitHub repository: https://github.com/vpicciuolo/url-intelligence-agent
-- Action reference: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/ACTIONS.md
+- GitHub: https://github.com/vpicciuolo/url-intelligence-agent
+- Actions: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/ACTIONS.md
 - Web research architecture: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/WEB_RESEARCH.md
-- MCP guide: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/MCP.md
-- Remote MCP guide: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/REMOTE_MCP.md
+- MCP: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/MCP.md
+- Remote MCP: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/REMOTE_MCP.md
 
-## Evidence and uncertainty FAQ
-
-**Why are extraction confidence and external corroboration separate?**  
-Extraction confidence describes how strongly observable target content supports an extracted field. External corroboration measures coverage across fetched third-party domains. They answer different questions and are not combined into a fake probability of truth.
-
-**What if the same claim appears on many pages of one website?**  
-It remains first-party evidence from one domain. It may strengthen extraction reliability, but it does not create independent sources.
-
-**Does Full Investigation go beyond the target website?**  
-Yes. It can expand public external references, search the wider web, fetch independent sources and check whether third-party pages mention or link back to the target.
-
-**Does it find every backlink?**  
-No. Complete reverse-link discovery requires a global backlink/search index. Coverage depends on what is publicly discoverable and on the available provider.
-
-**What if sources disagree?**  
-Contradictions can remain explicit in the result instead of being silently collapsed into one answer.
-
-**Can sources be inspected?**  
-Yes. Public source URLs remain attached to evidence and research results.
-
-**Are SEO, security, trust or compliance outputs definitive?**  
-No. They are explainable observations of public signals. Security audit is not penetration testing, and compliance/trust outputs are not legal or financial determinations.
-
-## Creator
+## 👤 Creator
 
 Created by **Vincenzo Picciuolo**  
 **HRN Innovation Technologies Ltd**
 
-- GitHub: https://github.com/vpicciuolo
 - Hugging Face: https://huggingface.co/vpicciuolo
+- GitHub: https://github.com/vpicciuolo
 - X: https://x.com/vpicciuolo
 - LinkedIn: https://www.linkedin.com/in/vpicciuolo/
