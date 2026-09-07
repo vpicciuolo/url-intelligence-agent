@@ -1,10 +1,13 @@
 ---
 title: URL Intelligence Agent
 emoji: 🧠
+colorFrom: blue
+colorTo: purple
 sdk: docker
 app_port: 7860
 license: mit
-short_description: Web-wide evidence-first URL intelligence + Remote MCP.
+short_description: Evidence-first web intelligence, source verification, reports & Remote MCP.
+thumbnail: https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260907-3
 pinned: false
 hf_oauth: true
 hf_oauth_expiration_minutes: 1440
@@ -24,6 +27,12 @@ tags:
   - open-source
   - typescript
   - docker
+  - ai-agent
+  - web-crawler
+  - source-verification
+  - due-diligence
+  - open-graph
+  - social-discovery
 ---
 
 # URL Intelligence Agent
@@ -42,6 +51,12 @@ Full investigation therefore uses two distinct evidence layers:
 The result keeps **extraction confidence** separate from **external corroboration**. Repetition across one domain is not counted as independent-domain confirmation.
 
 ## Live hosted demo
+
+**Live app:** https://vpicciuolo-url-intelligence-agent.hf.space/
+
+**Public Remote MCP:** https://vpicciuolo-url-intelligence-agent.hf.space/mcp
+
+**Hugging Face Space:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent
 
 The Docker Space runs the real URL Intelligence Agent HTTP service and a human-friendly web interface. Sign in with Hugging Face to test the hosted analysis UI.
 

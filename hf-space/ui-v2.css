@@ -6,8 +6,8 @@
   margin:5px 0 30px!important;
   min-height:68px;
   border:1px solid rgba(77,131,185,.46);
-  border-radius:24px;
-  background:linear-gradient(135deg,rgba(7,21,38,.94),rgba(7,15,27,.88) 58%,rgba(22,15,48,.86))!important;
+  border-radius:26px;
+  background:linear-gradient(135deg,rgba(7,21,38,.96),rgba(7,15,27,.91) 58%,rgba(22,15,48,.89))!important;
   box-shadow:0 18px 48px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.055);
   backdrop-filter:blur(20px) saturate(145%)!important;
   -webkit-backdrop-filter:blur(20px) saturate(145%);
@@ -33,6 +33,9 @@
 .brand img{
   width:48px!important;
   height:48px!important;
+  object-fit:contain!important;
+  background:#02060c!important;
+  padding:2px!important;
   border-radius:15px!important;
   border-color:rgba(77,132,185,.68)!important;
 }
