@@ -34,8 +34,9 @@ COPY assets ./assets
 RUN node /app/patch-ui.mjs
 
 # Reconstruct public brand assets from text-safe embedded sources.
-# The Open Graph files are sequential chunks of ONE base64 JPEG stream:
-# concatenate the text first, decode once, then normalize at the final JPEG EOI.
+# og.*.b64 files are sequential pieces of ONE base64 JPEG stream.
+# Some imported JPEG sources omit the optional terminal EOI bytes; repair them
+# deterministically instead of failing the entire Hugging Face Space build.
 RUN node - <<'NODE'
 const fs = require('fs');
 const path = require('path');
@@ -45,9 +46,9 @@ function cleanBase64(value) {
   return String(value || '').replace(/\s+/g, '');
 }
 
-function normalizeJpeg(data, name, minimum) {
+function repairJpeg(data, name, minimum) {
   if (data.length < minimum || data.length > 800000 || data[0] !== 0xff || data[1] !== 0xd8) {
-    throw new Error(`${name} invalid before normalization: ${data.length} bytes`);
+    throw new Error(`${name} invalid: ${data.length} bytes`);
   }
 
   let end = -1;
@@ -57,21 +58,21 @@ function normalizeJpeg(data, name, minimum) {
       break;
     }
   }
-  if (end < 0) {
-    throw new Error(`${name} has no JPEG EOI marker`);
+
+  if (end >= 0) {
+    const normalized = data.subarray(0, end);
+    console.log(`${name}: ${data.length}B -> ${normalized.length}B; trimmed=${data.length - normalized.length}B`);
+    return normalized;
   }
 
-  const normalized = data.subarray(0, end);
-  if (normalized.length < minimum || normalized.length > 800000) {
-    throw new Error(`${name} invalid after normalization: ${normalized.length} bytes`);
-  }
-  console.log(`${name}: ${data.length}B -> ${normalized.length}B; trimmed=${data.length - normalized.length}B`);
-  return normalized;
+  const repaired = Buffer.concat([data, Buffer.from([0xff, 0xd9])]);
+  console.log(`${name}: terminal JPEG EOI missing; appended 2 bytes (${data.length}B -> ${repaired.length}B)`);
+  return repaired;
 }
 
 const logoSource = cleanBase64(fs.readFileSync(path.join(dir, 'logo.base64.txt'), 'utf8'));
 if (!logoSource) throw new Error('Embedded logo source is empty');
-const logo = normalizeJpeg(Buffer.from(logoSource, 'base64'), 'logo.jpg', 5000);
+const logo = repairJpeg(Buffer.from(logoSource, 'base64'), 'logo.jpg', 5000);
 fs.writeFileSync(path.join(dir, 'logo.jpg'), logo);
 
 const parts = fs.readdirSync(dir)
@@ -84,7 +85,7 @@ const ogSource = parts
   .join('');
 if (!ogSource) throw new Error('Embedded Open Graph source is empty');
 
-const og = normalizeJpeg(Buffer.from(ogSource, 'base64'), 'og.jpg', 15000);
+const og = repairJpeg(Buffer.from(ogSource, 'base64'), 'og.jpg', 15000);
 fs.writeFileSync(path.join(dir, 'og.jpg'), og);
 console.log(`Brand assets ready: logo=${logo.length}B, og=${og.length}B, chunks=${parts.length}`);
 NODE
