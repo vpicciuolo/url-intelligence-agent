@@ -49,11 +49,19 @@ jobs:
           cp hf-space/ui-v2.css /tmp/hf-payload/ui-v2.css
           cp hf-space/ui-v2.js /tmp/hf-payload/ui-v2.js
 
-          # Hugging Face rejects normal git pushes containing binary files.
-          # Keep only text-safe asset sources in the Space repository.
+          # Keep the Space git repository text-safe. The Docker build decodes
+          # these embedded base64 sources into /assets/logo.jpg and /assets/og.jpg.
           mkdir -p /tmp/hf-payload/assets
           cp hf-space/assets/README.txt /tmp/hf-payload/assets/README.txt
           cp hf-space/assets/logo.base64.txt /tmp/hf-payload/assets/logo.base64.txt
+          shopt -s nullglob
+          for asset in hf-space/assets/og.*.b64; do
+            cp "$asset" /tmp/hf-payload/assets/
+          done
+          if ! compgen -G '/tmp/hf-payload/assets/og.*.b64' > /dev/null; then
+            echo "Open Graph base64 chunks are missing."
+            exit 1
+          fi
 
       - name: Sync Docker Space
         env:
