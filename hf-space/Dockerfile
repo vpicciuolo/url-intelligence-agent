@@ -33,9 +33,9 @@ COPY assets ./assets
 
 RUN node /app/patch-ui.mjs
 
-# Reconstruct the public brand assets from text-safe embedded sources.
-# The Open Graph files are sequential chunks of one base64 JPEG string,
-# so they must be concatenated first and decoded exactly once.
+# Reconstruct public brand assets from text-safe embedded sources.
+# The Open Graph files are sequential chunks of ONE base64 JPEG stream:
+# concatenate the text first, decode once, then normalize at the final JPEG EOI.
 RUN node - <<'NODE'
 const fs = require('fs');
 const path = require('path');
@@ -45,12 +45,33 @@ function cleanBase64(value) {
   return String(value || '').replace(/\s+/g, '');
 }
 
+function normalizeJpeg(data, name, minimum) {
+  if (data.length < minimum || data.length > 800000 || data[0] !== 0xff || data[1] !== 0xd8) {
+    throw new Error(`${name} invalid before normalization: ${data.length} bytes`);
+  }
+
+  let end = -1;
+  for (let i = data.length - 2; i >= 2; i -= 1) {
+    if (data[i] === 0xff && data[i + 1] === 0xd9) {
+      end = i + 2;
+      break;
+    }
+  }
+  if (end < 0) {
+    throw new Error(`${name} has no JPEG EOI marker`);
+  }
+
+  const normalized = data.subarray(0, end);
+  if (normalized.length < minimum || normalized.length > 800000) {
+    throw new Error(`${name} invalid after normalization: ${normalized.length} bytes`);
+  }
+  console.log(`${name}: ${data.length}B -> ${normalized.length}B; trimmed=${data.length - normalized.length}B`);
+  return normalized;
+}
+
 const logoSource = cleanBase64(fs.readFileSync(path.join(dir, 'logo.base64.txt'), 'utf8'));
 if (!logoSource) throw new Error('Embedded logo source is empty');
-const logo = Buffer.from(logoSource, 'base64');
-if (logo.length < 5000 || logo.length > 800000 || logo[0] !== 0xff || logo[1] !== 0xd8 || logo[logo.length - 2] !== 0xff || logo[logo.length - 1] !== 0xd9) {
-  throw new Error(`Embedded logo asset is invalid (${logo.length} bytes)`);
-}
+const logo = normalizeJpeg(Buffer.from(logoSource, 'base64'), 'logo.jpg', 5000);
 fs.writeFileSync(path.join(dir, 'logo.jpg'), logo);
 
 const parts = fs.readdirSync(dir)
@@ -63,10 +84,7 @@ const ogSource = parts
   .join('');
 if (!ogSource) throw new Error('Embedded Open Graph source is empty');
 
-const og = Buffer.from(ogSource, 'base64');
-if (og.length < 15000 || og.length > 800000 || og[0] !== 0xff || og[1] !== 0xd8 || og[og.length - 2] !== 0xff || og[og.length - 1] !== 0xd9) {
-  throw new Error(`Embedded Open Graph asset is invalid (${og.length} bytes)`);
-}
+const og = normalizeJpeg(Buffer.from(ogSource, 'base64'), 'og.jpg', 15000);
 fs.writeFileSync(path.join(dir, 'og.jpg'), og);
 console.log(`Brand assets ready: logo=${logo.length}B, og=${og.length}B, chunks=${parts.length}`);
 NODE
