@@ -27,30 +27,44 @@ jobs:
           const dir = 'hf-space/assets';
           const clean = value => String(value || '').replace(/\s+/g, '');
 
+          function normalizeJpeg(data, name, minimum) {
+            if (data.length < minimum || data.length > 800000 || data[0] !== 0xff || data[1] !== 0xd8) {
+              throw new Error(`${name} invalid before normalization: ${data.length} bytes`);
+            }
+            let end = -1;
+            for (let i = data.length - 2; i >= 2; i -= 1) {
+              if (data[i] === 0xff && data[i + 1] === 0xd9) {
+                end = i + 2;
+                break;
+              }
+            }
+            if (end < 0) throw new Error(`${name} has no JPEG EOI marker`);
+            const normalized = data.subarray(0, end);
+            if (normalized.length < minimum || normalized.length > 800000) {
+              throw new Error(`${name} invalid after normalization: ${normalized.length} bytes`);
+            }
+            console.log(`${name}: ${data.length}B -> ${normalized.length}B; trimmed=${data.length - normalized.length}B`);
+            return normalized;
+          }
+
           const logoSource = clean(fs.readFileSync(path.join(dir, 'logo.base64.txt'), 'utf8'));
           if (!logoSource) throw new Error('Logo base64 source is empty');
-          const logo = Buffer.from(logoSource, 'base64');
+          const logo = normalizeJpeg(Buffer.from(logoSource, 'base64'), 'logo.jpg', 5000);
 
           const parts = fs.readdirSync(dir)
             .filter(n => /^og\.\d+\.b64$/.test(n))
             .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
           if (!parts.length) throw new Error('No Open Graph chunks');
 
-          // og.*.b64 files are sequential pieces of one base64 string.
-          // Reassemble the text first, then decode once.
+          // og.*.b64 are sequential pieces of one base64 JPEG stream.
           const ogSource = parts
             .map(name => clean(fs.readFileSync(path.join(dir, name), 'utf8')))
             .join('');
           if (!ogSource) throw new Error('Open Graph base64 source is empty');
-          const og = Buffer.from(ogSource, 'base64');
+          const og = normalizeJpeg(Buffer.from(ogSource, 'base64'), 'og.jpg', 15000);
 
-          for (const [name, data, min] of [['logo.jpg', logo, 5000], ['og.jpg', og, 15000]]) {
-            if (data.length < min || data.length > 800000 || data[0] !== 0xff || data[1] !== 0xd8 || data[data.length - 2] !== 0xff || data[data.length - 1] !== 0xd9) {
-              throw new Error(`${name} invalid: ${data.length} bytes, head=${data.subarray(0, 2).toString('hex')}, tail=${data.subarray(-2).toString('hex')}`);
-            }
-            fs.writeFileSync(`/tmp/${name}`, data);
-            console.log(`${name}: ${data.length} bytes, JPEG OK`);
-          }
+          fs.writeFileSync('/tmp/logo.jpg', logo);
+          fs.writeFileSync('/tmp/og.jpg', og);
           console.log(`Validated ${parts.length} Open Graph chunks`);
           NODE
 
