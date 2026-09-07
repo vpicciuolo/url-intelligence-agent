@@ -26,12 +26,15 @@
     "serve": "npm run build && node dist/src/cli.js serve"
   },
   "engines": { "node": ">=18" },
-  "keywords": ["ai-agent","url-intelligence","web-intelligence","entity-resolution","metadata","open-graph","seo","mcp","crawler","deep-crawl","social-discovery","technology-detection","brand-intelligence","rag","monitoring","ssrf","typescript","horno"],
+  "keywords": ["ai-agent","url-intelligence","web-intelligence","entity-resolution","metadata","open-graph","seo","mcp","remote-mcp","crawler","deep-crawl","social-discovery","technology-detection","brand-intelligence","rag","monitoring","ssrf","typescript","horno"],
   "author": "Vincenzo Picciuolo / HRN Innovation Technologies Ltd",
   "license": "MIT",
   "repository": { "type": "git", "url": "git+https://github.com/vpicciuolo/url-intelligence-agent.git" },
   "homepage": "https://github.com/vpicciuolo/url-intelligence-agent#readme",
   "bugs": { "url": "https://github.com/vpicciuolo/url-intelligence-agent/issues" },
+  "dependencies": {
+    "pdfkit": "^0.17.2"
+  },
   "peerDependencies": {
     "pg": ">=8",
     "playwright": ">=1.50",
