@@ -1,14 +1,32 @@
+import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { actionNames, runAction } from "./agent.js";
 import { PROJECT, attributionObject, creditsLine } from "./credits.js";
 
 const buckets = new Map<string, { count: number; reset: number }>();
+let uiHtml: string | undefined;
 
 function json(res: ServerResponse, status: number, value: unknown): void {
   res.statusCode = status;
   res.setHeader("content-type", "application/json; charset=utf-8");
   res.setHeader("x-powered-by", `${PROJECT.name}/${PROJECT.version}`);
   res.end(JSON.stringify(value, null, 2));
+}
+
+async function serveUi(res: ServerResponse): Promise<boolean> {
+  const path = process.env.URL_AGENT_UI_FILE;
+  if (!path) return false;
+  try {
+    uiHtml ??= await readFile(path, "utf8");
+    res.statusCode = 200;
+    res.setHeader("content-type", "text/html; charset=utf-8");
+    res.setHeader("cache-control", "no-cache");
+    res.setHeader("x-powered-by", `${PROJECT.name}/${PROJECT.version}`);
+    res.end(uiHtml);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function clientIp(req: IncomingMessage): string { return String(req.socket.remoteAddress || "unknown"); }
@@ -45,6 +63,7 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
     if (!authorized(req)) { json(res, 401, { error: "Unauthorized", attribution: attributionObject() }); return; }
     try {
       const u = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+      if (u.pathname === "/" && req.method === "GET" && await serveUi(res)) return;
       if (u.pathname === "/health") { json(res, 200, { ok: true, uptimeSeconds: Math.round(process.uptime()), actions: actionNames().length, attribution: attributionObject() }); return; }
       if (u.pathname === "/actions") { json(res, 200, { actions: actionNames(), attribution: attributionObject() }); return; }
       const actionMatch = u.pathname.match(/^\/action\/([a-z0-9_:-]+)$/i);
@@ -58,7 +77,7 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
         const result = await runAction("investigate_url", args as any);
         json(res, 200, { attribution: attributionObject(), result }); return;
       }
-      json(res, 404, { error: "Not found", available: ["/health", "/actions", "/investigate", "/action/:name"], attribution: attributionObject() });
+      json(res, 404, { error: "Not found", available: ["/", "/health", "/actions", "/investigate", "/action/:name"], attribution: attributionObject() });
     } catch (error) {
       json(res, 400, { error: error instanceof Error ? error.message : String(error), attribution: attributionObject() });
     }
