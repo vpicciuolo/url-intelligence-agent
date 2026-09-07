@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vpicciuolo-url-intelligence-benchmark-leaderboard.hf.space/sitemap.xml
