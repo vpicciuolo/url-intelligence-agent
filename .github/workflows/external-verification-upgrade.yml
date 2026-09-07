@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 22.x
 
-      - name: Normalize current provider note
+      - name: Normalize current provider note and backlink notice
         run: python3 external_verification_prepatch.py
 
       - name: Apply runtime, UI, SEO and documentation upgrade
