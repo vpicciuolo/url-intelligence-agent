@@ -132,6 +132,54 @@ export type RagDocument = {
   metadata: Record<string, JsonValue>;
 };
 
+export type WebEvidenceSource = {
+  url: string;
+  finalUrl?: string;
+  host: string;
+  sourceClass: "first-party" | "platform" | "third-party";
+  discoveredBy: string[];
+  searchProvider?: string;
+  searchTitle?: string;
+  searchSnippet?: string;
+  status?: number;
+  title?: string;
+  description?: string;
+  publishedAt?: string;
+  mentionsEntity: boolean;
+  fetched: boolean;
+  observedAt: string;
+  error?: string;
+};
+
+export type WebResearchReport = {
+  enabled: boolean;
+  searchConfigured: boolean;
+  searchProvider?: string;
+  queries: string[];
+  candidateUrls: number;
+  fetchedSources: number;
+  thirdPartySources: number;
+  thirdPartyDomains: number;
+  corroboratingThirdPartySources: number;
+  corroboratingThirdPartyDomains: number;
+  platformSources: number;
+  sourceCoverageScore: number;
+  coverageLevel: "none" | "limited" | "moderate" | "strong";
+  sources: WebEvidenceSource[];
+  notes: string[];
+};
+
+export type ConfidenceAssessment = {
+  extractionConfidence: number;
+  externalCorroboration: number;
+  externalCoverageLevel: "none" | "limited" | "moderate" | "strong";
+  firstPartyEvidencePages: number;
+  thirdPartyEvidenceSources: number;
+  thirdPartyEvidenceDomains: number;
+  searchProvider?: string;
+  interpretation: string;
+};
+
 export type Snapshot = {
   meta: Record<string, unknown>;
   url: string;
@@ -164,6 +212,8 @@ export type IntelligenceResult = {
     name: EvidenceField<string>;
     description?: EvidenceField<string>;
   };
+  confidenceAssessment: ConfidenceAssessment;
+  webResearch: WebResearchReport;
   seo: AuditResult;
   security: AuditResult;
   quality: AuditResult;
