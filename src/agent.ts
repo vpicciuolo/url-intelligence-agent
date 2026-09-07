@@ -10,7 +10,8 @@ import { probeUrl } from "./net.js";
 import { inspectDomain } from "./domain.js";
 import { checkLinks, complianceSignals, contentFreshness, discoverApiSurfaces, exportKnowledge, extractCommerceSignals, extractPeople, linkIntelligence, structuredDataInventory } from "./extensions.js";
 import { renderUrl } from "./render.js";
-import type { CrawlPolicy, EvidenceField, IntelligenceResult, JsonValue, PageSignal, Snapshot } from "./types.js";
+import { researchExternalWeb } from "./research.js";
+import type { CrawlPolicy, EvidenceField, IntelligenceResult, JsonValue, PageSignal, Snapshot, WebResearchReport } from "./types.js";
 
 const cache = createCache();
 const unique = <T>(items: T[]): T[] => [...new Set(items)];
@@ -37,62 +38,88 @@ function identityCandidates(pages: PageSignal[]): { value: string; source: strin
 }
 
 function resolveName(pages: PageSignal[]): EvidenceField<string> {
-  const grouped = new Map<string, { display: string; score: number; sources: string[]; methods: string[] }>();
+  const grouped = new Map<string, { display: string; weighted: number; sources: string[]; methods: string[]; maxWeight: number }>();
   for (const candidate of identityCandidates(pages)) {
     const key = candidate.value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); if (!key) continue;
-    const current = grouped.get(key) || { display: candidate.value, score: 0, sources: [], methods: [] };
-    current.score += candidate.weight; current.sources.push(candidate.source); current.methods.push(candidate.method); grouped.set(key, current);
+    const current = grouped.get(key) || { display: candidate.value, weighted: 0, sources: [], methods: [], maxWeight: 0 };
+    const duplicate = current.sources.includes(candidate.source) && current.methods.includes(candidate.method);
+    if (!duplicate) current.weighted += candidate.weight;
+    current.maxWeight = Math.max(current.maxWeight, candidate.weight);
+    current.sources.push(candidate.source); current.methods.push(candidate.method); grouped.set(key, current);
   }
-  const best = [...grouped.values()].sort((a, b) => b.score - a.score)[0];
-  if (best) return field(best.display, Math.min(0.99, 0.55 + best.score * 0.12), unique(best.methods).join("+"), best.sources);
+  const best = [...grouped.values()].sort((a, b) => b.weighted - a.weighted)[0];
+  if (best) {
+    const methodDiversity = unique(best.methods).length;
+    const sourceSupport = unique(best.sources).length;
+    const confidence = Math.min(0.97, 0.52 + best.maxWeight * 0.24 + Math.min(0.12, methodDiversity * 0.04) + Math.min(0.09, Math.log2(sourceSupport + 1) * 0.025));
+    return field(best.display, confidence, `first-party-extraction:${unique(best.methods).join("+")}`, best.sources);
+  }
   const host = new URL(pages[0].url).hostname.replace(/^www\./, ""); return field(host, 0.55, "hostname-fallback", [pages[0].url]);
 }
 
 function resolveType(pages: PageSignal[]): EvidenceField<string> {
   const types = pages.flatMap(x => x.jsonLdTypes).map(x => x.toLowerCase()); const source = pages.filter(p => p.jsonLdTypes.length).map(p => p.url);
   const mapping: [RegExp, string][] = [[/person/, "person"], [/musicgroup|performinggroup/, "creator"], [/product/, "product"], [/softwareapplication|mobileapplication|webapplication/, "software"], [/localbusiness/, "business"], [/organization|corporation|ngo|educationalorganization/, "organization"], [/event/, "event"], [/service/, "service"]];
-  for (const [re, type] of mapping) if (types.some(x => re.test(x))) return field(type, 0.96, "jsonld-type", source);
+  for (const [re, type] of mapping) if (types.some(x => re.test(x))) return field(type, 0.92, "first-party-extraction:jsonld-type", source);
   const text = pages.slice(0, 5).map(x => `${x.title || ""} ${x.description || ""} ${x.textSample.slice(0, 2500)}`).join(" ").toLowerCase();
   const heuristics: [RegExp, string, number][] = [[/\b(dj|musician|artist|creator|influencer|author|photographer|producer)\b/, "creator", 0.78], [/\b(startup|saas|software platform|developer tool|artificial intelligence|\bai\b platform)\b/, "startup", 0.76], [/\b(ecommerce|online store|shop now|add to cart)\b/, "commerce", 0.75], [/\b(nonprofit|foundation|association|organization)\b/, "organization", 0.7], [/\b(event|conference|festival|tickets)\b/, "event", 0.68], [/\b(product|buy now|pricing)\b/, "product", 0.62]];
-  for (const [re, type, confidence] of heuristics) if (re.test(text)) return field(type, confidence, "content-heuristics", [pages[0].url]);
-  return field("website", 0.58, "generic-fallback", [pages[0].url]);
+  for (const [re, type, confidence] of heuristics) if (re.test(text)) return field(type, confidence, "first-party-extraction:content-heuristics", [pages[0].url]);
+  return field("website", 0.58, "first-party-extraction:generic-fallback", [pages[0].url]);
 }
 
 function findDescription(pages: PageSignal[]): EvidenceField<string> | undefined {
   const primary = pages[0].description || pages.find(x => x.description)?.description; if (!primary) return undefined;
-  return field(primary, pages[0].description === primary ? 0.92 : 0.78, "meta-description", pages.filter(p => p.description === primary).map(p => p.url));
+  return field(primary, pages[0].description === primary ? 0.9 : 0.76, "first-party-extraction:meta-description", pages.filter(p => p.description === primary).map(p => p.url));
 }
 
 function findContradictions(pages: PageSignal[], name: EvidenceField<string>): string[] {
   const out: string[] = []; const names = unique(identityCandidates(pages).filter(x => x.weight >= 0.85).map(x => x.value.toLowerCase()));
-  if (names.length >= 3 && !names.some(x => x.includes(name.value.toLowerCase()) || name.value.toLowerCase().includes(x))) out.push("Multiple high-confidence identity names disagree across metadata sources.");
+  if (names.length >= 3 && !names.some(x => x.includes(name.value.toLowerCase()) || name.value.toLowerCase().includes(x))) out.push("Multiple high-confidence identity names disagree across first-party metadata sources.");
   const canonicals = unique(pages.map(x => x.canonical).filter((x): x is string => Boolean(x)));
   if (canonicals.some(x => { try { return new URL(x).hostname !== new URL(pages[0].url).hostname; } catch { return false; } })) out.push("At least one canonical URL points to a different hostname.");
   return out;
 }
 
-export type InvestigateOptions = { profile?: string; crawl?: Partial<CrawlPolicy>; force?: boolean };
+function disabledWebResearch(): WebResearchReport {
+  return { enabled: false, searchConfigured: false, queries: [], candidateUrls: 0, fetchedSources: 0, thirdPartySources: 0, thirdPartyDomains: 0, corroboratingThirdPartySources: 0, corroboratingThirdPartyDomains: 0, platformSources: 0, sourceCoverageScore: 0, coverageLevel: "none", sources: [], notes: ["External web research was not requested for this action."] };
+}
+
+export type InvestigateOptions = { profile?: string; crawl?: Partial<CrawlPolicy>; force?: boolean; externalResearch?: boolean };
 
 export async function investigate(rawUrl: string, profileOrOptions: string | InvestigateOptions = process.env.URL_AGENT_PROFILE || "full-intelligence"): Promise<IntelligenceResult> {
   const options: InvestigateOptions = typeof profileOrOptions === "string" ? { profile: profileOrOptions } : profileOrOptions;
   const profile = options.profile || process.env.URL_AGENT_PROFILE || "full-intelligence";
-  const cacheKey = `investigate:${rawUrl}:${profile}:${JSON.stringify(options.crawl || {})}`;
+  const externalResearch = options.externalResearch ?? profile === "full-intelligence";
+  const cacheKey = `investigate:${rawUrl}:${profile}:${externalResearch ? "web" : "site"}:${JSON.stringify(options.crawl || {})}`;
   if (!options.force) { const hit = await cache.get<IntelligenceResult>(cacheKey); if (hit) return hit; }
   const crawl = await crawlSite(rawUrl, options.crawl); const pages = crawl.pages; const root = pages[0]; if (!root) throw new Error("No page could be collected");
   const name = resolveName(pages); const type = resolveType(pages); const description = findDescription(pages);
+  const webResearch = externalResearch ? await researchExternalWeb(root.url, name.value, pages) : disabledWebResearch();
+  const extractionConfidence = Math.min(name.confidence, type.confidence);
+  const confidenceAssessment = {
+    extractionConfidence,
+    externalCorroboration: webResearch.sourceCoverageScore / 100,
+    externalCoverageLevel: webResearch.coverageLevel,
+    firstPartyEvidencePages: pages.length,
+    thirdPartyEvidenceSources: webResearch.corroboratingThirdPartySources,
+    thirdPartyEvidenceDomains: webResearch.corroboratingThirdPartyDomains,
+    searchProvider: webResearch.searchProvider,
+    interpretation: "Extraction confidence measures how strongly the target's observable metadata/content supports the extracted field. External corroboration separately measures coverage across fetched third-party domains. Neither number is a probability that every claim is true."
+  } as const;
   const socials = unique(pages.flatMap(p => p.socials)); const emails = unique(pages.flatMap(p => p.emails)); const phones = unique(pages.flatMap(p => p.phones));
   const technologies = detectTechnologies(pages); const brand = extractBrand(pages); const seo = auditSeo(root, pages, crawl.sitemapUrls); const security = auditSecurity(root); const quality = auditQuality(root); const trust = auditTrust(root, pages, crawl.importantPages, socials, emails); const competitorList = discoverCompetitors(pages); const rag = buildRagDocuments(pages);
   const contentFingerprint = createHash("sha256").update(rag.map(x => x.checksum).sort().join(":" )).digest("hex");
   const fingerprint = createHash("sha256").update(JSON.stringify({ finalUrl: root.url, name: name.value, type: type.value, socials: socials.sort(), contacts: [...emails, ...phones].sort(), importantPages: crawl.importantPages, technologies: technologies.map(x => x.name).sort(), contentFingerprint })).digest("hex");
-  let result: IntelligenceResult = { meta: projectMeta(), inputUrl: rawUrl, finalUrl: root.url, profile, entity: { type, name, description }, seo, security, quality, trust, socials, contacts: { emails, phones }, importantPages: crawl.importantPages, pages, sitemapUrls: crawl.sitemapUrls, technologies, brand, graph: { nodes: [], edges: [] }, competitors: competitorList, rag, contradictions: findContradictions(pages, name), warnings: [...crawl.errors.map(x => `${x.url}: ${x.error}`), ...(crawl.robotsText ? [] : ["robots.txt was not available or could not be read"])].slice(0, 100), fingerprint, contentFingerprint, observedAt: new Date().toISOString() };
+  const webWarnings = webResearch.notes.filter(x => /No external search provider|search query failed|unverified/i.test(x)).map(x => `Web research: ${x}`);
+  let result: IntelligenceResult = { meta: projectMeta(), inputUrl: rawUrl, finalUrl: root.url, profile, entity: { type, name, description }, confidenceAssessment, webResearch, seo, security, quality, trust, socials, contacts: { emails, phones }, importantPages: crawl.importantPages, pages, sitemapUrls: crawl.sitemapUrls, technologies, brand, graph: { nodes: [], edges: [] }, competitors: competitorList, rag, contradictions: findContradictions(pages, name), warnings: [...crawl.errors.map(x => `${x.url}: ${x.error}`), ...(crawl.robotsText ? [] : ["robots.txt was not available or could not be read"]), ...webWarnings].slice(0, 100), fingerprint, contentFingerprint, observedAt: new Date().toISOString() };
   result.graph = buildEntityGraph(result); result = await applyPluginEnrichers(result, { profile });
-  if (process.env.URL_AGENT_AI_AUTO === "true") result.meta.ai = await reasonWithOpenAICompatible(result, "Produce a concise evidence-based intelligence summary and flag uncertainties.") as unknown as JsonValue;
+  if (process.env.URL_AGENT_AI_AUTO === "true") result.meta.ai = await reasonWithOpenAICompatible(result, "Produce a concise evidence-based intelligence summary. Distinguish first-party claims from third-party corroboration and flag uncertainty or disagreement.") as unknown as JsonValue;
   await cache.set(cacheKey, result, Number(process.env.URL_AGENT_CACHE_TTL_MS || 300000)); return result;
 }
 
 export function generateListing(result: IntelligenceResult) {
   const keywords = unique([result.entity.type.value, result.profile, ...result.technologies.slice(0, 8).map(x => x.name), ...result.pages[0].jsonLdTypes]).slice(0, 20);
-  return { meta: result.meta, name: result.entity.name.value, tagline: result.brand.taglines[0] || result.entity.description?.value || "", description: result.entity.description?.value || result.brand.taglines[0] || "", category: result.entity.type.value, url: result.finalUrl, logo: result.brand.logos[0] || result.brand.favicons[0] || result.pages[0].ogImage, image: result.pages[0].ogImage, socials: result.socials, contacts: result.contacts, keywords, technologies: result.technologies.map(x => x.name), seoScore: result.seo.score, trustScore: result.trust.score, completeness: profileCompleteness(result), confidence: Math.min(result.entity.name.confidence, result.entity.type.confidence), evidence: unique([result.finalUrl, ...Object.values(result.importantPages), ...result.entity.name.sources]) };
+  return { meta: result.meta, name: result.entity.name.value, tagline: result.brand.taglines[0] || result.entity.description?.value || "", description: result.entity.description?.value || result.brand.taglines[0] || "", category: result.entity.type.value, url: result.finalUrl, logo: result.brand.logos[0] || result.brand.favicons[0] || result.pages[0].ogImage, image: result.pages[0].ogImage, socials: result.socials, contacts: result.contacts, keywords, technologies: result.technologies.map(x => x.name), seoScore: result.seo.score, trustScore: result.trust.score, completeness: profileCompleteness(result), confidence: result.confidenceAssessment, evidence: unique([result.finalUrl, ...Object.values(result.importantPages), ...result.entity.name.sources, ...result.webResearch.sources.filter(x => x.mentionsEntity).map(x => x.finalUrl || x.url)]) };
 }
 
 export function compareResults(a: IntelligenceResult, b: IntelligenceResult) {
@@ -105,12 +132,13 @@ export async function runAction(name: string, args: Record<string, any>): Promis
   if (name === "probe_url") return probeUrl(args.url);
   if (name === "domain_intelligence") return { meta: projectMeta(), domain: await inspectDomain(args.url) };
   if (name === "render_page") { const rendered = await renderUrl(args.url); return { meta: projectMeta(), rendered: rendered ? { url: rendered.url, renderer: rendered.renderer, html: args.includeHtml === false ? undefined : rendered.html, screenshotBase64: rendered.screenshotBase64 } : null }; }
-  if (name === "compare_urls") return compareResults(await investigate(args.url, args.profile), await investigate(args.url2, args.profile));
-  if (name === "batch_investigate") { const urls = Array.isArray(args.urls) ? args.urls : []; const queue = new WorkerQueue(Number(args.concurrency || process.env.URL_AGENT_WORKER_CONCURRENCY || 4)); urls.forEach((url: string) => queue.add("investigate", { url, profile: args.profile })); return queue.run(async job => investigate((job.payload as any).url, (job.payload as any).profile)); }
-  const result = await investigate(args.url, { profile: args.profile, force: Boolean(args.force), crawl: args.crawl });
+  if (name === "compare_urls") return compareResults(await investigate(args.url, { profile: args.profile, externalResearch: false }), await investigate(args.url2, { profile: args.profile, externalResearch: false }));
+  if (name === "batch_investigate") { const urls = Array.isArray(args.urls) ? args.urls : []; const queue = new WorkerQueue(Number(args.concurrency || process.env.URL_AGENT_WORKER_CONCURRENCY || 4)); urls.forEach((url: string) => queue.add("investigate", { url, profile: args.profile })); return queue.run(async job => investigate((job.payload as any).url, { profile: (job.payload as any).profile, externalResearch: false })); }
+  const externalResearch = args.externalResearch !== undefined ? Boolean(args.externalResearch) : (name === "investigate_url" || name === "resolve_entity");
+  const result = await investigate(args.url, { profile: args.profile, force: Boolean(args.force), crawl: args.crawl, externalResearch });
   if (name === "investigate_url") return result;
   if (name === "map_site" || name === "deep_crawl") return { meta: result.meta, rootUrl: result.finalUrl, importantPages: result.importantPages, sitemapUrls: result.sitemapUrls, pages: result.pages };
-  if (name === "resolve_entity") return { meta: result.meta, entity: result.entity, contradictions: result.contradictions, graph: result.graph };
+  if (name === "resolve_entity") return { meta: result.meta, entity: result.entity, confidenceAssessment: result.confidenceAssessment, webResearch: result.webResearch, contradictions: result.contradictions, graph: result.graph };
   if (name === "find_social_profiles") return { meta: result.meta, socials: result.socials };
   if (name === "find_contacts") return { meta: result.meta, contacts: result.contacts, contactPage: result.importantPages.contact, people: extractPeople(result.pages) };
   if (name === "detect_technologies") return { meta: result.meta, technologies: result.technologies };
