@@ -34,9 +34,8 @@ COPY assets ./assets
 RUN node /app/patch-ui.mjs
 
 # Build the public brand assets entirely from text-safe embedded sources.
-# This removes the previous runtime/build dependency on external image hosts and
-# guarantees that the header logo, favicon, PDF branding and Open Graph preview
-# are available before any user signs in.
+# No OAuth/session state or external image host is required for the logo,
+# favicon, PDF branding or Open Graph social preview.
 RUN node - <<'NODE'
 const fs = require('fs');
 const path = require('path');
@@ -45,9 +44,13 @@ const dir = '/app/assets';
 function cleanBase64(value) {
   return String(value || '').replace(/\s+/g, '');
 }
+function decodePart(name) {
+  const encoded = cleanBase64(fs.readFileSync(path.join(dir, name), 'utf8'));
+  if (!encoded) throw new Error(`Embedded asset part ${name} is empty`);
+  return Buffer.from(encoded, 'base64');
+}
 
-const logoSource = cleanBase64(fs.readFileSync(path.join(dir, 'logo.base64.txt'), 'utf8'));
-const logo = Buffer.from(logoSource, 'base64');
+const logo = decodePart('logo.base64.txt');
 if (logo.length < 5000 || logo[0] !== 0xff || logo[1] !== 0xd8) {
   throw new Error('Embedded logo asset is invalid');
 }
@@ -57,13 +60,15 @@ const parts = fs.readdirSync(dir)
   .filter((name) => /^og\.\d+\.b64$/.test(name))
   .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 if (!parts.length) throw new Error('Embedded Open Graph asset chunks are missing');
-const ogSource = cleanBase64(parts.map((name) => fs.readFileSync(path.join(dir, name), 'utf8')).join(''));
-const og = Buffer.from(ogSource, 'base64');
-if (og.length < 15000 || og[0] !== 0xff || og[1] !== 0xd8) {
-  throw new Error('Embedded Open Graph asset is invalid');
+
+// Every chunk is independently base64-encoded. Decode each part first and
+// concatenate the binary bytes; concatenating padded base64 strings is invalid.
+const og = Buffer.concat(parts.map(decodePart));
+if (og.length < 15000 || og.length > 800000 || og[0] !== 0xff || og[1] !== 0xd8 || og[og.length - 2] !== 0xff || og[og.length - 1] !== 0xd9) {
+  throw new Error(`Embedded Open Graph asset is invalid (${og.length} bytes)`);
 }
 fs.writeFileSync(path.join(dir, 'og.jpg'), og);
-console.log(`Brand assets ready: logo=${logo.length}B, og=${og.length}B`);
+console.log(`Brand assets ready: logo=${logo.length}B, og=${og.length}B, chunks=${parts.length}`);
 NODE
 
 EXPOSE 7860
