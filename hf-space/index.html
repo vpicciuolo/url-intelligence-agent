@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>URL Intelligence Agent – Open Source Remote MCP & Web Intelligence AI Agent</title>
-  <meta name="description" content="Open-source URL Intelligence Agent for crawling, entity resolution, SEO, security, trust, social discovery, technology detection, RAG, API and remote MCP." />
-  <meta name="keywords" content="URL intelligence agent, web intelligence AI, remote MCP server, MCP AI agent, URL analyzer, SEO audit AI, security audit, entity resolution, social discovery, technology detection, web crawler, RAG, open source AI agent" />
+  <title>URL Intelligence Agent – Evidence-First Web Intelligence, Remote MCP, SEO & Security</title>
+  <meta name="description" content="Open-source evidence-first URL Intelligence Agent. Investigate public websites, inspect sources and confidence, expose disagreements, audit SEO/security/trust, resolve entities, discover socials, use RAG, API, CLI or Remote MCP." />
+  <meta name="keywords" content="URL intelligence agent, web intelligence AI, evidence first AI, source provenance AI, remote MCP server, MCP AI agent, URL analyzer, SEO audit AI, security audit, trust signals, entity resolution, social discovery, technology detection, web crawler, RAG, open source AI agent" />
   <meta name="author" content="Vincenzo Picciuolo" />
   <meta name="creator" content="Vincenzo Picciuolo" />
   <meta name="publisher" content="HRN Innovation Technologies Ltd" />
@@ -19,21 +19,19 @@
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="URL Intelligence Agent" />
-  <meta property="og:title" content="URL Intelligence Agent – URL in. Identity, Evidence & Intelligence out." />
-  <meta property="og:description" content="Try the evidence-first open-source web intelligence AI agent live. Connect through remote MCP, HTTP API, CLI or Docker." />
+  <meta property="og:title" content="URL Intelligence Agent – URL in. Evidence & Intelligence out." />
+  <meta property="og:description" content="Investigate the public web with visible sources, evidence-derived confidence and explicit contradictions. Live demo + Remote MCP + open-source runtime." />
   <meta property="og:url" content="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent" />
   <meta property="og:image" content="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg" />
   <meta property="og:image:secure_url" content="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg" />
   <meta property="og:image:type" content="image/jpeg" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="URL Intelligence Agent – open-source evidence-first web intelligence for AI agents and developers" />
+  <meta property="og:image:alt" content="URL Intelligence Agent – evidence-first public web intelligence, Remote MCP, SEO, security, trust and entity resolution" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="URL Intelligence Agent – Open Source Remote MCP" />
-  <meta name="twitter:description" content="URL in. Identity, evidence and intelligence out. Try the live agent or connect it to your AI through remote MCP." />
+  <meta name="twitter:title" content="URL Intelligence Agent – Evidence-First Remote MCP" />
+  <meta name="twitter:description" content="Sources stay visible. Confidence comes from evidence. Disagreements stay visible instead of being collapsed into one answer." />
   <meta name="twitter:image" content="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg" />
-  <meta name="twitter:image:alt" content="URL Intelligence Agent capabilities" />
+  <meta name="twitter:image:alt" content="URL Intelligence Agent capabilities and evidence-first web intelligence" />
   <meta name="twitter:creator" content="@vpicciuolo" />
 
   <script type="application/ld+json">
@@ -45,7 +43,7 @@
         "@id":"https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent#software",
         "name":"URL Intelligence Agent",
         "alternateName":"URL Intelligence AI Agent",
-        "description":"Evidence-first open-source URL and web intelligence agent with crawling, entity resolution, social discovery, SEO, security, trust, technology detection, RAG, HTTP API, CLI and remote MCP.",
+        "description":"Evidence-first open-source URL and web intelligence agent with crawling, entity resolution, provenance, contradiction reporting, social discovery, SEO, security, trust, technology detection, RAG, HTTP API, CLI and Remote MCP.",
         "applicationCategory":"DeveloperApplication",
         "operatingSystem":"Cross-platform",
         "softwareVersion":"1.0.0",
@@ -58,7 +56,7 @@
         "creator":{"@id":"https://github.com/vpicciuolo#person"},
         "publisher":{"@type":"Organization","name":"HRN Innovation Technologies Ltd","url":"https://horno.net"},
         "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
-        "featureList":["URL intelligence","Deep crawl","Entity resolution","Social discovery","Contact discovery","SEO audit","Security audit","Trust analysis","Technology detection","Brand intelligence","RAG export","Remote MCP server","HTTP API","CLI","Docker"]
+        "featureList":["Evidence-linked URL intelligence","Source provenance","Contradiction reporting","Deep crawl","Entity resolution","Social discovery","Contact discovery","SEO audit","Security audit","Quality audit","Trust analysis","Technology detection","Brand intelligence","Structured data","API discovery","Compliance signals","Commerce intelligence","Content freshness","Link intelligence","RAG export","Knowledge export","Monitoring snapshots","Remote MCP server","HTTP API","CLI","Docker"]
       },
       {
         "@type":"Person",
@@ -71,7 +69,18 @@
         "@type":"WebSite",
         "name":"URL Intelligence Agent",
         "url":"https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent",
-        "description":"Live Docker Space and remote MCP endpoint for URL Intelligence Agent."
+        "description":"Live evidence-first URL intelligence Docker Space and public Remote MCP endpoint."
+      },
+      {
+        "@type":"FAQPage",
+        "mainEntity":[
+          {"@type":"Question","name":"Where does confidence come from?","acceptedAnswer":{"@type":"Answer","text":"Confidence is attached to observable evidence fields and extraction methods. It is not presented as the AI model's personal certainty."}},
+          {"@type":"Question","name":"What happens when sources disagree?","acceptedAnswer":{"@type":"Answer","text":"The result preserves explicit contradictions and displays them as disputed evidence instead of silently forcing one clean answer."}},
+          {"@type":"Question","name":"Can I inspect the sources?","acceptedAnswer":{"@type":"Answer","text":"Yes. Evidence-linked fields expose their source URLs and the web interface surfaces unique sources so users can open and verify them."}},
+          {"@type":"Question","name":"How do I know when the result was observed?","acceptedAnswer":{"@type":"Answer","text":"Full investigations include an observedAt timestamp. The interface surfaces observation time near the evidence summary."}},
+          {"@type":"Question","name":"Are trust, SEO and security scores definitive?","acceptedAnswer":{"@type":"Answer","text":"No. They are explainable observations of public signals, not legal, financial or professional security determinations."}},
+          {"@type":"Question","name":"Can I connect the agent to ChatGPT or Claude?","acceptedAnswer":{"@type":"Answer","text":"Yes, where the client supports Remote MCP / Streamable HTTP custom servers, use the public /mcp endpoint. The full open-source runtime also provides local stdio MCP."}}
+        ]
       }
     ]
   }
@@ -80,8 +89,9 @@
   <style>
     :root{color-scheme:dark;--bg:#050b14;--panel:#0b1728;--panel2:#0f2037;--soft:#122641;--line:#203a5d;--text:#f5f9ff;--muted:#9eb2cc;--cyan:#1fe0ff;--blue:#3a8cff;--violet:#a458ff;--pink:#f253ff;--ok:#49e1aa;--warn:#ffd36e;--bad:#ff8585;--shadow:0 24px 70px rgba(0,0,0,.35)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 15% -10%,#102c53 0,transparent 33%),radial-gradient(circle at 90% 20%,#29124b 0,transparent 27%),var(--bg);color:var(--text)}
-    a{color:inherit;text-decoration:none}button,input,select{font:inherit}.wrap{max-width:1240px;margin:auto;padding:22px}.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 0 24px;background:linear-gradient(180deg,rgba(5,11,20,.96),rgba(5,11,20,.76),transparent);backdrop-filter:blur(8px)}.brand{display:flex;align-items:center;gap:11px;font-weight:850;letter-spacing:-.02em}.brand img{width:44px;height:44px;object-fit:cover;border-radius:12px;border:1px solid #31517b;box-shadow:0 0 24px rgba(31,224,255,.2)}.nav{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 15px;border-radius:11px;border:1px solid var(--line);background:rgba(12,24,40,.94);color:var(--text);font-weight:780;cursor:pointer;transition:.18s ease}.btn:hover{transform:translateY(-1px);border-color:#4778b5}.btn.primary{border:0;background:linear-gradient(100deg,var(--cyan),var(--blue) 55%,var(--violet));color:#030912;box-shadow:0 10px 28px rgba(31,224,255,.18)}.btn.small{padding:8px 11px;font-size:13px}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding:34px 0 12px}.eyebrow{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #2a517f;border-radius:999px;background:#07192b;color:#72edff;font-weight:850;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 16px var(--ok)}h1{font-size:clamp(46px,7.2vw,84px);line-height:.94;letter-spacing:-.055em;margin:18px 0}.gradient{background:linear-gradient(100deg,var(--cyan),var(--blue) 48%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}.lead{color:var(--muted);font-size:19px;line-height:1.65;max-width:760px}.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.chip{border:1px solid var(--line);background:#0b1a2d;color:#c8d8ed;padding:7px 10px;border-radius:999px;font-size:12px}.hero-card,.panel,.card,.mcpbox{background:linear-gradient(180deg,rgba(13,29,50,.96),rgba(8,19,33,.96));border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}.hero-card{padding:20px}.status-row,.quota-line{display:flex;justify-content:space-between;align-items:center;gap:12px}.status-row{padding-bottom:14px;border-bottom:1px solid var(--line)}.status{display:flex;align-items:center;gap:8px;font-weight:800}.muted{color:var(--muted)}.quota{margin-top:15px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#0d2138}.quota strong{display:block;margin-bottom:7px}.quota-line{font-size:14px;padding:3px 0}.hero-image{margin-top:34px;border:1px solid #233f63;border-radius:20px;overflow:hidden;box-shadow:var(--shadow);background:#02060c}.hero-image img{display:block;width:100%;height:auto}.section{margin-top:72px}.section h2{font-size:34px;letter-spacing:-.035em;margin:0 0 9px}.section>p{max-width:870px;color:var(--muted);font-size:16px;line-height:1.65}.demo{padding:22px;margin-top:21px}.form-grid{display:grid;grid-template-columns:minmax(0,1fr) 230px auto;gap:10px}.input,.select{width:100%;padding:13px 14px;border-radius:11px;border:1px solid var(--line);background:#050f1c;color:var(--text);outline:none}.input:focus,.select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(31,224,255,.1)}.notice{display:flex;gap:10px;margin-top:12px;padding:12px 14px;border:1px solid #5b522a;background:#1a170b;border-radius:11px;color:#eadb9e;font-size:13px;line-height:1.5}.signin-note{border-color:#234b76;background:#091b30;color:#bcd9f8}.loading{display:none;margin-top:15px;color:var(--muted)}.result-shell{display:none;margin-top:22px}.result-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:13px;border:1px solid var(--line);border-radius:14px 14px 0 0;background:#102642}.exports{display:flex;gap:8px;flex-wrap:wrap}.report-view{border:1px solid var(--line);border-top:0;background:#06101d;padding:18px;border-radius:0 0 14px 14px}.result-section{margin:0 0 12px;border:1px solid #1c3555;border-radius:12px;overflow:hidden;background:#0a1728}.result-section summary{cursor:pointer;padding:13px 15px;font-weight:800;background:#0e2139}.result-section .inside{padding:14px}.kv{display:grid;grid-template-columns:minmax(130px,.35fr) 1fr;gap:8px 14px;padding:7px 0;border-bottom:1px solid rgba(44,69,101,.45);font-size:13px}.kv:last-child{border-bottom:0}.k{color:#90a6c1;font-weight:700;word-break:break-word}.v{word-break:break-word;white-space:pre-wrap}.array{margin:6px 0 0;padding-left:18px;color:#d7e5f5}.raw{margin-top:14px;background:#02070e;border:1px solid var(--line);border-radius:12px;overflow:hidden}.raw-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#0c1a2c;color:var(--muted);font-size:12px}.raw pre{margin:0;padding:16px;max-height:650px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:#c8d8eb;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}.card{padding:19px}.card h3{margin:0 0 8px;font-size:17px}.card p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}.mcpbox{padding:22px;margin-top:22px;border-color:#315a8a}.mcpurl{display:flex;gap:9px;align-items:center;margin-top:14px}.mcpurl code{flex:1;min-width:0;padding:13px 14px;border:1px solid #31577f;background:#020912;border-radius:11px;color:#79ebff;overflow:auto;white-space:nowrap}.mcp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px}.code-card{margin-top:13px;background:#02070e;border:1px solid var(--line);border-radius:14px;overflow:hidden}.code-head{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:#0b1727;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}pre.code{margin:0;padding:17px;overflow:auto;color:#cbdced;font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.cyan{color:var(--cyan)}.footer{margin:72px 0 12px;padding:24px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;color:var(--muted);font-size:13px}
-    @media(max-width:900px){.hero{grid-template-columns:1fr}.grid,.mcp-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.top{position:relative;align-items:flex-start}.nav{justify-content:flex-end}h1{font-size:52px}.wrap{padding:17px}.kv{grid-template-columns:1fr}.mcpurl{align-items:stretch;flex-direction:column}}
+    a{color:inherit;text-decoration:none}button,input,select{font:inherit}.wrap{max-width:1240px;margin:auto;padding:22px}.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 0 24px;background:linear-gradient(180deg,rgba(5,11,20,.96),rgba(5,11,20,.76),transparent);backdrop-filter:blur(8px)}.brand{display:flex;align-items:center;gap:11px;font-weight:850;letter-spacing:-.02em}.brand img{width:46px;height:46px;object-fit:cover;border-radius:12px;border:1px solid #31517b;box-shadow:0 0 24px rgba(31,224,255,.2)}.nav{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 15px;border-radius:11px;border:1px solid var(--line);background:rgba(12,24,40,.94);color:var(--text);font-weight:780;cursor:pointer;transition:.18s ease}.btn:hover{transform:translateY(-1px);border-color:#4778b5}.btn.primary{border:0;background:linear-gradient(100deg,var(--cyan),var(--blue) 55%,var(--violet));color:#030912;box-shadow:0 10px 28px rgba(31,224,255,.18)}.btn.small{padding:8px 11px;font-size:13px}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding:34px 0 12px}.eyebrow{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #2a517f;border-radius:999px;background:#07192b;color:#72edff;font-weight:850;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 16px var(--ok)}h1{font-size:clamp(46px,7.2vw,84px);line-height:.94;letter-spacing:-.055em;margin:18px 0}.gradient{background:linear-gradient(100deg,var(--cyan),var(--blue) 48%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}.lead{color:var(--muted);font-size:19px;line-height:1.65;max-width:760px}.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.chip,.mode{border:1px solid var(--line);background:#0b1a2d;color:#c8d8ed;padding:7px 10px;border-radius:999px;font-size:12px}.mode.hosted{border-color:#256b62;color:#8ef6d7}.mode.full{border-color:#5a4b85;color:#d7c0ff}.hero-card,.panel,.card,.mcpbox,.guide,.faq-item,.action-row{background:linear-gradient(180deg,rgba(13,29,50,.96),rgba(8,19,33,.96));border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}.hero-card{padding:20px}.status-row,.quota-line{display:flex;justify-content:space-between;align-items:center;gap:12px}.status-row{padding-bottom:14px;border-bottom:1px solid var(--line)}.status{display:flex;align-items:center;gap:8px;font-weight:800}.muted{color:var(--muted)}.quota{margin-top:15px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#0d2138}.quota strong{display:block;margin-bottom:7px}.quota-line{font-size:14px;padding:3px 0}.hero-image{margin-top:34px;border:1px solid #233f63;border-radius:20px;overflow:hidden;box-shadow:var(--shadow);background:#02060c}.hero-image img{display:block;width:100%;height:auto}.section{margin-top:72px}.section h2{font-size:34px;letter-spacing:-.035em;margin:0 0 9px}.section>p{max-width:920px;color:var(--muted);font-size:16px;line-height:1.65}.demo{padding:22px;margin-top:21px}.form-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px auto;gap:10px}.input,.select{width:100%;padding:13px 14px;border-radius:11px;border:1px solid var(--line);background:#050f1c;color:var(--text);outline:none}.input:focus,.select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(31,224,255,.1)}.guide{margin-top:12px;padding:15px;box-shadow:none}.guide-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.guide h3{margin:0 0 5px;font-size:16px}.guide p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}.guide-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.guide-meta span{font-size:11px;padding:5px 8px;border-radius:999px;background:#07111e;border:1px solid #233d60;color:#c5d6ea}.quick-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}.quick-actions button{padding:7px 10px;border-radius:999px;border:1px solid #274463;background:#071626;color:#c8d8ed;font-size:12px;cursor:pointer}.quick-actions button:hover{border-color:var(--cyan);color:#fff}.notice{display:flex;gap:10px;margin-top:12px;padding:12px 14px;border:1px solid #5b522a;background:#1a170b;border-radius:11px;color:#eadb9e;font-size:13px;line-height:1.5}.signin-note{border-color:#234b76;background:#091b30;color:#bcd9f8}.loading{display:none;margin-top:15px;color:var(--muted)}.result-shell{display:none;margin-top:22px}.result-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:13px;border:1px solid var(--line);border-radius:14px 14px 0 0;background:#102642}.exports{display:flex;gap:8px;flex-wrap:wrap}.report-view{border:1px solid var(--line);border-top:0;background:#06101d;padding:18px;border-radius:0 0 14px 14px}.evidence-overview{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.metric{padding:13px;border:1px solid #234260;background:#09182a;border-radius:12px}.metric .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.metric .value{font-size:17px;font-weight:850;margin-top:4px;word-break:break-word}.status-good{color:var(--ok)}.status-warn{color:var(--warn)}.status-bad{color:var(--bad)}.interpretation{margin:0 0 15px;padding:14px;border:1px solid #31577f;background:#081a2d;border-radius:12px;color:#c8d9ed;font-size:13px;line-height:1.6}.dispute{border-color:#78404a;background:#241018;color:#ffd1d7}.result-section{margin:0 0 12px;border:1px solid #1c3555;border-radius:12px;overflow:hidden;background:#0a1728}.result-section summary{cursor:pointer;padding:13px 15px;font-weight:800;background:#0e2139}.result-section .inside{padding:14px}.claim-card{padding:13px;margin:9px 0;border:1px solid #244666;border-radius:10px;background:#071423}.claim-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.claim-path{font-size:12px;color:#9db2cb}.confidence{font-size:12px;font-weight:850;padding:4px 7px;border-radius:999px;border:1px solid #31577f}.claim-value{margin-top:7px;font-weight:760;word-break:break-word}.claim-meta{margin-top:7px;color:var(--muted);font-size:12px}.source-list{display:grid;gap:7px;margin-top:9px}.source-link{display:block;padding:8px 10px;border:1px solid #254667;border-radius:8px;background:#06111e;color:#77e9ff;font-size:12px;word-break:break-all}.kv{display:grid;grid-template-columns:minmax(130px,.35fr) 1fr;gap:8px 14px;padding:7px 0;border-bottom:1px solid rgba(44,69,101,.45);font-size:13px}.kv:last-child{border-bottom:0}.k{color:#90a6c1;font-weight:700;word-break:break-word}.v{word-break:break-word;white-space:pre-wrap}.array{margin:6px 0 0;padding-left:18px;color:#d7e5f5}.raw{margin-top:14px;background:#02070e;border:1px solid var(--line);border-radius:12px;overflow:hidden}.raw-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#0c1a2c;color:var(--muted);font-size:12px}.raw pre{margin:0;padding:16px;max-height:650px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:#c8d8eb;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}.card{padding:19px}.card h3{margin:0 0 8px;font-size:17px}.card p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}.mcpbox{padding:22px;margin-top:22px;border-color:#315a8a}.mcpurl{display:flex;gap:9px;align-items:center;margin-top:14px}.mcpurl code{flex:1;min-width:0;padding:13px 14px;border:1px solid #31577f;background:#020912;border-radius:11px;color:#79ebff;overflow:auto;white-space:nowrap}.mcp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px}.code-card{margin-top:13px;background:#02070e;border:1px solid var(--line);border-radius:14px;overflow:hidden}.code-head{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:#0b1727;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}pre.code{margin:0;padding:17px;overflow:auto;color:#cbdced;font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.cyan{color:var(--cyan)}.action-groups{display:grid;gap:16px;margin-top:22px}.action-group>h3{margin:0 0 10px}.action-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.action-row{padding:14px;box-shadow:none}.action-row .name{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:850}.action-row code{color:#8feeff}.action-row p{margin:7px 0 0;color:var(--muted);font-size:13px;line-height:1.5}.action-io{margin-top:9px;display:grid;gap:4px;font-size:11px;color:#b9cae0}.faq{display:grid;gap:10px;margin-top:20px}.faq-item{padding:0;overflow:hidden;box-shadow:none}.faq-item summary{cursor:pointer;font-weight:820;padding:15px 17px}.faq-item p{margin:0;padding:0 17px 17px;color:var(--muted);line-height:1.6;font-size:14px}.footer{margin:72px 0 12px;padding:24px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+    @media(max-width:900px){.hero{grid-template-columns:1fr}.grid,.mcp-grid,.action-list{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.top{position:relative;align-items:flex-start}.nav{justify-content:flex-end}h1{font-size:52px}.wrap{padding:17px}.kv{grid-template-columns:1fr}.mcpurl{align-items:stretch;flex-direction:column}.evidence-overview{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:520px){.brand span{display:none}.nav{gap:5px}.btn.small{padding:7px 9px}.evidence-overview{grid-template-columns:1fr}.section{margin-top:52px}.section h2{font-size:29px}.lead{font-size:17px}.hero-image{margin-top:22px}}
   </style>
 </head>
 <body>
@@ -89,16 +99,16 @@
     <header class="top">
       <a class="brand" href="#top" aria-label="URL Intelligence Agent home"><img src="/assets/logo.jpg" alt="URL Intelligence Agent logo" /><span>URL Intelligence Agent</span></a>
       <nav class="nav" aria-label="Main navigation">
-        <a class="btn small" href="#try">Live demo</a><a class="btn small" href="#remote-mcp">Remote MCP</a><a class="btn small" href="#cli">CLI</a><a class="btn small" href="#api">API</a><a class="btn small" href="https://github.com/vpicciuolo/url-intelligence-agent" target="_blank" rel="noreferrer">GitHub ↗</a>
+        <a class="btn small" href="#try">Live demo</a><a class="btn small" href="#actions">Actions</a><a class="btn small" href="#faq">FAQ</a><a class="btn small" href="#remote-mcp">Remote MCP</a><a class="btn small" href="https://github.com/vpicciuolo/url-intelligence-agent" target="_blank" rel="noreferrer">GitHub ↗</a>
       </nav>
     </header>
 
     <section class="hero" id="top">
       <div>
         <span class="eyebrow"><span class="dot"></span> LIVE DOCKER SPACE · REMOTE MCP · OPEN SOURCE · MIT</span>
-        <h1>URL in.<br><span class="gradient">Intelligence out.</span></h1>
-        <p class="lead">Evidence-first URL and web intelligence for AI agents, developers and research workflows. Crawl public websites, resolve entities, discover social and contact signals, detect technologies, audit SEO, security and trust, export branded reports, or connect the agent directly to compatible AI clients through remote MCP.</p>
-        <div class="chips"><span class="chip">Remote MCP</span><span class="chip">TypeScript</span><span class="chip">Node.js</span><span class="chip">Docker</span><span class="chip">HTTP API</span><span class="chip">CLI</span><span class="chip">RAG</span><span class="chip">MIT</span></div>
+        <h1>URL in.<br><span class="gradient">Evidence out.</span></h1>
+        <p class="lead">Evidence-first URL and web intelligence for AI agents, developers and research workflows. The agent keeps sources attached to claims, exposes evidence-derived confidence, timestamps observations and preserves explicit contradictions instead of hiding disagreement behind one clean answer.</p>
+        <div class="chips"><span class="chip">Source provenance</span><span class="chip">Contradictions</span><span class="chip">Remote MCP</span><span class="chip">TypeScript</span><span class="chip">Docker</span><span class="chip">HTTP API</span><span class="chip">CLI</span><span class="chip">RAG</span><span class="chip">MIT</span></div>
       </div>
       <aside class="hero-card" aria-label="Runtime status">
         <div class="status-row"><div class="status"><span id="healthDot" class="dot"></span><span id="healthText">Checking runtime…</span></div><span class="muted">v1.0.0</span></div>
@@ -112,38 +122,144 @@
       </aside>
     </section>
 
-    <div class="hero-image"><img src="/assets/og.jpg" width="1200" height="630" alt="URL Intelligence Agent features: crawl and map, metadata, SEO, security, trust, monitoring, entity resolution, contact and social discovery" /></div>
+    <div class="hero-image"><img src="/assets/og.jpg" alt="URL Intelligence Agent evidence-first web intelligence, crawling, entity resolution, SEO, security, trust, social discovery and Remote MCP" /></div>
 
     <section class="section" id="try">
-      <h2>Try the URL Intelligence Agent live</h2>
-      <p>Sign in with Hugging Face, enter a public URL and select an intelligence action. The hosted web demo allows one analysis every 24 hours per account. Each successful analysis can be exported as a fully branded PDF, JSON, Markdown or HTML report.</p>
+      <h2>Try it live</h2>
+      <p>Sign in with Hugging Face, enter a public URL and choose an action. Before you run it, the action guide explains exactly what the request does, what it reads and what the result means. The hosted demo currently exposes the most useful read-only actions; the complete runtime action catalog is documented below.</p>
       <div class="panel demo">
         <div class="form-grid">
           <input id="urlInput" class="input" type="url" inputmode="url" autocomplete="url" placeholder="https://example.com" aria-label="Public URL" />
           <select id="actionSelect" class="select" aria-label="Analysis type">
-            <option value="/investigate">Full investigation</option><option value="/action/audit_seo">SEO audit</option><option value="/action/audit_security">Security audit</option><option value="/action/audit_trust">Trust signals</option><option value="/action/find_social_profiles">Social discovery</option><option value="/action/detect_technologies">Technology detection</option><option value="/action/brand_intelligence">Brand intelligence</option><option value="/action/domain_intelligence">Domain intelligence</option><option value="/action/structured_data">Structured data</option>
+            <optgroup label="Hosted demo — available now">
+              <option value="/investigate" data-action="investigate_url">Full investigation</option>
+              <option value="/action/audit_seo" data-action="audit_seo">SEO audit</option>
+              <option value="/action/audit_security" data-action="audit_security">Security audit</option>
+              <option value="/action/audit_trust" data-action="audit_trust">Trust signals</option>
+              <option value="/action/find_social_profiles" data-action="find_social_profiles">Social discovery</option>
+              <option value="/action/detect_technologies" data-action="detect_technologies">Technology detection</option>
+              <option value="/action/brand_intelligence" data-action="brand_intelligence">Brand intelligence</option>
+              <option value="/action/domain_intelligence" data-action="domain_intelligence">Domain intelligence</option>
+              <option value="/action/structured_data" data-action="structured_data">Structured data</option>
+            </optgroup>
+            <optgroup label="Full runtime — CLI / API / local MCP">
+              <option disabled>URL probe</option><option disabled>Render page</option><option disabled>Map site</option><option disabled>Deep crawl</option><option disabled>Resolve entity</option><option disabled>Find contacts</option><option disabled>Quality audit</option><option disabled>Entity graph</option><option disabled>Competitor intelligence</option><option disabled>API discovery</option><option disabled>Compliance signals</option><option disabled>People & team</option><option disabled>Commerce intelligence</option><option disabled>Content freshness</option><option disabled>Link intelligence</option><option disabled>Check links</option><option disabled>Generate listing</option><option disabled>RAG export</option><option disabled>Knowledge export</option><option disabled>Compare URLs</option><option disabled>Batch investigate</option><option disabled>Create snapshot</option><option disabled>Diff snapshot</option><option disabled>AI reason</option><option disabled>List plugins</option>
+            </optgroup>
           </select>
           <button id="runBtn" class="btn primary" disabled>Run analysis</button>
         </div>
+
+        <div id="actionGuide" class="guide" aria-live="polite"></div>
+        <div class="quick-actions" aria-label="Popular actions">
+          <button data-action-path="/investigate">Full investigation</button><button data-action-path="/action/audit_seo">SEO</button><button data-action-path="/action/audit_security">Security</button><button data-action-path="/action/audit_trust">Trust</button><button data-action-path="/action/find_social_profiles">Socials</button><button data-action-path="/action/detect_technologies">Tech</button>
+        </div>
+
         <div id="demoNotice" class="notice signin-note"><span>🔐</span><span><strong>Hugging Face login is required.</strong> Sign in to use the hosted analysis and report export features. Local/self-hosted usage remains unrestricted under the MIT License.</span></div>
-        <div id="loading" class="loading">Analyzing the URL and collecting evidence… this may take a little time.</div>
+        <div id="loading" class="loading">Analyzing the URL, collecting public evidence and checking contradictions… this may take a little time.</div>
         <div id="resultShell" class="result-shell">
           <div class="result-toolbar"><strong id="resultTitle">Analysis result</strong><div class="exports"><a id="pdfExport" class="btn small primary" href="#">PDF report</a><a id="jsonExport" class="btn small" href="#">JSON</a><a id="mdExport" class="btn small" href="#">Markdown</a><a id="htmlExport" class="btn small" href="#">HTML</a><button id="copyResult" class="btn small">Copy JSON</button></div></div>
-          <div class="report-view"><div id="structuredResult"></div><div class="raw"><div class="raw-head"><span>Complete raw response</span></div><pre id="resultPre"></pre></div></div>
+          <div class="report-view">
+            <div id="evidenceSummary"></div>
+            <div id="structuredResult"></div>
+            <div class="raw"><div class="raw-head"><span>Complete raw response · nothing hidden</span></div><pre id="resultPre"></pre></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="read-results">
+      <h2>How to read a result</h2>
+      <p>The interface is designed around a simple rule: confidence should come from observable evidence, not from the model sounding confident. The result keeps uncertainty visible and gives you the material needed to verify important claims yourself.</p>
+      <div class="grid">
+        <article class="card"><h3>1. Evidence-linked confidence</h3><p>Evidence fields carry a value, confidence score, extraction method and source URLs. The UI surfaces all four together.</p></article>
+        <article class="card"><h3>2. Disagreement stays visible</h3><p>If the runtime reports contradictions, the result is explicitly marked as disputed. Contradictions are shown before the detailed output rather than being buried.</p></article>
+        <article class="card"><h3>3. Time matters</h3><p>The observation timestamp is shown when available. Public web content changes, so a result is evidence observed at a point in time, not permanent truth.</p></article>
+        <article class="card"><h3>4. Sources remain openable</h3><p>Unique public source URLs discovered inside the result are collected in one place. Open them and inspect why a claim received its confidence.</p></article>
+        <article class="card"><h3>5. No forced consensus</h3><p>No explicit contradiction does not automatically prove that every source agrees. The UI states exactly that instead of overstating consensus.</p></article>
+        <article class="card"><h3>6. Raw output remains available</h3><p>The structured view is for humans. The complete raw JSON remains underneath for developers, reproducibility and audit workflows.</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="actions">
+      <h2>Complete action catalog</h2>
+      <p>The runtime contains 34 actions. The hosted Space exposes a controlled subset for public testing; the complete set is available through the open-source CLI, self-hosted HTTP API and local MCP server. Every action below says what you send and what you get back.</p>
+      <div class="action-groups">
+        <div class="action-group">
+          <h3>Core discovery & crawling</h3>
+          <div class="action-list">
+            <article class="action-row"><div class="name"><code>investigate_url</code><span class="mode hosted">Hosted</span></div><p>Complete evidence-first investigation across identity, crawl, audits, brand, technology, graph, competitors and RAG.</p><div class="action-io"><span><b>Input:</b> url; optional profile, crawl, force</span><span><b>Output:</b> complete IntelligenceResult + contradictions + observedAt</span></div></article>
+            <article class="action-row"><div class="name"><code>probe_url</code><span class="mode full">Full runtime</span></div><p>Safely checks a public URL, final destination, status and redirect chain.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> status / redirect probe</span></div></article>
+            <article class="action-row"><div class="name"><code>map_site</code><span class="mode full">Full runtime</span></div><p>Finds important pages, sitemap URLs and crawlable page structure.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> site map and important pages</span></div></article>
+            <article class="action-row"><div class="name"><code>deep_crawl</code><span class="mode full">Full runtime</span></div><p>Runs a bounded multi-page crawl using the configured crawl policy.</p><div class="action-io"><span><b>Input:</b> url; optional crawl policy</span><span><b>Output:</b> pages, skipped URLs, errors, policy</span></div></article>
+            <article class="action-row"><div class="name"><code>render_page</code><span class="mode full">Full runtime</span></div><p>Renders JavaScript-heavy pages when a compatible rendering backend is configured.</p><div class="action-io"><span><b>Input:</b> url; optional includeHtml, screenshot</span><span><b>Output:</b> rendered page / optional screenshot</span></div></article>
+          </div>
+        </div>
+
+        <div class="action-group">
+          <h3>Identity, people, brand & public profiles</h3>
+          <div class="action-list">
+            <article class="action-row"><div class="name"><code>resolve_entity</code><span class="mode full">Full runtime</span></div><p>Resolves entity type and name while retaining evidence and graph relationships.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> identity + evidence + graph</span></div></article>
+            <article class="action-row"><div class="name"><code>find_social_profiles</code><span class="mode hosted">Hosted</span></div><p>Discovers and normalizes public social profile URLs found in observable page evidence.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> normalized social profiles</span></div></article>
+            <article class="action-row"><div class="name"><code>find_contacts</code><span class="mode full">Full runtime</span></div><p>Extracts public emails, phone signals and JSON-LD people/contact information.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> public contacts and people signals</span></div></article>
+            <article class="action-row"><div class="name"><code>brand_intelligence</code><span class="mode hosted">Hosted</span></div><p>Collects logos, favicons, colors, handles and taglines from public brand signals.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> BrandProfile</span></div></article>
+            <article class="action-row"><div class="name"><code>people_team</code><span class="mode full">Full runtime</span></div><p>Extracts public JSON-LD Person records and related team signals.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> public people/team records</span></div></article>
+            <article class="action-row"><div class="name"><code>entity_graph</code><span class="mode full">Full runtime</span></div><p>Builds an evidence-linked relationship graph between discovered entities and URLs.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> graph nodes, edges, confidence, evidence</span></div></article>
+          </div>
+        </div>
+
+        <div class="action-group">
+          <h3>Technical, SEO, security, trust & compliance</h3>
+          <div class="action-list">
+            <article class="action-row"><div class="name"><code>domain_intelligence</code><span class="mode hosted">Hosted</span></div><p>Inspects public DNS, mail and TLS signals including MX, NS, TXT, CAA, SPF and DMARC.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> domain / DNS / TLS intelligence</span></div></article>
+            <article class="action-row"><div class="name"><code>detect_technologies</code><span class="mode hosted">Hosted</span></div><p>Finds technology fingerprints and attaches confidence plus concrete evidence to each signal.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> technologies + confidence + evidence</span></div></article>
+            <article class="action-row"><div class="name"><code>audit_seo</code><span class="mode hosted">Hosted</span></div><p>Explains public SEO/discoverability checks, issues and warnings.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> score + checks + issues + warnings</span></div></article>
+            <article class="action-row"><div class="name"><code>audit_security</code><span class="mode hosted">Hosted</span></div><p>Observes public HTTP security-header posture. It is not a penetration test.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> explainable security posture audit</span></div></article>
+            <article class="action-row"><div class="name"><code>audit_quality</code><span class="mode full">Full runtime</span></div><p>Surfaces basic quality, accessibility and performance hints from public page signals.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> quality score + checks + issues</span></div></article>
+            <article class="action-row"><div class="name"><code>audit_trust</code><span class="mode hosted">Hosted</span></div><p>Scores explainable public trust/transparency signals without claiming a definitive trust verdict.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> score + transparent checks + warnings</span></div></article>
+            <article class="action-row"><div class="name"><code>structured_data</code><span class="mode hosted">Hosted</span></div><p>Inventories visible JSON-LD and structured-data types and objects.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> structured-data inventory</span></div></article>
+            <article class="action-row"><div class="name"><code>api_discovery</code><span class="mode full">Full runtime</span></div><p>Looks for public OpenAPI, Swagger, GraphQL, developer and API documentation hints.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> API/developer surface signals</span></div></article>
+            <article class="action-row"><div class="name"><code>compliance_signals</code><span class="mode full">Full runtime</span></div><p>Observes public privacy, terms, consent and related policy signals. It is not legal advice.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> public compliance-policy signals</span></div></article>
+          </div>
+        </div>
+
+        <div class="action-group">
+          <h3>Content, links, commerce & competitive intelligence</h3>
+          <div class="action-list">
+            <article class="action-row"><div class="name"><code>competitor_intelligence</code><span class="mode full">Full runtime</span></div><p>Finds public comparison or alternative candidates with confidence, reason and evidence.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> candidates + evidence</span></div></article>
+            <article class="action-row"><div class="name"><code>commerce_intelligence</code><span class="mode full">Full runtime</span></div><p>Extracts public pricing, ecommerce and subscription signals.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> commerce/pricing signals</span></div></article>
+            <article class="action-row"><div class="name"><code>content_freshness</code><span class="mode full">Full runtime</span></div><p>Collects publication and modification dates to help judge how current visible content is.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> freshness/date signals</span></div></article>
+            <article class="action-row"><div class="name"><code>link_intelligence</code><span class="mode full">Full runtime</span></div><p>Summarizes internal and external link relationships discovered on the site.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> link graph summary</span></div></article>
+            <article class="action-row"><div class="name"><code>check_links</code><span class="mode full">Full runtime</span></div><p>Checks a bounded set of links for public URL health.</p><div class="action-io"><span><b>Input:</b> url; optional limit, concurrency</span><span><b>Output:</b> bounded link-health results</span></div></article>
+            <article class="action-row"><div class="name"><code>generate_listing</code><span class="mode full">Full runtime</span></div><p>Turns observed public identity and metadata into a ready-to-review directory/marketplace listing object.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> listing/profile object</span></div></article>
+          </div>
+        </div>
+
+        <div class="action-group">
+          <h3>RAG, knowledge, comparison, monitoring & extensions</h3>
+          <div class="action-list">
+            <article class="action-row"><div class="name"><code>rag_export</code><span class="mode full">Full runtime</span></div><p>Produces clean checksum-addressed documents suitable for retrieval and downstream RAG workflows.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> RAG documents + metadata</span></div></article>
+            <article class="action-row"><div class="name"><code>knowledge_export</code><span class="mode full">Full runtime</span></div><p>Exports provenance-aware facts/knowledge records for structured downstream use.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> provenance-aware fact triples</span></div></article>
+            <article class="action-row"><div class="name"><code>compare_urls</code><span class="mode full">Full runtime</span></div><p>Compares intelligence extracted from two public URLs/entities.</p><div class="action-io"><span><b>Input:</b> url + url2</span><span><b>Output:</b> URL/entity comparison</span></div></article>
+            <article class="action-row"><div class="name"><code>batch_investigate</code><span class="mode full">Full runtime</span></div><p>Processes multiple URLs using bounded concurrency for worker/automation workflows.</p><div class="action-io"><span><b>Input:</b> urls[]; optional concurrency</span><span><b>Output:</b> worker job results</span></div></article>
+            <article class="action-row"><div class="name"><code>create_snapshot</code><span class="mode full">Full runtime</span></div><p>Persists a monitoring baseline including fingerprints, scores, technology and identity signals.</p><div class="action-io"><span><b>Input:</b> url</span><span><b>Output:</b> persisted Snapshot + observedAt</span></div></article>
+            <article class="action-row"><div class="name"><code>diff_snapshot</code><span class="mode full">Full runtime</span></div><p>Compares the current public state with a previous snapshot and returns normalized changes.</p><div class="action-io"><span><b>Input:</b> url; optional snapshot, webhook</span><span><b>Output:</b> changed flag + before/after changes</span></div></article>
+            <article class="action-row"><div class="name"><code>ai_reason</code><span class="mode full">Full runtime</span></div><p>Optional model synthesis constrained to collected evidence. Requires a configured compatible AI endpoint/key.</p><div class="action-io"><span><b>Input:</b> url + instruction</span><span><b>Output:</b> evidence-only synthesis</span></div></article>
+            <article class="action-row"><div class="name"><code>list_plugins</code><span class="mode full">Full runtime</span></div><p>Lists registered runtime plugins and extension metadata.</p><div class="action-io"><span><b>Input:</b> none</span><span><b>Output:</b> registered plugins</span></div></article>
+          </div>
         </div>
       </div>
     </section>
 
     <section class="section" id="remote-mcp">
-      <h2>Connect your AI directly with Remote MCP</h2>
-      <p>The Space exposes a public <strong>Streamable HTTP MCP endpoint</strong>. Compatible remote-MCP clients can discover the available URL intelligence tools and call them directly from an AI conversation. This includes clients and platforms with remote MCP support such as Claude and ChatGPT custom apps/connectors where the feature is available.</p>
+      <h2>Connect your AI with Remote MCP</h2>
+      <p>The Space exposes a public Streamable HTTP MCP endpoint. Compatible clients can discover the public demo tools and call URL intelligence directly from an AI conversation. Use the full local stdio MCP server when you clone/self-host the project.</p>
       <div class="mcpbox">
         <strong>Public Remote MCP endpoint</strong>
         <div class="mcpurl"><code id="mcpUrl">https://vpicciuolo-url-intelligence-agent.hf.space/mcp</code><button class="btn small" data-copy="mcpUrl">Copy endpoint</button></div>
         <p class="muted" style="line-height:1.6">Transport: Streamable HTTP · Public read-only demo tools · No API key required for connection · One analysis tool call per MCP session every 24 hours. Tool discovery, initialization and health checks do not consume the analysis allowance.</p>
         <div class="mcp-grid">
-          <div class="card"><h3>ChatGPT</h3><p>In a ChatGPT workspace/account with custom MCP app support, enable developer/custom app mode, create an app, paste the endpoint above, choose no authentication for this public demo, scan tools, then ask ChatGPT to investigate a URL using the connected app.</p></div>
-          <div class="card"><h3>Claude / other MCP clients</h3><p>Add the URL above as a remote Streamable HTTP MCP server. After initialization, the client can discover the public URL intelligence tools and call one analysis for the demo session.</p></div>
+          <div class="card"><h3>ChatGPT</h3><p>Where custom Remote MCP apps/connectors are available, create a custom app, paste the endpoint above, choose no authentication for this public demo, discover tools and then ask ChatGPT to investigate a public URL with the connected app.</p></div>
+          <div class="card"><h3>Claude / other MCP clients</h3><p>Add the URL above as a remote Streamable HTTP MCP server. After initialization the client can discover the hosted public tool subset and call an analysis.</p></div>
         </div>
         <div class="code-card"><div class="code-head"><span>Protocol test</span><button class="btn small" data-copy="mcpCurl">Copy</button></div><pre class="code" id="mcpCurl">curl -i https://vpicciuolo-url-intelligence-agent.hf.space/mcp \
   -H 'Content-Type: application/json' \
@@ -152,21 +268,25 @@
       </div>
     </section>
 
-    <section class="section">
-      <h2>Evidence-first web intelligence capabilities</h2>
-      <p>The same core runtime powers the hosted interface, CLI, HTTP API, Docker service and MCP transports.</p>
-      <div class="grid">
-        <article class="card"><h3>Deep URL crawling & mapping</h3><p>Redirects, robots policy, sitemaps, multi-page crawling, links, metadata, structured data and freshness signals.</p></article>
-        <article class="card"><h3>Entity & brand resolution</h3><p>Organizations, people, products, public profiles, logos, brand signals and evidence-linked identity resolution.</p></article>
-        <article class="card"><h3>SEO, security & trust audits</h3><p>Search metadata, canonical/Open Graph signals, crawl discoverability, HTTP security headers, transparency and public trust indicators.</p></article>
-        <article class="card"><h3>Social & contact discovery</h3><p>Normalize public social profiles, emails, phone numbers and important contact/about pages from observable evidence.</p></article>
-        <article class="card"><h3>Technology intelligence</h3><p>Detect public web technologies and implementation signals using deterministic fingerprints and confidence scoring.</p></article>
-        <article class="card"><h3>RAG, monitoring & reports</h3><p>Generate provenance-aware knowledge exports, snapshots, diffs, structured data and branded intelligence reports.</p></article>
+    <section class="section" id="faq">
+      <h2>Frequently asked questions</h2>
+      <p>These answers are deliberately precise about what the agent can prove, what it only observes and where uncertainty remains.</p>
+      <div class="faq">
+        <details class="faq-item" open><summary>Where does the confidence score come from?</summary><p>Evidence fields include the extracted value, a confidence number, the extraction method and source URLs. Confidence is therefore shown next to observable evidence. It should not be interpreted as the AI simply saying “I am confident.”</p></details>
+        <details class="faq-item"><summary>What happens when two sources disagree?</summary><p>The full investigation result contains a contradictions list. When contradictions are present, the web result shows a disputed-evidence warning before the normal sections. The sources stay openable so you can inspect why the evidence differs.</p></details>
+        <details class="faq-item"><summary>Does “no contradiction found” mean all sources agree?</summary><p>No. It means this run did not report an explicit contradiction. The interface intentionally avoids turning absence of a detected conflict into a stronger consensus claim.</p></details>
+        <details class="faq-item"><summary>Can I see when the information was observed?</summary><p>Yes when the action returns an observation timestamp, especially full investigations and snapshots. The result summary displays it. Public websites can change after that time.</p></details>
+        <details class="faq-item"><summary>Can I open the original evidence?</summary><p>Yes. EvidenceField source URLs and other public URLs found in the result are collected into an “Open sources” section. The complete JSON is also preserved below the human-readable view.</p></details>
+        <details class="faq-item"><summary>Why can a result change between runs?</summary><p>The agent observes the live public web. Pages, DNS, headers, structured data, social links, technologies and policies can change. Crawl configuration and availability can also affect what evidence is observable at a given time.</p></details>
+        <details class="faq-item"><summary>Are SEO, security, trust or compliance scores definitive?</summary><p>No. They are explainable observations of public signals. Security audit is not penetration testing, compliance signals are not legal advice, and trust scoring is not a guarantee about a person or organization.</p></details>
+        <details class="faq-item"><summary>What URLs can be investigated?</summary><p>Public HTTP/HTTPS URLs. The runtime validates destinations and deliberately blocks localhost/private network destinations. It does not intentionally bypass authentication, CAPTCHAs or access controls.</p></details>
+        <details class="faq-item"><summary>Why does the hosted demo have a limit?</summary><p>The public Space is for testing. A normal signed-in Hugging Face account gets one hosted analysis every 24 hours. Clone or self-host the MIT-licensed project for unrestricted usage under your own infrastructure limits.</p></details>
+        <details class="faq-item"><summary>What is the difference between the hosted demo and the full runtime?</summary><p>The hosted demo exposes a controlled read-only subset. The repository contains all 34 actions plus CLI, HTTP API, Docker, local MCP, monitoring, batch operations and optional AI reasoning.</p></details>
       </div>
     </section>
 
     <section class="section" id="cli">
-      <h2>Run the agent locally with the CLI</h2>
+      <h2>Run the full agent locally</h2>
       <p>Clone the MIT-licensed repository for unrestricted local use, development, automation and self-hosting.</p>
       <div class="code-card"><div class="code-head"><span>Quick start</span><button class="btn small" data-copy="cliCode">Copy</button></div><pre class="code" id="cliCode"><span class="cyan">git clone</span> https://github.com/vpicciuolo/url-intelligence-agent.git
 <span class="cyan">cd</span> url-intelligence-agent
@@ -182,10 +302,10 @@ node dist/src/cli.js technologies https://example.com</pre></div>
 
     <section class="section" id="api">
       <h2>HTTP API, Docker and local MCP</h2>
-      <p>Use the runtime as a service or integrate it into other agent stacks. The hosted web analysis requires Hugging Face login; the public remote MCP demo has its own session quota.</p>
+      <p>Use the same runtime as a service or integrate it into other agent stacks.</p>
       <div class="grid">
         <article class="card"><h3>HTTP API</h3><p><code>npm run serve</code><br><br>Endpoints include <code>/health</code>, <code>/actions</code>, <code>/investigate</code> and <code>/action/:name</code>.</p></article>
-        <article class="card"><h3>Local MCP</h3><p><code>npm run mcp</code><br><br>Starts the stdio MCP server for compatible local AI clients and development tools.</p></article>
+        <article class="card"><h3>Local MCP</h3><p><code>npm run mcp</code><br><br>Starts the stdio MCP server with the complete action registry for compatible local AI clients.</p></article>
         <article class="card"><h3>Docker</h3><p>Build and run the same Node.js runtime as a portable container for private infrastructure or production integrations.</p></article>
       </div>
     </section>
@@ -204,21 +324,114 @@ node dist/src/cli.js technologies https://example.com</pre></div>
     let session = null;
     let lastResponse = null;
 
+    const ACTION_GUIDE = {
+      investigate_url:{title:'Full investigation',desc:'The broadest evidence-first request. It combines entity resolution, crawling, SEO, security, quality, trust, socials, contacts, technologies, brand, graph, competitors and RAG in one result.',input:'Public URL',output:'Complete IntelligenceResult',best:'Best when you want the complete picture.'},
+      audit_seo:{title:'SEO audit',desc:'Checks visible search/discoverability signals and explains the score through checks, issues and warnings.',input:'Public URL',output:'SEO score, checks, issues, warnings',best:'Best for technical/metadata SEO review.'},
+      audit_security:{title:'Security audit',desc:'Reviews publicly observable HTTP security-header posture. It does not exploit or penetrate the target.',input:'Public URL',output:'Security score, checks, issues, warnings',best:'Best for a fast public configuration review.'},
+      audit_trust:{title:'Trust signals',desc:'Evaluates public transparency/trust signals with explainable checks. It is an observation, not a definitive trust verdict.',input:'Public URL',output:'Trust score, checks, issues, warnings',best:'Best for transparency and public trust signals.'},
+      find_social_profiles:{title:'Social discovery',desc:'Finds and normalizes public social profile URLs that are observable from the target and related public page evidence.',input:'Public URL',output:'Normalized social profiles',best:'Best for public profile discovery.'},
+      detect_technologies:{title:'Technology detection',desc:'Detects public technology fingerprints. Each technology signal can include confidence and the evidence that triggered the detection.',input:'Public URL',output:'Technology signals + confidence + evidence',best:'Best for stack fingerprinting.'},
+      brand_intelligence:{title:'Brand intelligence',desc:'Extracts visible brand signals such as logos, favicons, colors, social handles and taglines.',input:'Public URL',output:'BrandProfile',best:'Best for brand/identity enrichment.'},
+      domain_intelligence:{title:'Domain intelligence',desc:'Inspects public DNS, mail and TLS configuration including records such as MX, NS, TXT, CAA, SPF and DMARC where observable.',input:'Public URL',output:'DNS / mail / TLS intelligence',best:'Best for domain infrastructure context.'},
+      structured_data:{title:'Structured data',desc:'Inventories visible JSON-LD and structured data so you can inspect machine-readable entity and content signals.',input:'Public URL',output:'Structured-data inventory',best:'Best for schema/JSON-LD inspection.'}
+    };
+
     const formatReset = iso => { if(!iso) return ''; try{return new Date(iso).toLocaleString()}catch{return iso} };
     const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
+    const titleCase = value => String(value).replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase());
+    const isHttp = value => typeof value==='string' && /^https?:\/\//i.test(value);
+
+    function currentActionName(){
+      const opt=$('actionSelect').selectedOptions[0];
+      return opt?.dataset?.action || ($('actionSelect').value==='/investigate'?'investigate_url':$('actionSelect').value.split('/').pop());
+    }
+
+    function renderActionGuide(){
+      const info=ACTION_GUIDE[currentActionName()] || ACTION_GUIDE.investigate_url;
+      $('actionGuide').innerHTML=`<div class="guide-top"><div><h3>${info.title}</h3><p>${info.desc}</p></div><span class="mode hosted">Hosted demo</span></div><div class="guide-meta"><span>Input: ${info.input}</span><span>Returns: ${info.output}</span><span>${info.best}</span></div>`;
+    }
 
     function valueNode(value, depth=0){
       if(value === null || value === undefined){const s=document.createElement('span');s.className='muted';s.textContent=String(value);return s;}
       if(Array.isArray(value)){
         if(!value.length){const s=document.createElement('span');s.className='muted';s.textContent='Empty list';return s;}
         const ul=document.createElement('ul');ul.className='array';
-        value.forEach(item=>{const li=document.createElement('li'); if(item && typeof item==='object'){li.appendChild(valueNode(item,depth+1))}else{li.textContent=String(item)} ul.appendChild(li)});return ul;
+        value.forEach(item=>{const li=document.createElement('li'); if(item && typeof item==='object'){li.appendChild(valueNode(item,depth+1))}else if(isHttp(item)){const a=document.createElement('a');a.href=item;a.target='_blank';a.rel='noreferrer';a.className='cyan';a.textContent=item;li.appendChild(a)}else{li.textContent=String(item)} ul.appendChild(li)});return ul;
       }
       if(typeof value==='object'){
         const box=document.createElement('div');
-        Object.entries(value).forEach(([k,v])=>{const row=document.createElement('div');row.className='kv';const key=document.createElement('div');key.className='k';key.textContent=k.replaceAll('_',' ');const val=document.createElement('div');val.className='v';val.appendChild(valueNode(v,depth+1));row.append(key,val);box.appendChild(row)});return box;
+        Object.entries(value).forEach(([k,v])=>{const row=document.createElement('div');row.className='kv';const key=document.createElement('div');key.className='k';key.textContent=titleCase(k);const val=document.createElement('div');val.className='v';val.appendChild(valueNode(v,depth+1));row.append(key,val);box.appendChild(row)});return box;
       }
+      if(isHttp(value)){const a=document.createElement('a');a.href=value;a.target='_blank';a.rel='noreferrer';a.className='cyan';a.textContent=value;return a;}
       const s=document.createElement('span');s.textContent=String(value);return s;
+    }
+
+    function evidenceClaims(root){
+      const out=[];const seen=new Set();
+      const walk=(value,path='result')=>{
+        if(!value || typeof value!=='object')return;
+        if(!Array.isArray(value) && Object.prototype.hasOwnProperty.call(value,'value') && typeof value.confidence==='number' && Array.isArray(value.sources)){
+          const key=path+'|'+String(value.value);if(!seen.has(key)){seen.add(key);out.push({path,value:value.value,confidence:value.confidence,method:value.method||'',sources:value.sources.filter(isHttp)});}return;
+        }
+        if(Array.isArray(value)){value.forEach((v,i)=>walk(v,`${path}[${i}]`));return;}
+        Object.entries(value).forEach(([k,v])=>walk(v,`${path}.${k}`));
+      };walk(root);return out;
+    }
+
+    function signalClaims(root){
+      const out=[];const seen=new Set();
+      const walk=(value,path='result')=>{
+        if(!value || typeof value!=='object')return;
+        if(!Array.isArray(value) && typeof value.confidence==='number' && Array.isArray(value.evidence) && !Object.prototype.hasOwnProperty.call(value,'value')){
+          const label=value.name||value.label||value.type||path.split('.').pop();const key=path+'|'+String(label);if(!seen.has(key)){seen.add(key);out.push({path,value:label,confidence:value.confidence,method:value.category||value.reason||'',sources:value.evidence.filter(isHttp),evidence:value.evidence});}
+        }
+        if(Array.isArray(value)){value.forEach((v,i)=>walk(v,`${path}[${i}]`));return;}
+        Object.entries(value).forEach(([k,v])=>walk(v,`${path}.${k}`));
+      };walk(root);return out;
+    }
+
+    function collectUrls(root){
+      const set=new Set();
+      const walk=value=>{if(isHttp(value)){set.add(value);return;}if(Array.isArray(value)){value.forEach(walk);return;}if(value&&typeof value==='object')Object.values(value).forEach(walk)};walk(root);return [...set];
+    }
+
+    function confidenceClass(n){return n>=.8?'status-good':n>=.55?'status-warn':'status-bad'}
+
+    function claimNode(claim){
+      const box=document.createElement('div');box.className='claim-card';
+      const head=document.createElement('div');head.className='claim-head';
+      const path=document.createElement('span');path.className='claim-path';path.textContent=claim.path.replace(/^result\.?/,'');
+      const conf=document.createElement('span');conf.className='confidence '+confidenceClass(claim.confidence);conf.textContent=Math.round(claim.confidence*100)+'% confidence';head.append(path,conf);
+      const value=document.createElement('div');value.className='claim-value';value.appendChild(valueNode(claim.value));box.append(head,value);
+      if(claim.method){const meta=document.createElement('div');meta.className='claim-meta';meta.textContent='Method / reason: '+claim.method;box.appendChild(meta)}
+      if(claim.sources?.length){const list=document.createElement('div');list.className='source-list';claim.sources.forEach(src=>{const a=document.createElement('a');a.className='source-link';a.href=src;a.target='_blank';a.rel='noreferrer';a.textContent='Open source ↗  '+src;list.appendChild(a)});box.appendChild(list)}
+      else if(claim.evidence?.length){const meta=document.createElement('div');meta.className='claim-meta';meta.textContent='Evidence: '+claim.evidence.join(' · ');box.appendChild(meta)}
+      return box;
+    }
+
+    function renderEvidenceSummary(result){
+      const target=$('evidenceSummary');clear(target);if(!result||typeof result!=='object')return;
+      const claims=[...evidenceClaims(result),...signalClaims(result)];
+      const contradictions=Array.isArray(result.contradictions)?result.contradictions.filter(Boolean):[];
+      const urls=collectUrls(result);
+      const observed=result.observedAt||result.meta?.observedAt||result.current?.observedAt||'';
+      const wrap=document.createElement('div');wrap.className='evidence-overview';
+      const metrics=[
+        ['Evidence claims',String(claims.length),''],
+        ['Openable URLs',String(urls.length),''],
+        ['Contradictions',contradictions.length?String(contradictions.length):'None reported',contradictions.length?'status-bad':'status-good'],
+        ['Observed',observed?formatReset(observed):'Not supplied','']
+      ];
+      metrics.forEach(([label,value,cls])=>{const m=document.createElement('div');m.className='metric';m.innerHTML=`<div class="label">${label}</div><div class="value ${cls}">${value}</div>`;wrap.appendChild(m)});target.appendChild(wrap);
+
+      const note=document.createElement('div');note.className='interpretation'+(contradictions.length?' dispute':'');
+      note.innerHTML=contradictions.length?'<strong>Disputed evidence detected.</strong> This run reported conflicting public signals. The agent does not hide the disagreement; inspect the contradiction list and sources below.':'<strong>No explicit contradiction was reported by this run.</strong> That does not prove every source agrees. Confidence should be read together with extraction method, source evidence and observation time.';target.appendChild(note);
+
+      if(contradictions.length){const d=document.createElement('details');d.className='result-section';d.open=true;const s=document.createElement('summary');s.textContent='⚠ Disputed / contradictory evidence';const inside=document.createElement('div');inside.className='inside';contradictions.forEach((c,i)=>{const row=document.createElement('div');row.className='claim-card';row.innerHTML=`<div class="claim-value">Conflict ${i+1}</div><div class="claim-meta"></div>`;row.querySelector('.claim-meta').textContent=String(c);inside.appendChild(row)});d.append(s,inside);target.appendChild(d)}
+
+      if(claims.length){const d=document.createElement('details');d.className='result-section';d.open=true;const s=document.createElement('summary');s.textContent=`Evidence & confidence (${claims.length})`;const inside=document.createElement('div');inside.className='inside';claims.slice(0,60).forEach(c=>inside.appendChild(claimNode(c)));if(claims.length>60){const p=document.createElement('p');p.className='muted';p.textContent=`Showing the first 60 of ${claims.length} evidence signals. Complete data remains in the raw response.`;inside.appendChild(p)}d.append(s,inside);target.appendChild(d)}
+
+      if(urls.length){const d=document.createElement('details');d.className='result-section';const s=document.createElement('summary');s.textContent=`Open sources & public URLs (${urls.length})`;const inside=document.createElement('div');inside.className='inside source-list';urls.slice(0,100).forEach(src=>{const a=document.createElement('a');a.className='source-link';a.href=src;a.target='_blank';a.rel='noreferrer';a.textContent='Open ↗  '+src;inside.appendChild(a)});d.append(s,inside);target.appendChild(d)}
     }
 
     function renderStructured(result){
@@ -226,7 +439,7 @@ node dist/src/cli.js technologies https://example.com</pre></div>
       if(!result || typeof result!=='object'){target.appendChild(valueNode(result));return;}
       Object.entries(result).forEach(([key,value],i)=>{
         const d=document.createElement('details');d.className='result-section';if(i<5)d.open=true;
-        const summary=document.createElement('summary');summary.textContent=key.replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase());
+        const summary=document.createElement('summary');summary.textContent=titleCase(key);
         const inside=document.createElement('div');inside.className='inside';inside.appendChild(valueNode(value));d.append(summary,inside);target.appendChild(d);
       });
     }
@@ -266,17 +479,18 @@ node dist/src/cli.js technologies https://example.com</pre></div>
       $('runBtn').disabled=true;$('loading').style.display='block';$('resultShell').style.display='none';
       try{
         const res=await fetch($('actionSelect').value,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:url.toString()})});
-        const data=await res.json();lastResponse=data;$('resultShell').style.display='block';$('resultTitle').textContent=res.ok?'Analysis report':'Request failed · '+res.status;$('resultPre').textContent=JSON.stringify(data,null,2);
-        renderStructured(res.ok?data.result:data);setExports(res.ok?data.report:null);
+        const data=await res.json();lastResponse=data;$('resultShell').style.display='block';$('resultTitle').textContent=res.ok?(ACTION_GUIDE[currentActionName()]?.title||'Analysis')+' · evidence report':'Request failed · '+res.status;$('resultPre').textContent=JSON.stringify(data,null,2);
+        const result=res.ok?data.result:data;renderEvidenceSummary(result);renderStructured(result);setExports(res.ok?data.report:null);$('resultShell').scrollIntoView({behavior:'smooth',block:'start'});
       }catch(e){showError('Request failed',String(e));}
       finally{$('loading').style.display='none';await refreshStatus();}
     }
 
-    function showError(title,text){$('resultShell').style.display='block';$('resultTitle').textContent=title;$('resultPre').textContent=text;renderStructured({error:text});setExports(null);}
+    function showError(title,text){$('resultShell').style.display='block';$('resultTitle').textContent=title;$('resultPre').textContent=text;clear($('evidenceSummary'));renderStructured({error:text});setExports(null);}
 
-    $('runBtn').addEventListener('click',runAnalysis);$('urlInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAnalysis()});$('copyResult').addEventListener('click',()=>navigator.clipboard.writeText(JSON.stringify(lastResponse,null,2)||$('resultPre').textContent||''));
+    $('runBtn').addEventListener('click',runAnalysis);$('urlInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAnalysis()});$('actionSelect').addEventListener('change',renderActionGuide);$('copyResult').addEventListener('click',()=>navigator.clipboard.writeText(JSON.stringify(lastResponse,null,2)||$('resultPre').textContent||''));
+    document.querySelectorAll('[data-action-path]').forEach(btn=>btn.addEventListener('click',()=>{const path=btn.dataset.actionPath;for(const opt of $('actionSelect').options){if(opt.value===path){opt.selected=true;break}}renderActionGuide();$('actionSelect').scrollIntoView({behavior:'smooth',block:'center'});}));
     document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',()=>{const el=$(btn.dataset.copy);navigator.clipboard.writeText(el.innerText||el.textContent||'');const old=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=old,1200)}));
-    refreshStatus();
+    renderActionGuide();refreshStatus();
   </script>
 </body>
 </html>
