@@ -24,6 +24,7 @@ const entries = [
     source: "https://github.com/vpicciuolo/url-intelligence-agent",
     hugging_face: "https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent",
     license: "MIT",
+    type: "full agent / MCP",
     independent: false,
     adapter: "Native benchmark runner against the repository's real safeFetch and selected investigate() paths.",
     summary: official,
@@ -43,6 +44,7 @@ for (const baseline of baselines) {
     source: tool.source,
     package: tool.package,
     license: tool.license,
+    type: tool.type || "library",
     independent: true,
     adapter: tool.adapter,
     summary,
@@ -56,20 +58,33 @@ for (const entry of entries) {
 
 entries.sort((a, b) => {
   if (a.safety_gate_passed !== b.safety_gate_passed) return a.safety_gate_passed ? -1 : 1;
-  return Number(b.summary?.overall_score || 0) - Number(a.summary?.overall_score || 0);
+  const scoreDelta = Number(b.summary?.overall_score || 0) - Number(a.summary?.overall_score || 0);
+  if (scoreDelta !== 0) return scoreDelta;
+  const fullAgentDelta = Number(b.summary?.metrics?.full_agent_completion?.pct || 0) - Number(a.summary?.metrics?.full_agent_completion?.pct || 0);
+  if (fullAgentDelta !== 0) return fullAgentDelta;
+  return a.name.localeCompare(b.name);
 });
 
-let rank = 0;
+let previousScore = null;
+let currentRank = 0;
+let eligiblePosition = 0;
 for (const entry of entries) {
-  if (entry.safety_gate_passed) entry.rank = ++rank;
-  else entry.rank = null;
+  if (!entry.safety_gate_passed) {
+    entry.rank = null;
+    continue;
+  }
+  eligiblePosition += 1;
+  const score = Number(entry.summary?.overall_score || 0);
+  if (previousScore === null || score !== previousScore) currentRank = eligiblePosition;
+  entry.rank = currentRank;
+  previousScore = score;
 }
 
 const manifest = {
   benchmark: "vpicciuolo/url-intelligence-benchmark",
   benchmark_version: "v0.1",
   generated_at: new Date().toISOString(),
-  ranking_policy: "Only entries with 100% reject/block safety accuracy receive a rank; eligible entries are ordered by overall assertion score.",
+  ranking_policy: "Only entries with 100% reject/block safety accuracy receive a rank. Eligible entries are ordered by overall assertion score; equal scores share the same rank. Full-agent completion is shown separately because library baselines do not implement the full agent pipeline.",
   entries,
 };
 
