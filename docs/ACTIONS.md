@@ -9,16 +9,26 @@ All machine-readable outputs retain project attribution to HRN Innovation Techno
 The project is evidence-first. Where an action returns evidence-linked fields, read the pieces together:
 
 - `value` — the extracted claim/value.
-- `confidence` — confidence derived from the observable extraction/evidence path, not a statement that an AI model “feels confident.”
+- `confidence` — extraction confidence derived from the observable extraction/evidence path, not a statement that an AI model “feels confident.”
 - `method` — how the value was obtained.
 - `sources` — public source URLs supporting the field.
 - `evidence` — deterministic/public signals that triggered a technology, graph or competitor signal.
 - `contradictions` — explicit conflicts reported by a full investigation. A contradiction should remain visible rather than being silently collapsed into one clean answer.
 - `observedAt` — the point in time at which the public-web evidence was observed.
 
-Important: an empty `contradictions` list means no explicit contradiction was reported by that run. It does **not** prove universal source consensus.
+Full investigations also return:
 
-The hosted web interface surfaces these fields in a human-readable evidence summary, keeps public sources openable, marks disputed results and also preserves the complete raw JSON.
+- `confidenceAssessment.extractionConfidence` — how strongly the target's observable metadata/content supports the extracted identity fields.
+- `confidenceAssessment.externalCorroboration` — independent-domain source coverage from fetched third-party evidence.
+- `webResearch` — search-provider status, search queries, discovered external URLs, fetched third-party sources, domains, coverage score, discovery method and limitations.
+
+A website repeating the same statement across many pages is **not** treated as many independent sources. Extraction confidence and third-party corroboration are deliberately kept separate.
+
+Important: an empty `contradictions` list means no explicit contradiction was reported by that run. It does **not** prove universal source consensus. External corroboration is also not a mathematical probability that every claim is true.
+
+The hosted web interface surfaces these fields in a human-readable evidence summary, keeps public sources openable, marks disputed results and preserves the complete raw JSON.
+
+External research architecture and provider configuration: [WEB_RESEARCH.md](WEB_RESEARCH.md)
 
 Live demo: https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent  
 Remote MCP: https://vpicciuolo-url-intelligence-agent.hf.space/mcp
@@ -27,13 +37,13 @@ Remote MCP: https://vpicciuolo-url-intelligence-agent.hf.space/mcp
 
 | Action | Input | Output |
 | --- | --- | --- |
-| `investigate_url` | `url`, optional `profile`, `crawl`, `force` | Complete `IntelligenceResult`, including evidence-linked entity fields, contradictions, warnings and `observedAt` |
+| `investigate_url` | `url`, optional `profile`, `crawl`, `force`, `externalResearch` | Complete `IntelligenceResult`, including first-party evidence, `confidenceAssessment`, `webResearch`, contradictions, warnings and `observedAt` |
 | `probe_url` | `url` | Safe status/redirect probe |
 | `domain_intelligence` | `url` | DNS, MX, NS, TXT, CAA, SPF, DMARC, TLS |
 | `render_page` | `url`, optional `includeHtml`, `screenshot` | Rendered HTML and optional screenshot |
 | `map_site` | `url` | Important pages, sitemaps and crawl pages |
 | `deep_crawl` | `url`, optional crawl policy | Bounded crawl result |
-| `resolve_entity` | `url` | Entity identity, evidence and graph |
+| `resolve_entity` | `url` | Entity identity, extraction confidence, external corroboration, evidence and graph |
 | `find_social_profiles` | `url` | Normalized public social profiles |
 | `find_contacts` | `url` | Public contacts and JSON-LD people |
 | `detect_technologies` | `url` | Technology fingerprints with confidence/evidence |
@@ -75,6 +85,8 @@ The public hosted web demo intentionally exposes a controlled read-only subset f
 - `brand_intelligence`
 - `domain_intelligence`
 - `structured_data`
+
+`investigate_url` enables external web research by default. Other actions avoid the extra external-research cost unless the action specifically needs it or `externalResearch` is explicitly requested by the caller.
 
 The complete action registry is available when the project is cloned or self-hosted through the CLI, HTTP API or local MCP server.
 
