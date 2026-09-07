@@ -20,5 +20,7 @@ COPY --from=build /app/dist ./dist
 COPY README.md LICENSE SECURITY.md ./
 COPY index.html ./index.html
 COPY assets ./assets
+RUN node -e "const fs=require('fs'); const s=fs.readFileSync('/app/assets/logo.base64.txt','utf8').trim(); fs.writeFileSync('/app/assets/logo.jpg',Buffer.from(s,'base64'));" \
+ && node -e "const fs=require('fs'); fetch('https://storage.mlcdn.com/account_image/2365654/725Q0AzeY15nwDK3JocgKXq5AhxRoNC53LUBchc7.png').then(async r=>{if(!r.ok) throw new Error('OG download '+r.status); fs.writeFileSync('/app/assets/og.jpg',Buffer.from(await r.arrayBuffer()));}).catch(e=>{console.error(e);process.exit(1)});"
 EXPOSE 7860
 CMD ["node", "dist/src/cli.js", "serve", "--host", "0.0.0.0", "--port", "7860"]
