@@ -1,0 +1,70 @@
+name: Benchmark Independent Baselines
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/run-independent-baselines.mjs'
+      - 'scripts/build-leaderboard-results.mjs'
+      - 'hf-dataset/evaluate.py'
+      - 'hf-dataset/data/**'
+      - '.github/workflows/benchmark-independent-baselines.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: benchmark-independent-baselines
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install project and pinned baseline tools
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund url-metadata@5.12.0 link-preview-js@5.0.0
+
+      - name: Run independent baselines
+        run: node scripts/run-independent-baselines.mjs
+
+      - name: Score url-metadata 5.12.0
+        run: |
+          python3 hf-dataset/evaluate.py \
+            hf-dataset/results/baselines/url-metadata-5.12.0/predictions.jsonl \
+            --json-out hf-dataset/results/baselines/url-metadata-5.12.0/summary.json \
+            --markdown-out hf-dataset/results/baselines/url-metadata-5.12.0/summary.md
+
+      - name: Score link-preview-js 5.0.0
+        run: |
+          python3 hf-dataset/evaluate.py \
+            hf-dataset/results/baselines/link-preview-js-5.0.0/predictions.jsonl \
+            --json-out hf-dataset/results/baselines/link-preview-js-5.0.0/summary.json \
+            --markdown-out hf-dataset/results/baselines/link-preview-js-5.0.0/summary.md
+
+      - name: Build leaderboard manifest
+        run: node scripts/build-leaderboard-results.mjs
+
+      - name: Publish baseline results to repository
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hf-dataset/results/baselines hf-dataset/results/leaderboard.json
+          if git diff --cached --quiet; then
+            echo "Independent baseline results unchanged."
+          else
+            git commit -m "Publish independent URL benchmark baselines [skip ci]"
+            git push origin HEAD:main
+          fi
