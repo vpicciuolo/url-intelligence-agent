@@ -45,6 +45,9 @@ jobs:
           cp hf-space/README.md /tmp/hf-payload/README.md
           cp hf-space/Dockerfile /tmp/hf-payload/Dockerfile
           cp hf-space/index.html /tmp/hf-payload/index.html
+          if [ -d hf-space/assets ]; then
+            cp -R hf-space/assets /tmp/hf-payload/assets
+          fi
 
       - name: Sync Docker Space
         env:
