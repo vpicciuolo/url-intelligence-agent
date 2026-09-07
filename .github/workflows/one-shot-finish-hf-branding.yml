@@ -26,23 +26,32 @@ jobs:
           const path = require('path');
           const dir = 'hf-space/assets';
           const clean = value => String(value || '').replace(/\s+/g, '');
-          const decode = name => {
-            const encoded = clean(fs.readFileSync(path.join(dir, name), 'utf8'));
-            const bytes = Buffer.from(encoded, 'base64');
-            console.log(`${name}: ${encoded.length} base64 chars -> ${bytes.length} bytes`);
-            return bytes;
-          };
-          const logo = decode('logo.base64.txt');
-          const parts = fs.readdirSync(dir).filter(n => /^og\.\d+\.b64$/.test(n)).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+
+          const logoSource = clean(fs.readFileSync(path.join(dir, 'logo.base64.txt'), 'utf8'));
+          if (!logoSource) throw new Error('Logo base64 source is empty');
+          const logo = Buffer.from(logoSource, 'base64');
+
+          const parts = fs.readdirSync(dir)
+            .filter(n => /^og\.\d+\.b64$/.test(n))
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
           if (!parts.length) throw new Error('No Open Graph chunks');
-          const og = Buffer.concat(parts.map(decode));
+
+          // og.*.b64 files are sequential pieces of one base64 string.
+          // Reassemble the text first, then decode once.
+          const ogSource = parts
+            .map(name => clean(fs.readFileSync(path.join(dir, name), 'utf8')))
+            .join('');
+          if (!ogSource) throw new Error('Open Graph base64 source is empty');
+          const og = Buffer.from(ogSource, 'base64');
+
           for (const [name, data, min] of [['logo.jpg', logo, 5000], ['og.jpg', og, 15000]]) {
-            if (data.length < min || data.length > 800000 || data[0] !== 0xff || data[1] !== 0xd8 || data[data.length-2] !== 0xff || data[data.length-1] !== 0xd9) {
-              throw new Error(`${name} invalid: ${data.length} bytes, head=${data.subarray(0,2).toString('hex')}, tail=${data.subarray(-2).toString('hex')}`);
+            if (data.length < min || data.length > 800000 || data[0] !== 0xff || data[1] !== 0xd8 || data[data.length - 2] !== 0xff || data[data.length - 1] !== 0xd9) {
+              throw new Error(`${name} invalid: ${data.length} bytes, head=${data.subarray(0, 2).toString('hex')}, tail=${data.subarray(-2).toString('hex')}`);
             }
             fs.writeFileSync(`/tmp/${name}`, data);
             console.log(`${name}: ${data.length} bytes, JPEG OK`);
           }
+          console.log(`Validated ${parts.length} Open Graph chunks`);
           NODE
 
       - name: Apply branding, SEO and social metadata
