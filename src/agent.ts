@@ -161,8 +161,10 @@ export async function investigate(rawUrl: string, profileOrOptions: string | Inv
     firstPartyEvidencePages: pages.length,
     thirdPartyEvidenceSources: webResearch.corroboratingThirdPartySources,
     thirdPartyEvidenceDomains: webResearch.corroboratingThirdPartyDomains,
+    verifiedPlatformSources: webResearch.verifiedPlatformSources || 0,
+    verifiedDirectReferences: webResearch.verifiedDirectReferenceSources || 0,
     searchProvider: webResearch.searchProvider,
-    interpretation: "Extraction confidence measures how strongly the target's observable metadata/content supports the extracted field. External corroboration separately measures coverage across fetched third-party domains. Neither number is a probability that every claim is true."
+    interpretation: "Extraction confidence measures how strongly the target's observable metadata/content supports the extracted field. External corroboration separately measures verified evidence outside the target domain. Direct links and social profiles only strengthen corroboration after the destination is fetched and its content, entity mention or backlink relationship is verified. Neither number is a probability that every claim is true."
   } as const;
   const socials = unique(pages.flatMap(p => p.socials)); const emails = unique(pages.flatMap(p => p.emails)); const phones = unique(pages.flatMap(p => p.phones));
   const technologies = detectTechnologies(pages); const brand = extractBrand(pages); const seo = auditSeo(root, pages, crawl.sitemapUrls); const security = auditSecurity(root); const quality = auditQuality(root); const trust = auditTrust(root, pages, crawl.importantPages, socials, emails); const competitorList = discoverCompetitors(pages); const rag = buildRagDocuments(pages);

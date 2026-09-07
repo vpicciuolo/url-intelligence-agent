@@ -6,10 +6,10 @@ The full investigation pipeline deliberately separates **first-party extraction*
 
 1. Crawl the submitted public URL, robots policy, sitemaps and prioritized same-site pages.
 2. Resolve the entity from observable first-party metadata and content.
-3. Collect eligible external URLs from outbound links and structured data / JSON-LD, including public `sameAs` references.
-4. Search beyond the target domain for entity/domain mentions, articles, reviews, interviews and backlink-style references.
-5. Fetch a bounded set of selected public third-party pages through the SSRF-safe network layer.
-6. Inspect fetched external pages for direct links back to the target domain and mark those sources with `backlink-to-target` discovery evidence.
+3. Collect eligible external URLs from outbound links, public social/profile links and structured data / JSON-LD, including public `sameAs` references. Direct references from the target receive a dedicated high-priority verification lane.
+4. Open and read eligible direct external destinations through the SSRF-safe network layer. A link does not count as confirmation by itself. Articles, websites and public social/profile pages must be fetched and parsed before they can strengthen corroboration.
+5. Search beyond the target domain for additional entity/domain mentions, articles, reviews, interviews and backlink-style references using the selected external index.
+6. Fetch the selected search results and inspect every fetched external page for entity mentions and direct links back to the target domain. Mark verified backlinks with `backlink-to-target` evidence. Platforms that block automated public access stay visible as unverified instead of being silently trusted.
 7. Report extraction confidence and external corroboration separately.
 8. Preserve source URLs, timestamps, coverage limitations and explicit contradictions.
 
@@ -31,7 +31,9 @@ The full result also exposes `webResearch`, including:
 - fetched source count
 - third-party source/domain counts
 - corroborating third-party source/domain counts
-- platform source count
+- platform source count and verified-platform count
+- direct-reference count and verified-direct-reference count
+- per-source verification status, analyzed word count and bounded content sample
 - source coverage score and level
 - every selected external source
 - discovery path (`outbound-link`, `structured-data`, `search:<provider>`, and `backlink-to-target` when detected)
@@ -74,7 +76,9 @@ No code change is required after the secret is available to the running Space.
 ```text
 URL_AGENT_EXTERNAL_RESEARCH=true
 URL_AGENT_EXTERNAL_MAX_SOURCES=24
-URL_AGENT_EXTERNAL_CONCURRENCY=4
+URL_AGENT_EXTERNAL_DIRECT_MAX_SOURCES=60
+URL_AGENT_EXTERNAL_SEARCH_MAX_SOURCES=24
+URL_AGENT_EXTERNAL_CONCURRENCY=6
 URL_AGENT_EXTERNAL_TIMEOUT_MS=9000
 URL_AGENT_EXTERNAL_MAX_BYTES=1500000
 URL_AGENT_SEARCH_QUERIES=4

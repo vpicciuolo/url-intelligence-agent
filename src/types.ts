@@ -145,6 +145,10 @@ export type WebEvidenceSource = {
   title?: string;
   description?: string;
   publishedAt?: string;
+  wordCount?: number;
+  contentSample?: string;
+  linksToTarget?: boolean;
+  verificationStatus?: "unverified" | "search-snippet-match" | "fetched-no-match" | "verified-mention" | "verified-backlink" | "fetch-blocked";
   mentionsEntity: boolean;
   fetched: boolean;
   observedAt: string;
@@ -163,6 +167,9 @@ export type WebResearchReport = {
   corroboratingThirdPartySources: number;
   corroboratingThirdPartyDomains: number;
   platformSources: number;
+  verifiedPlatformSources?: number;
+  directReferenceSources?: number;
+  verifiedDirectReferenceSources?: number;
   sourceCoverageScore: number;
   coverageLevel: "none" | "limited" | "moderate" | "strong";
   sources: WebEvidenceSource[];
@@ -176,6 +183,8 @@ export type ConfidenceAssessment = {
   firstPartyEvidencePages: number;
   thirdPartyEvidenceSources: number;
   thirdPartyEvidenceDomains: number;
+  verifiedPlatformSources?: number;
+  verifiedDirectReferences?: number;
   searchProvider?: string;
   interpretation: string;
 };

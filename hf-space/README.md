@@ -37,7 +37,7 @@ The project is designed around a simple principle: confidence should come from o
 Full investigation therefore uses two distinct evidence layers:
 
 1. **First-party extraction** — crawl the submitted site, sitemaps and prioritized internal pages to understand what the target says about itself.
-2. **External corroboration** — cross the target-domain boundary, expand public outbound/JSON-LD references, search for independent mentions/articles/backlink-style results, fetch selected external pages and verify whether they mention or link back to the target.
+2. **External corroboration** — cross the target-domain boundary, expand public outbound links, social/profile URLs and JSON-LD references, then actually fetch/read eligible destinations before they can strengthen confidence. Search-index results add independent articles and backlink-style sources. A direct link from the target is treated only as a lead until the destination itself is verified.
 
 The result keeps **extraction confidence** separate from **external corroboration**. Repetition across one domain is not counted as independent-domain confirmation.
 
@@ -70,6 +70,9 @@ The full investigation result surfaces:
 - Third-party sources and domains
 - Independent-domain corroboration coverage
 - Verified direct backlink signals from fetched sources
+- Direct external-reference verification counts
+- Public social/profile verification status
+- Parsed external content samples / source context
 - External article/source URLs
 - Explicit contradictions / disputed evidence
 - Observation time
@@ -95,6 +98,19 @@ A crawler cannot guarantee every backlink on the internet because complete rever
 Full architecture and configuration:
 
 https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/WEB_RESEARCH.md
+
+## Related open source & HORNO Network ecosystem
+
+This project is one of the open-source intelligence components developed by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd** and used inside the **HORNO Network ecosystem**.
+
+- **URL Metadata & Social Profile Fetcher** — lightweight deterministic companion for URL metadata, Open Graph, canonical URLs, images and social/profile discovery: https://github.com/vpicciuolo/url-metadata-social-fetcher
+- **HORNO Network** — ecosystem: https://horno.net
+- **HORNO Space** — digital identity and smart-link platform: https://space.horno.net
+- **Easy HORNO** — onboarding, documentation and account experience: https://easy.horno.net
+- **BeHot.Now** — attention marketplace using the URL-first enrichment pattern: https://behot.now
+
+These links are deliberately present on both GitHub and Hugging Face so the relationship between the projects is explicit for developers, search engines and AI indexing systems.
+
 
 ## Complete runtime action catalog
 

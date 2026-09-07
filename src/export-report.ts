@@ -212,6 +212,9 @@ function renderWebResearch(doc: any, result: AnyRecord): void {
   keyValue(doc, "Corroborating third-party sources", research.corroboratingThirdPartySources);
   keyValue(doc, "Independent third-party domains", research.corroboratingThirdPartyDomains);
   keyValue(doc, "Platform sources", research.platformSources);
+  keyValue(doc, "Verified platform sources", research.verifiedPlatformSources);
+  keyValue(doc, "Direct external references checked", research.directReferenceSources);
+  keyValue(doc, "Direct references verified", research.verifiedDirectReferenceSources);
 
   if (!research.searchConfigured) {
     callout(doc, "Coverage limitation", "No external search provider was configured for this run. The agent can still inspect off-site URLs exposed by the target, but it cannot claim broad web-wide backlink or article discovery from those links alone.", "warn");
@@ -238,10 +241,13 @@ function renderWebResearch(doc: any, result: AnyRecord): void {
         asText(source.sourceClass, "external"),
         source.mentionsEntity ? "entity mention observed" : "no explicit entity mention",
         source.fetched ? `fetched${source.status ? ` · HTTP ${source.status}` : ""}` : "not fetched",
-        source.publishedAt ? `published ${source.publishedAt}` : ""
+        source.publishedAt ? `published ${source.publishedAt}` : "",
+        source.verificationStatus ? `verification: ${source.verificationStatus}` : "",
+        source.wordCount ? `${source.wordCount} words analyzed` : ""
       ].filter(Boolean).join(" · ");
       paragraph(doc, meta, { color: "#64748B", size: 7.5, after: 0.08 });
       if (source.description || source.searchSnippet) paragraph(doc, asText(source.description || source.searchSnippet), { size: 7.7, after: 0.15 });
+      if (source.contentSample) paragraph(doc, `Verified content excerpt: ${asText(source.contentSample)}`, { color: "#475569", size: 7.5, after: 0.15 });
       if (source.error) paragraph(doc, `Collection note: ${asText(source.error)}`, { color: "#9A6700", size: 7.6, after: 0.2 });
     });
   }

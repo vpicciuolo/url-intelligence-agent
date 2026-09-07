@@ -337,6 +337,7 @@ async function fetchCandidate(candidate: Candidate, entityName: string, rootDoma
   let host = "";
   try { host = new URL(candidate.url).hostname.toLowerCase(); } catch { host = "unknown"; }
   const sourceClass: WebEvidenceSource["sourceClass"] = isSameSite(host, rootDomain) ? "first-party" : isPlatform(host) ? "platform" : "third-party";
+  const snippetMentions = mentionsEntity(`${candidate.searchTitle || ""} ${candidate.searchSnippet || ""}`, entityName, rootDomain);
   const base: WebEvidenceSource = {
     url: candidate.url,
     host,
@@ -346,11 +347,14 @@ async function fetchCandidate(candidate: Candidate, entityName: string, rootDoma
     searchTitle: candidate.searchTitle,
     searchSnippet: candidate.searchSnippet,
     publishedAt: candidate.publishedAt,
-    mentionsEntity: mentionsEntity(`${candidate.searchTitle || ""} ${candidate.searchSnippet || ""}`, entityName, rootDomain),
+    mentionsEntity: snippetMentions,
+    verificationStatus: snippetMentions ? "search-snippet-match" : "unverified",
     fetched: false,
     observedAt
   };
-  if (sourceClass === "platform" && /(?:facebook|instagram|linkedin|tiktok|t\.me|telegram)/i.test(host)) return base;
+  // Do not silently trust or skip social/profile URLs. Attempt to fetch every
+  // eligible public reference through the same SSRF-safe network layer. If a
+  // platform blocks automated access, the source remains visible as unverified.
   try {
     const fetched = await safeFetch(candidate.url, { timeoutMs: envInt("URL_AGENT_EXTERNAL_TIMEOUT_MS", 9000, 2000, 30000), maxBytes: envInt("URL_AGENT_EXTERNAL_MAX_BYTES", 1_500_000, 100_000, 5_000_000) });
     const contentType = fetched.headers.get("content-type") || "";
@@ -358,6 +362,7 @@ async function fetchCandidate(candidate: Candidate, entityName: string, rootDoma
     const page = parsePage(fetched.text, fetched.url, fetched.status, fetched);
     const text = `${page.title || ""} ${page.description || ""} ${page.textSample.slice(0, 12000)}`;
     const backlink = pageLinksToTarget(page, rootDomain);
+    const mention = mentionsEntity(text, entityName, rootDomain);
     return {
       ...base,
       finalUrl: fetched.url,
@@ -366,12 +371,16 @@ async function fetchCandidate(candidate: Candidate, entityName: string, rootDoma
       title: page.title,
       description: page.description,
       publishedAt: extractPublishedAt(page) || candidate.publishedAt,
-      mentionsEntity: mentionsEntity(text, entityName, rootDomain),
+      wordCount: page.wordCount,
+      contentSample: page.textSample.slice(0, 2400),
+      linksToTarget: backlink,
+      mentionsEntity: mention,
+      verificationStatus: backlink ? "verified-backlink" : mention ? "verified-mention" : "fetched-no-match",
       discoveredBy: backlink ? unique([...base.discoveredBy, "backlink-to-target"]) : base.discoveredBy,
       fetched: true
     };
   } catch (error) {
-    return { ...base, error: error instanceof Error ? error.message : String(error) };
+    return { ...base, verificationStatus: "fetch-blocked", error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -403,10 +412,13 @@ export async function researchExternalWeb(rootUrl: string, entityName: string, p
 
   // Stage A: collect everything the target itself points at, including JSON-LD sameAs/citations.
   for (const page of pages) {
-    for (const link of page.links) addCandidate(candidates, link, "outbound-link", 60);
+    // Direct references published by the target are high-priority evidence leads.
+    // They do not become confirmation until the linked destination is fetched and checked.
+    for (const link of page.links) addCandidate(candidates, link, "outbound-link", 120);
+    for (const social of page.socials) addCandidate(candidates, social, "first-party-social", 140);
     const jsonUrls: string[] = [];
     page.jsonLd.forEach(doc => collectJsonUrls(doc, jsonUrls));
-    jsonUrls.forEach(url => addCandidate(candidates, url, "structured-data", 85));
+    jsonUrls.forEach(url => addCandidate(candidates, url, "structured-data", 130));
   }
 
   // Stage B: search beyond the target domain for mentions, articles, reviews and possible backlinks.
@@ -439,9 +451,18 @@ export async function researchExternalWeb(rootUrl: string, entityName: string, p
     if (isSameSite(host, rootDomain)) candidates.delete(url);
   }
 
-  const maxSources = envInt("URL_AGENT_EXTERNAL_MAX_SOURCES", 24, 1, 60);
-  const selected = [...candidates.values()].sort((a, b) => b.priority - a.priority).slice(0, maxSources);
-  const concurrency = envInt("URL_AGENT_EXTERNAL_CONCURRENCY", 4, 1, 10);
+  const allCandidates = [...candidates.values()].sort((a, b) => b.priority - a.priority);
+  const directKinds = new Set(["outbound-link", "structured-data", "first-party-social"]);
+  const isDirect = (candidate: Candidate) => [...candidate.discoveredBy].some(kind => directKinds.has(kind));
+  const directCandidates = allCandidates.filter(isDirect);
+  const directMax = envInt("URL_AGENT_EXTERNAL_DIRECT_MAX_SOURCES", 60, 1, 150);
+  const searchMax = envInt("URL_AGENT_EXTERNAL_SEARCH_MAX_SOURCES", envInt("URL_AGENT_EXTERNAL_MAX_SOURCES", 24, 1, 60), 1, 80);
+  const directSelected = directCandidates.slice(0, directMax);
+  const selectedUrls = new Set(directSelected.map(x => x.url));
+  const searchSelected = allCandidates.filter(x => !selectedUrls.has(x.url)).slice(0, searchMax);
+  const selected = [...directSelected, ...searchSelected];
+  if (directCandidates.length > directSelected.length) notes.push(`Direct-reference verification was bounded to ${directSelected.length} of ${directCandidates.length} eligible external URLs for this run. Increase URL_AGENT_EXTERNAL_DIRECT_MAX_SOURCES when running on infrastructure sized for a larger pass.`);
+  const concurrency = envInt("URL_AGENT_EXTERNAL_CONCURRENCY", 6, 1, 12);
   const sources: WebEvidenceSource[] = [];
   for (let i = 0; i < selected.length; i += concurrency) {
     const batch = selected.slice(i, i + concurrency);
@@ -454,14 +475,20 @@ export async function researchExternalWeb(rootUrl: string, entityName: string, p
   const thirdPartyDomains = new Set(sources.filter(s => s.sourceClass === "third-party" && s.fetched).map(s => registrableDomain(s.host))).size;
   const corroboratingThirdPartyDomains = new Set(corroboratingThirdParty.map(s => registrableDomain(s.host))).size;
   const platformSources = sources.filter(s => s.sourceClass === "platform").length;
+  const verifiedPlatformSources = sources.filter(s => s.sourceClass === "platform" && s.fetched && (s.mentionsEntity || isBacklink(s)) && (s.status || 0) >= 200 && (s.status || 0) < 400).length;
+  const isDirectReference = (s: WebEvidenceSource) => s.discoveredBy.some(kind => ["outbound-link", "structured-data", "first-party-social"].includes(kind));
+  const directReferenceSources = sources.filter(isDirectReference).length;
+  const verifiedDirectReferenceSources = sources.filter(s => isDirectReference(s) && s.fetched && (s.mentionsEntity || isBacklink(s)) && (s.status || 0) >= 200 && (s.status || 0) < 400).length;
   const backlinkSources = sources.filter(s => s.sourceClass === "third-party" && s.fetched && isBacklink(s));
   const backlinkDomains = new Set(backlinkSources.map(s => registrableDomain(s.host))).size;
-  const score = coverageScore(corroboratingThirdPartyDomains, corroboratingThirdParty.length, platformSources, backlinkDomains);
+  const score = coverageScore(corroboratingThirdPartyDomains, corroboratingThirdParty.length, verifiedPlatformSources, backlinkDomains);
 
   if (sources.length && !corroboratingThirdParty.length) notes.push("External sources were discovered, but no fetched third-party page produced a clear entity mention or direct link back to the target. Treat external corroboration as unverified.");
   if (corroboratingThirdPartyDomains === 1) notes.push("Only one corroborating third-party domain was observed. A single external domain should not be treated as broad consensus.");
   if (backlinkSources.length) notes.push(`${backlinkSources.length} fetched third-party source(s) linked directly back to the target across ${backlinkDomains} independent domain(s).`);
-  if (provider === "duckduckgo") notes.push("Web-wide discovery used the built-in public DuckDuckGo index. Google Custom Search is the preferred hosted provider when GOOGLE_CSE_API_KEY and GOOGLE_CSE_CX are configured; users can choose an available provider in the web interface.");
+  notes.push(`${verifiedDirectReferenceSources} of ${directReferenceSources} selected direct external reference(s) were fetched and content-verified as an entity mention or backlink. A link published by the target does not increase corroboration unless the destination itself supports the relationship.`);
+  if (platformSources) notes.push(`${verifiedPlatformSources} of ${platformSources} public social/platform reference(s) were directly fetchable and verified. Platforms that block automated public access remain visible but do not count as verified confirmation.`);
+  if (provider === "duckduckgo") notes.push("Web-wide discovery used the built-in public DuckDuckGo search fallback. For higher-volume or more reproducible coverage, configure SearXNG, Brave Search, Serper, Tavily or Google CSE.");
   if (provider === "google-cse") notes.push("Web-wide discovery used Google Custom Search as the external index selected for this investigation.");
   notes.push("No live crawler can guarantee discovery of every backlink or every page on the public web. This stage performs bounded live discovery plus search-index discovery; exhaustive backlink coverage depends on the external index available to the runtime.");
   notes.push("Source coverage is a measure of independent-domain corroboration, not a probability that every claim is true. Claim-level verification still depends on the evidence attached to each assertion.");
@@ -478,6 +505,9 @@ export async function researchExternalWeb(rootUrl: string, entityName: string, p
     corroboratingThirdPartySources: corroboratingThirdParty.length,
     corroboratingThirdPartyDomains,
     platformSources,
+    verifiedPlatformSources,
+    directReferenceSources,
+    verifiedDirectReferenceSources,
     sourceCoverageScore: score,
     coverageLevel: coverageLevel(score),
     sources,
