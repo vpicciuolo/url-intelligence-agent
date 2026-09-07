@@ -31,64 +31,21 @@ COPY index.html ui-v2.css ui-v2.js ./
 COPY patch-ui.mjs ./patch-ui.mjs
 COPY assets ./assets
 
-RUN node /app/patch-ui.mjs
-
-# Reconstruct public brand assets from text-safe embedded sources.
-# og.*.b64 files are sequential pieces of ONE base64 JPEG stream.
-# Some imported JPEG sources omit the optional terminal EOI bytes; repair them
-# deterministically instead of failing the entire Hugging Face Space build.
+# Validate that the exact production logo and social preview supplied to the
+# deploy workflow are present and are real JPEG files before the image builds.
 RUN node - <<'NODE'
 const fs = require('fs');
-const path = require('path');
-const dir = '/app/assets';
-
-function cleanBase64(value) {
-  return String(value || '').replace(/\s+/g, '');
+for (const [name, min] of [['logo.jpg', 5000], ['og.jpg', 15000]]) {
+  const file = `/app/assets/${name}`;
+  const data = fs.readFileSync(file);
+  if (data.length < min || data[0] !== 0xff || data[1] !== 0xd8) {
+    throw new Error(`${name} is invalid (${data.length} bytes)`);
+  }
+  console.log(`${name} OK (${data.length} bytes)`);
 }
-
-function repairJpeg(data, name, minimum) {
-  if (data.length < minimum || data.length > 800000 || data[0] !== 0xff || data[1] !== 0xd8) {
-    throw new Error(`${name} invalid: ${data.length} bytes`);
-  }
-
-  let end = -1;
-  for (let i = data.length - 2; i >= 2; i -= 1) {
-    if (data[i] === 0xff && data[i + 1] === 0xd9) {
-      end = i + 2;
-      break;
-    }
-  }
-
-  if (end >= 0) {
-    const normalized = data.subarray(0, end);
-    console.log(`${name}: ${data.length}B -> ${normalized.length}B; trimmed=${data.length - normalized.length}B`);
-    return normalized;
-  }
-
-  const repaired = Buffer.concat([data, Buffer.from([0xff, 0xd9])]);
-  console.log(`${name}: terminal JPEG EOI missing; appended 2 bytes (${data.length}B -> ${repaired.length}B)`);
-  return repaired;
-}
-
-const logoSource = cleanBase64(fs.readFileSync(path.join(dir, 'logo.base64.txt'), 'utf8'));
-if (!logoSource) throw new Error('Embedded logo source is empty');
-const logo = repairJpeg(Buffer.from(logoSource, 'base64'), 'logo.jpg', 5000);
-fs.writeFileSync(path.join(dir, 'logo.jpg'), logo);
-
-const parts = fs.readdirSync(dir)
-  .filter((name) => /^og\.\d+\.b64$/.test(name))
-  .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-if (!parts.length) throw new Error('Embedded Open Graph asset chunks are missing');
-
-const ogSource = parts
-  .map((name) => cleanBase64(fs.readFileSync(path.join(dir, name), 'utf8')))
-  .join('');
-if (!ogSource) throw new Error('Embedded Open Graph source is empty');
-
-const og = repairJpeg(Buffer.from(ogSource, 'base64'), 'og.jpg', 15000);
-fs.writeFileSync(path.join(dir, 'og.jpg'), og);
-console.log(`Brand assets ready: logo=${logo.length}B, og=${og.length}B, chunks=${parts.length}`);
 NODE
+
+RUN node /app/patch-ui.mjs
 
 EXPOSE 7860
 CMD ["node", "dist/src/cli.js", "serve", "--host", "0.0.0.0", "--port", "7860"]
