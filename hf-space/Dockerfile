@@ -13,12 +13,17 @@ ENV NODE_ENV=production \
     PORT=7860 \
     URL_AGENT_UI_FILE=/app/index.html \
     URL_AGENT_ASSET_DIR=/app/assets \
-    URL_AGENT_OWNER_USERNAME=vpicciuolo
+    URL_AGENT_OWNER_USERNAME=vpicciuolo \
+    URL_AGENT_EXTERNAL_RESEARCH=true \
+    URL_AGENT_EXTERNAL_MAX_SOURCES=24 \
+    URL_AGENT_EXTERNAL_CONCURRENCY=4 \
+    URL_AGENT_SEARCH_QUERIES=4 \
+    URL_AGENT_SEARCH_RESULTS_PER_QUERY=10
 COPY package*.json ./
 RUN npm install --omit=dev --ignore-scripts
 COPY --from=build /app/dist ./dist
 COPY README.md LICENSE SECURITY.md ./
-COPY index.html ./index.html
+COPY index.html ui-v2.css ui-v2.js ./
 COPY patch-ui.mjs ./patch-ui.mjs
 COPY assets ./assets
 RUN node /app/patch-ui.mjs
