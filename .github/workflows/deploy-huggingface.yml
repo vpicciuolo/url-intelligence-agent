@@ -46,22 +46,11 @@ jobs:
           cp hf-space/Dockerfile /tmp/hf-payload/Dockerfile
           cp hf-space/index.html /tmp/hf-payload/index.html
 
+          # Hugging Face rejects normal git pushes containing binary files.
+          # Keep only text-safe asset sources in the Space repository.
           mkdir -p /tmp/hf-payload/assets
-          if [ -d hf-space/assets ]; then
-            cp -R hf-space/assets/. /tmp/hf-payload/assets/
-          fi
-
-          # Build the real square project logo from the repository-safe base64 source.
-          if [ -s hf-space/assets/logo.base64.txt ]; then
-            base64 --decode hf-space/assets/logo.base64.txt > /tmp/hf-payload/assets/logo.jpg
-          fi
-
-          # Use the official URL Intelligence Agent banner as the 1200x630 social/OG asset.
-          curl --fail --location --silent --show-error \
-            'https://storage.mlcdn.com/account_image/2365654/725Q0AzeY15nwDK3JocgKXq5AhxRoNC53LUBchc7.png' \
-            --output /tmp/hf-payload/assets/og.jpg
-
-          file /tmp/hf-payload/assets/logo.jpg /tmp/hf-payload/assets/og.jpg
+          cp hf-space/assets/README.txt /tmp/hf-payload/assets/README.txt
+          cp hf-space/assets/logo.base64.txt /tmp/hf-payload/assets/logo.base64.txt
 
       - name: Sync Docker Space
         env:
