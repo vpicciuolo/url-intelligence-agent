@@ -1,0 +1,49 @@
+name: Deploy Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'hf-space/**'
+      - '.github/workflows/deploy-huggingface.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huggingface-space-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub repository
+        uses: actions/checkout@v4
+
+      - name: Verify Hugging Face token
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN is missing. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Sync Space files
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git clone https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent /tmp/hf-space
+          rsync -av --delete --exclude='.git' hf-space/ /tmp/hf-space/
+          cd /tmp/hf-space
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No Hugging Face Space changes to deploy."
+            exit 0
+          fi
+          git commit -m "Deploy from GitHub ${GITHUB_SHA}"
+          git push "https://vpicciuolo:${HF_TOKEN}@huggingface.co/spaces/vpicciuolo/url-intelligence-agent" HEAD:main
