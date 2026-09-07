@@ -31,18 +31,29 @@ COPY index.html ui-v2.css ui-v2.js ./
 COPY patch-ui.mjs ./patch-ui.mjs
 COPY assets ./assets
 
-# Validate that the exact production logo and social preview supplied to the
-# deploy workflow are present and are real JPEG files before the image builds.
+# Hugging Face rejects normal git pushes containing binary files. The deploy
+# workflow therefore converts the approved source images to JPEG, stores them
+# as text-safe base64, and this step reconstructs the exact runtime files.
 RUN node - <<'NODE'
 const fs = require('fs');
-for (const [name, min] of [['logo.jpg', 5000], ['og.jpg', 15000]]) {
-  const file = `/app/assets/${name}`;
-  const data = fs.readFileSync(file);
-  if (data.length < min || data[0] !== 0xff || data[1] !== 0xd8) {
-    throw new Error(`${name} is invalid (${data.length} bytes)`);
-  }
-  console.log(`${name} OK (${data.length} bytes)`);
-}
+const path = require('path');
+const dir = '/app/assets';
+const clean = (v) => String(v || '').replace(/\s+/g, '');
+
+const logoSource = clean(fs.readFileSync(path.join(dir, 'logo.base64.txt'), 'utf8'));
+const logo = Buffer.from(logoSource, 'base64');
+if (logo.length < 5000 || logo[0] !== 0xff || logo[1] !== 0xd8) throw new Error('logo.jpg reconstruction failed');
+fs.writeFileSync(path.join(dir, 'logo.jpg'), logo);
+
+const parts = fs.readdirSync(dir)
+  .filter((name) => /^og\.\d+\.b64$/.test(name))
+  .sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+if (!parts.length) throw new Error('Open Graph chunks missing');
+const ogSource = parts.map((name) => clean(fs.readFileSync(path.join(dir,name),'utf8'))).join('');
+const og = Buffer.from(ogSource, 'base64');
+if (og.length < 15000 || og[0] !== 0xff || og[1] !== 0xd8) throw new Error('og.jpg reconstruction failed');
+fs.writeFileSync(path.join(dir, 'og.jpg'), og);
+console.log(`Approved brand assets reconstructed: logo=${logo.length}B og=${og.length}B`);
 NODE
 
 RUN node /app/patch-ui.mjs
