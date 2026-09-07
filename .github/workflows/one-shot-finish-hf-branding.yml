@@ -1,0 +1,59 @@
+name: One-shot finish Hugging Face branding
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-shot-finish-hf-branding.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate embedded brand assets
+        run: |
+          set -euo pipefail
+          test -s hf-space/assets/logo.base64.txt
+          compgen -G 'hf-space/assets/og.*.b64' >/dev/null
+          tr -d '\n\r\t ' < hf-space/assets/logo.base64.txt | base64 -d > /tmp/logo.jpg
+          cat hf-space/assets/og.*.b64 | tr -d '\n\r\t ' | base64 -d > /tmp/og.jpg
+          python3 - <<'PY'
+          from pathlib import Path
+          for name, minimum in [('logo.jpg', 5000), ('og.jpg', 15000)]:
+              p = Path('/tmp') / name
+              data = p.read_bytes()
+              if len(data) < minimum or data[:2] != b'\xff\xd8':
+                  raise SystemExit(f'{name} invalid: {len(data)} bytes')
+              print(f'{name}: {len(data)} bytes, JPEG OK')
+          PY
+
+      - name: Apply branding, SEO and social metadata
+        run: python3 scripts/finish_hf_branding.py
+
+      - name: Verify metadata
+        run: |
+          grep -q '^thumbnail: https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg' hf-space/README.md
+          grep -q 'og:image:width" content="1200"' hf-space/index.html
+          grep -q 'twitter:card" content="summary_large_image"' hf-space/index.html
+          grep -q 'canonical" href="https://vpicciuolo-url-intelligence-agent.hf.space/' hf-space/index.html
+          grep -q 'fetchpriority="high"' hf-space/index.html
+
+      - name: Commit final page update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hf-space/README.md hf-space/index.html hf-space/ui-v2.css hf-space/assets/README.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Finish Hugging Face SEO, logo and social preview"
+          git push origin HEAD:main
