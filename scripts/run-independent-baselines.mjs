@@ -28,7 +28,7 @@ const BASELINES = [
     package: "https://www.npmjs.com/package/link-preview-js",
     license: "MIT",
     type: "link-preview library",
-    adapter: "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled. The library does not expose HTTP response status in its public result, so status-family assertions remain unscored as failures rather than inferred.",
+    adapter: "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled. The library does not expose HTTP response status in its public result, so status-family assertions remain failures rather than being inferred.",
   },
 ];
 
@@ -85,6 +85,14 @@ function inputTargetsPrivateNetwork(input) {
   }
 }
 
+function inputUsesUnsupportedScheme(input) {
+  try {
+    return !/^https?:$/.test(new URL(input).protocol);
+  } catch {
+    return false;
+  }
+}
+
 function classifyBaselineFailure(error, input) {
   const message = messageOf(error);
   if (
@@ -92,6 +100,9 @@ function classifyBaselineFailure(error, input) {
     (inputTargetsPrivateNetwork(input) && /valid (?:a )?url|not allowed|fetch failed/i.test(message))
   ) {
     return { action: "block", error: message };
+  }
+  if (inputUsesUnsupportedScheme(input)) {
+    return { action: "reject", error: message };
   }
   if (/valid (?:a )?url|invalid url|unsupported protocol|only http|only absolute urls|protocol.*not supported|failed to parse url|scheme/i.test(message)) {
     return { action: "reject", error: message };
