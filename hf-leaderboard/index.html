@@ -4,25 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>URL Intelligence Benchmark Leaderboard</title>
-  <meta name="description" content="Public reproducible leaderboard for URL intelligence agents, MCP servers, metadata analyzers and web-intelligence tools." />
+  <meta name="description" content="Public reproducible leaderboard comparing URL intelligence agents, MCP servers, metadata libraries and web-analysis tools." />
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
   <meta property="og:title" content="URL Intelligence Benchmark Leaderboard" />
-  <meta property="og:description" content="Compare URL intelligence agents, MCP servers and web-analysis tools on a reproducible public benchmark." />
+  <meta property="og:description" content="Compare independent URL-analysis tools and agents on the same reproducible, safety-aware benchmark." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard" />
   <meta name="twitter:card" content="summary_large_image" />
   <style>
-    :root{color-scheme:dark;--bg:#06080d;--panel:#0c111b;--panel2:#101826;--line:#202c3c;--text:#f3f7fb;--muted:#92a0b2;--accent:#5ee7ff;--accent2:#a875ff;--good:#4ce0a3}
-    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(94,231,255,.09),transparent 34%),radial-gradient(circle at 80% 0%,rgba(168,117,255,.1),transparent 30%),var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    a{color:inherit}.wrap{max-width:1200px;margin:auto;padding:40px 22px 72px}.eyebrow{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:rgba(12,17,27,.7);padding:7px 11px;border-radius:999px;color:#c8d5e4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 16px var(--good)}h1{font-size:clamp(38px,6vw,74px);line-height:.98;margin:20px 0 14px;max-width:900px;letter-spacing:-.045em}.grad{background:linear-gradient(90deg,var(--accent),#b89cff);-webkit-background-clip:text;background-clip:text;color:transparent}.lead{max-width:830px;color:#b2c0d0;font-size:18px;margin:0 0 24px}.actions{display:flex;gap:11px;flex-wrap:wrap;margin:26px 0 38px}.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;border-radius:10px;padding:11px 15px;border:1px solid var(--line);background:var(--panel);font-weight:700}.btn.primary{background:linear-gradient(135deg,#1662ff,#7649e8);border-color:transparent}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:24px 0 34px}.stat{border:1px solid var(--line);background:linear-gradient(180deg,rgba(16,24,38,.95),rgba(9,13,21,.95));border-radius:14px;padding:17px}.stat b{font-size:28px;display:block;letter-spacing:-.03em}.stat span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}.section{border:1px solid var(--line);background:rgba(10,15,24,.88);border-radius:16px;overflow:hidden;margin-top:18px}.section-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:14px}.section-head h2{font-size:20px;margin:0}.section-head small{color:var(--muted)}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:920px}th,td{text-align:left;padding:15px 16px;border-bottom:1px solid #17202e}th{color:#92a0b2;font-size:11px;text-transform:uppercase;letter-spacing:.065em;background:#0a1019;position:sticky;top:0}td.score{font-weight:800;color:#dfffee}.rank{font-size:20px;font-weight:900}.tool a{text-decoration:none}.tool strong{display:block}.tool small{color:var(--muted)}.badge{display:inline-block;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:#162538;border:1px solid #263c54;color:#bbdefa}.badge.open{background:#0f2b22;border-color:#245945;color:#9cf0ca}.loading{color:var(--muted)}.notice{padding:16px 20px;color:#aebbc9;background:#0a1018}.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-top:18px}.card{border:1px solid var(--line);background:rgba(10,15,24,.88);border-radius:16px;padding:20px}.card h3{margin:0 0 8px}.card p{color:#aebbc9;margin:0 0 14px}.steps{margin:0;padding-left:20px;color:#b5c2d1}.steps li{margin:8px 0}.footer{margin-top:38px;color:#7f8d9f;font-size:13px;text-align:center}.footer a{color:#b8c6d7}
-    @media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.wrap{padding-top:26px}}
+    :root{color-scheme:dark;--bg:#06080d;--panel:#0c111b;--line:#202c3c;--text:#f3f7fb;--muted:#92a0b2;--accent:#5ee7ff;--accent2:#a875ff;--good:#4ce0a3;--warn:#ffcb6b}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(94,231,255,.09),transparent 34%),radial-gradient(circle at 80% 0%,rgba(168,117,255,.1),transparent 30%),var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{color:inherit}.wrap{max-width:1280px;margin:auto;padding:40px 22px 72px}.eyebrow{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:rgba(12,17,27,.7);padding:7px 11px;border-radius:999px;color:#c8d5e4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 16px var(--good)}h1{font-size:clamp(38px,6vw,74px);line-height:.98;margin:20px 0 14px;max-width:900px;letter-spacing:-.045em}.grad{background:linear-gradient(90deg,var(--accent),#b89cff);-webkit-background-clip:text;background-clip:text;color:transparent}.lead{max-width:900px;color:#b2c0d0;font-size:18px;margin:0 0 24px}.actions{display:flex;gap:11px;flex-wrap:wrap;margin:26px 0 38px}.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;border-radius:10px;padding:11px 15px;border:1px solid var(--line);background:var(--panel);font-weight:700}.btn.primary{background:linear-gradient(135deg,#1662ff,#7649e8);border-color:transparent}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:24px 0 34px}.stat{border:1px solid var(--line);background:linear-gradient(180deg,rgba(16,24,38,.95),rgba(9,13,21,.95));border-radius:14px;padding:17px}.stat b{font-size:28px;display:block;letter-spacing:-.03em}.stat span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}.section{border:1px solid var(--line);background:rgba(10,15,24,.88);border-radius:16px;overflow:hidden;margin-top:18px}.section-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:14px}.section-head h2{font-size:20px;margin:0}.section-head small{color:var(--muted)}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:1120px}th,td{text-align:left;padding:14px 14px;border-bottom:1px solid #17202e;vertical-align:middle}th{color:#92a0b2;font-size:11px;text-transform:uppercase;letter-spacing:.065em;background:#0a1019;position:sticky;top:0}td.score{font-weight:800;color:#dfffee}.rank{font-size:18px;font-weight:900}.tool a{text-decoration:none}.tool strong{display:block}.tool small{color:var(--muted);display:block}.badge{display:inline-block;font-size:10px;font-weight:800;padding:4px 7px;border-radius:999px;background:#162538;border:1px solid #263c54;color:#bbdefa;white-space:nowrap}.badge.open{background:#0f2b22;border-color:#245945;color:#9cf0ca}.badge.warn{background:#33270f;border-color:#72551b;color:#ffd58b}.badge.independent{background:#221b38;border-color:#4d3875;color:#d2bfff}.loading{color:var(--muted)}.notice{padding:16px 20px;color:#aebbc9;background:#0a1018}.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-top:18px}.card{border:1px solid var(--line);background:rgba(10,15,24,.88);border-radius:16px;padding:20px}.card h3{margin:0 0 8px}.card p{color:#aebbc9;margin:0 0 14px}.steps{margin:0;padding-left:20px;color:#b5c2d1}.steps li{margin:8px 0}.policy{font-size:13px;color:#aebbc9;margin-top:8px}.footer{margin-top:38px;color:#7f8d9f;font-size:13px;text-align:center}.footer a{color:#b8c6d7}@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.wrap{padding-top:26px}}
   </style>
 </head>
 <body>
   <main class="wrap">
-    <div class="eyebrow"><span class="dot"></span> Public benchmark · reproducible results</div>
+    <div class="eyebrow"><span class="dot"></span> Public benchmark · independent baselines · reproducible results</div>
     <h1>URL Intelligence<br><span class="grad">Benchmark Leaderboard</span></h1>
-    <p class="lead">Compare URL intelligence agents, MCP servers, metadata analyzers and web-intelligence tools on the same open benchmark. Results are versioned, reproducible and safety-aware.</p>
+    <p class="lead">Compare URL intelligence agents, MCP servers and independent metadata/link-analysis libraries on the same open benchmark. Every published baseline is executed from a pinned package version and scored with the same evaluator.</p>
     <div class="actions">
       <a class="btn primary" href="https://github.com/vpicciuolo/url-intelligence-agent/issues/new?template=benchmark-submission.yml" target="_blank" rel="noopener">🏆 Submit your tool</a>
       <a class="btn" href="https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark" target="_blank" rel="noopener">📊 Benchmark dataset</a>
@@ -34,35 +32,35 @@
       <div class="stat"><b id="caseCount">55</b><span>Benchmark cases</span></div>
       <div class="stat"><b id="assertionCount">120</b><span>Scored assertions</span></div>
       <div class="stat"><b id="detCount">50</b><span>Deterministic cases</span></div>
-      <div class="stat"><b id="toolCount">1</b><span>Published tools</span></div>
+      <div class="stat"><b id="toolCount">3</b><span>Published tools</span></div>
     </section>
 
     <section class="section">
-      <div class="section-head"><div><h2>Official leaderboard</h2><small>Current benchmark: v0.1 seed release</small></div><small id="updated">Loading latest verified run…</small></div>
+      <div class="section-head"><div><h2>Official leaderboard</h2><small>Current benchmark: v0.1 seed release</small></div><small id="updated">Loading verified results…</small></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Rank</th><th>Tool / Agent</th><th>Overall</th><th>Safety</th><th>Status</th><th>Redirects</th><th>Content</th><th>Full agent</th><th>Open source</th></tr></thead>
-          <tbody id="rows"><tr><td colspan="9" class="loading">Loading verified benchmark result…</td></tr></tbody>
+          <thead><tr><th>Rank</th><th>Tool / Type</th><th>Core score</th><th>Safety</th><th>Status</th><th>Redirects</th><th>Content</th><th>Full agent</th><th>Source</th><th>Track</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="10" class="loading">Loading verified benchmark results…</td></tr></tbody>
         </table>
       </div>
-      <div class="notice">Scores are specific to the published benchmark revision. A 100% benchmark score is not a claim of perfect behavior on every website or network environment.</div>
+      <div class="notice"><strong>Safety gate:</strong> only tools with 100% reject/block safety accuracy receive an official rank. Full-agent completion is reported separately because library baselines do not implement the full investigation pipeline. A benchmark score is specific to this version and is not a claim of universal internet accuracy.</div>
     </section>
 
     <div class="grid">
       <section class="card">
-        <h3>How to submit</h3>
-        <p>The leaderboard is open to other tools. Submissions are reviewed for reproducibility before publication.</p>
+        <h3>Independent baseline methodology</h3>
+        <p>External tools are installed from pinned public package versions and exercised through their documented public APIs. Their upstream source is not modified. Adapter code only translates each tool's native outputs/errors into the benchmark's common prediction schema.</p>
         <ol class="steps">
-          <li>Run your analyzer on the pinned benchmark revision.</li>
-          <li>Generate JSONL predictions and score them with the included evaluator.</li>
-          <li>Publish the exact tool version/commit and reproduction command.</li>
-          <li>Open a Benchmark Submission issue with predictions and scorer output.</li>
+          <li><strong>url-metadata 5.12.0</strong> uses its network-only probe and built-in request-filtering-agent SSRF controls.</li>
+          <li><strong>link-preview-js 5.0.0</strong> uses its documented <code>resolveDNSHost</code> protection and manual redirect validation.</li>
+          <li>Raw predictions and scorer summaries are published with the Dataset for inspection.</li>
         </ol>
       </section>
       <section class="card">
-        <h3>What is measured</h3>
-        <p>Action classification, HTTP status families, redirects, content kinds, invalid input handling, URL normalization and reject/block safety including SSRF/private-network vectors.</p>
-        <a class="btn" href="https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark" target="_blank" rel="noopener">Inspect all test cases</a>
+        <h3>Add another tool</h3>
+        <p>Submit an open-source URL analyzer, MCP server, crawler, metadata library or web-intelligence agent with an exact version and reproduction path.</p>
+        <a class="btn" href="https://github.com/vpicciuolo/url-intelligence-agent/issues/new?template=benchmark-submission.yml" target="_blank" rel="noopener">Submit benchmark result</a>
+        <p class="policy" id="policy">Ranking policy loads from the published benchmark manifest.</p>
       </section>
     </div>
 
@@ -70,27 +68,44 @@
   </main>
 
   <script>
-    const latestUrl='https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark/resolve/main/results/latest.json';
-    const fallback={benchmark_cases:55,generated_at:'2026-09-07T22:01:37Z',git_sha:'ef7c5321c1a09e4d3808465c644cf5732dac91d2',overall_score:100,metrics:{overall_assertions:{ok:120,total:120,pct:100},security_action_accuracy:{pct:100},status_family:{pct:100},redirects:{pct:100},content_kind:{pct:100},full_agent_completion:{pct:100}}};
+    const manifestUrl='https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark/resolve/main/results/leaderboard.json';
     const pct=v=>Number.isFinite(Number(v))?`${Number(v).toFixed(2)}%`:'—';
-    function render(d){
-      const m=d.metrics||{};
-      document.getElementById('caseCount').textContent=d.benchmark_cases||55;
-      document.getElementById('assertionCount').textContent=m.overall_assertions?.total||120;
-      document.getElementById('updated').textContent=d.generated_at?`Verified ${new Date(d.generated_at).toLocaleString()}`:'Verified result';
-      document.getElementById('rows').innerHTML=`<tr>
-        <td class="rank">#1</td>
-        <td class="tool"><a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent" target="_blank" rel="noopener"><strong>URL Intelligence Agent</strong><small>vpicciuolo · commit ${(d.git_sha||'').slice(0,8)}</small></a></td>
-        <td class="score">${pct(d.overall_score)}</td>
-        <td class="score">${pct(m.security_action_accuracy?.pct)}</td>
+    const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    function renderEntry(entry){
+      const s=entry.summary||{},m=s.metrics||{};
+      const rank=entry.rank==null?'<span class="badge warn">Unranked</span>':`#${entry.rank}`;
+      const safety=entry.safety_gate_passed?`<span class="badge open">${pct(m.security_action_accuracy?.pct)} · pass</span>`:`<span class="badge warn">${pct(m.security_action_accuracy?.pct)} · gate fail</span>`;
+      const full=m.full_agent_completion?.total?pct(m.full_agent_completion?.pct):'N/A';
+      const track=entry.independent?'<span class="badge independent">Independent baseline</span>':'<span class="badge open">Reference agent</span>';
+      const href=entry.hugging_face||entry.source||'#';
+      return `<tr>
+        <td class="rank">${rank}</td>
+        <td class="tool"><a href="${esc(href)}" target="_blank" rel="noopener"><strong>${esc(entry.name)}</strong><small>${esc(entry.version)} · ${esc(entry.type||'tool')}</small></a></td>
+        <td class="score">${pct(s.overall_score)}</td>
+        <td>${safety}</td>
         <td class="score">${pct(m.status_family?.pct)}</td>
         <td class="score">${pct(m.redirects?.pct)}</td>
         <td class="score">${pct(m.content_kind?.pct)}</td>
-        <td class="score">${pct(m.full_agent_completion?.pct)}</td>
-        <td><span class="badge open">Yes · MIT</span></td>
+        <td class="score">${full}</td>
+        <td><a class="badge" href="${esc(entry.source||'#')}" target="_blank" rel="noopener">${esc(entry.license||'Source')}</a></td>
+        <td>${track}</td>
       </tr>`;
     }
-    fetch(latestUrl,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('fetch');return r.json()}).then(render).catch(()=>render(fallback));
+    function render(data){
+      const entries=data.entries||[];
+      const reference=entries.find(e=>e.id==='url-intelligence-agent')||entries[0]||{};
+      const metrics=reference.summary?.metrics||{};
+      document.getElementById('caseCount').textContent=reference.summary?.benchmark_cases||55;
+      document.getElementById('assertionCount').textContent=metrics.overall_assertions?.total||120;
+      document.getElementById('toolCount').textContent=entries.length||0;
+      document.getElementById('updated').textContent=data.generated_at?`Verified ${new Date(data.generated_at).toLocaleString()}`:'Verified results';
+      document.getElementById('policy').textContent=data.ranking_policy||'Safety-aware ranking policy.';
+      document.getElementById('rows').innerHTML=entries.length?entries.map(renderEntry).join(''):'<tr><td colspan="10" class="loading">No published entries.</td></tr>';
+    }
+    fetch(manifestUrl,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('manifest fetch failed');return r.json()}).then(render).catch(err=>{
+      document.getElementById('updated').textContent='Results temporarily unavailable';
+      document.getElementById('rows').innerHTML=`<tr><td colspan="10" class="loading">Could not load the published leaderboard manifest. ${esc(err.message)}</td></tr>`;
+    });
   </script>
 </body>
 </html>
