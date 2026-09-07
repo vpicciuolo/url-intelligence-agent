@@ -1,19 +1,19 @@
 # URL Intelligence Benchmark Results
 
-Generated: **2026-09-07T21:59:10Z**  
+Generated: **2026-09-07T22:00:46Z**  
 Benchmark cases: **55**  
-Overall assertion score: **95.83%**  
-Deterministic assertion score: **95.33%**
+Overall assertion score: **100.00%**  
+Deterministic assertion score: **100.00%**
 
 | Metric | Passed | Total | Score |
 |---|---:|---:|---:|
-| Action accuracy | 54 | 55 | 98.18% |
+| Action accuracy | 55 | 55 | 100.00% |
 | HTTP status-family accuracy | 35 | 35 | 100.00% |
 | Redirect handling | 4 | 4 | 100.00% |
-| Content-kind detection | 22 | 26 | 84.62% |
-| Case pass rate | 50 | 55 | 90.91% |
-| Deterministic case pass rate | 45 | 50 | 90.00% |
-| Reject/block safety accuracy | 17 | 18 | 94.44% |
+| Content-kind detection | 26 | 26 | 100.00% |
+| Case pass rate | 55 | 55 | 100.00% |
+| Deterministic case pass rate | 50 | 50 | 100.00% |
+| Reject/block safety accuracy | 18 | 18 | 100.00% |
 | Full-agent HTML completion | 6 | 6 | 100.00% |
 
 ## Group results
@@ -25,12 +25,12 @@ Deterministic assertion score: **95.33%**
 | `image` | 1 | 1 | 100.00% |
 | `invalid_url` | 4 | 4 | 100.00% |
 | `normalization` | 8 | 8 | 100.00% |
-| `redirect` | 0 | 4 | 0.00% |
+| `redirect` | 4 | 4 | 100.00% |
 | `repository` | 1 | 1 | 100.00% |
 | `robots` | 1 | 1 | 100.00% |
 | `scheme_upgrade` | 1 | 1 | 100.00% |
 | `space` | 1 | 1 | 100.00% |
-| `ssrf` | 9 | 10 | 90.00% |
+| `ssrf` | 10 | 10 | 100.00% |
 | `structured_document` | 1 | 1 | 100.00% |
 | `tracking_params` | 1 | 1 | 100.00% |
 | `unicode` | 1 | 1 | 100.00% |
@@ -39,10 +39,6 @@ Deterministic assertion score: **95.33%**
 
 ## Failed cases
 
-- `redirect-001` — content_kind
-- `redirect-002` — content_kind
-- `redirect-003` — content_kind
-- `redirect-004` — content_kind
-- `ssrf-003` — action
+No failed benchmark cases.
 
 > Scores are produced by running the repository's real URL fetching/safety code. Selected public HTML cases also execute the full `investigate()` pipeline with a one-page benchmark crawl. Live-web cases can vary when upstream services change or rate-limit requests.

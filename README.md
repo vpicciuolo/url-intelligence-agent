@@ -43,9 +43,9 @@ The repository is continuously measured against the public **URL Intelligence Be
 
 | Metric | Latest score |
 |---|---:|
-| Overall benchmark | **95.83%** |
-| Deterministic assertions | **95.33%** |
-| Reject/block safety | **94.44%** |
+| Overall benchmark | **100.00%** |
+| Deterministic assertions | **100.00%** |
+| Reject/block safety | **100.00%** |
 | Full-agent HTML completion | **100.00%** |
 
 **Dataset:** https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark  

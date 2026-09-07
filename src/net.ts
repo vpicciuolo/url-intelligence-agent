@@ -39,7 +39,8 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
   try { url = new URL(raw); } catch { throw new Error("Invalid URL"); }
   if (!/^https?:$/.test(url.protocol)) throw new Error("Only http/https URLs are allowed");
   if (url.username || url.password) throw new Error("Credentials in URLs are not allowed");
-  const host = url.hostname.toLowerCase();
+  const rawHost = url.hostname.toLowerCase();
+  const host = rawHost.startsWith("[") && rawHost.endsWith("]") ? rawHost.slice(1, -1) : rawHost;
   if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) throw new Error("Local/private host is blocked");
   if (net.isIP(host)) {
     if (isPrivateIp(host)) throw new Error("Private/reserved IP blocked");

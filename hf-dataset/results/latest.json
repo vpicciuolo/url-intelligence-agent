@@ -3,25 +3,25 @@
   "benchmark_cases": 55,
   "predictions": 55,
   "missing": [],
-  "generated_at": "2026-09-07T21:59:10Z",
-  "git_sha": "93579968f2b90a38b439aa9b7631be2fb31df0ae",
-  "overall_score": 95.83,
-  "deterministic_score": 95.33,
+  "generated_at": "2026-09-07T22:00:46Z",
+  "git_sha": "788a1f5f7d651f30d52f36c477c954c4650a93ed",
+  "overall_score": 100.0,
+  "deterministic_score": 100.0,
   "metrics": {
     "action": {
-      "ok": 54,
+      "ok": 55,
       "total": 55,
-      "pct": 98.18
+      "pct": 100.0
     },
     "content_kind": {
-      "ok": 22,
+      "ok": 26,
       "total": 26,
-      "pct": 84.62
+      "pct": 100.0
     },
     "overall_assertions": {
-      "ok": 115,
+      "ok": 120,
       "total": 120,
-      "pct": 95.83
+      "pct": 100.0
     },
     "redirects": {
       "ok": 4,
@@ -34,24 +34,24 @@
       "pct": 100.0
     },
     "case_pass_rate": {
-      "ok": 50,
+      "ok": 55,
       "total": 55,
-      "pct": 90.91
+      "pct": 100.0
     },
     "deterministic_assertions": {
-      "ok": 102,
+      "ok": 107,
       "total": 107,
-      "pct": 95.33
+      "pct": 100.0
     },
     "deterministic_case_pass_rate": {
-      "ok": 45,
+      "ok": 50,
       "total": 50,
-      "pct": 90.0
+      "pct": 100.0
     },
     "security_action_accuracy": {
-      "ok": 17,
+      "ok": 18,
       "total": 18,
-      "pct": 94.44
+      "pct": 100.0
     },
     "full_agent_completion": {
       "ok": 6,
@@ -86,9 +86,9 @@
       "pct": 100.0
     },
     "redirect": {
-      "ok": 0,
+      "ok": 4,
       "total": 4,
-      "pct": 0.0
+      "pct": 100.0
     },
     "repository": {
       "ok": 1,
@@ -111,9 +111,9 @@
       "pct": 100.0
     },
     "ssrf": {
-      "ok": 9,
+      "ok": 10,
       "total": 10,
-      "pct": 90.0
+      "pct": 100.0
     },
     "structured_document": {
       "ok": 1,
@@ -141,57 +141,6 @@
       "pct": 100.0
     }
   },
-  "average_network_elapsed_ms": 74,
-  "failures": [
-    {
-      "id": "redirect-001",
-      "group": "redirect",
-      "failed_checks": [
-        "content_kind"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "analyze",
-      "error": null
-    },
-    {
-      "id": "redirect-002",
-      "group": "redirect",
-      "failed_checks": [
-        "content_kind"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "analyze",
-      "error": null
-    },
-    {
-      "id": "redirect-003",
-      "group": "redirect",
-      "failed_checks": [
-        "content_kind"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "analyze",
-      "error": null
-    },
-    {
-      "id": "redirect-004",
-      "group": "redirect",
-      "failed_checks": [
-        "content_kind"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "analyze",
-      "error": null
-    },
-    {
-      "id": "ssrf-003",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "error",
-      "error": "getaddrinfo ENOTFOUND [::1]"
-    }
-  ]
+  "average_network_elapsed_ms": 95,
+  "failures": []
 }

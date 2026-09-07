@@ -66,17 +66,17 @@ These results are generated automatically from the current open-source repositor
 
 | Metric | Latest score |
 |---|---:|
-| Overall assertion score | **95.83%** |
-| Deterministic assertion score | **95.33%** |
-| Action accuracy | **98.18%** |
+| Overall assertion score | **100.00%** |
+| Deterministic assertion score | **100.00%** |
+| Action accuracy | **100.00%** |
 | HTTP status-family accuracy | **100.00%** |
 | Redirect handling | **100.00%** |
-| Content-kind detection | **84.62%** |
-| Reject/block safety accuracy | **94.44%** |
+| Content-kind detection | **100.00%** |
+| Reject/block safety accuracy | **100.00%** |
 | Full-agent HTML completion | **100.00%** |
 
-Generated: `2026-09-07T21:59:10Z`  
-Git commit: `93579968f2b90a38b439aa9b7631be2fb31df0ae`
+Generated: `2026-09-07T22:00:46Z`  
+Git commit: `788a1f5f7d651f30d52f36c477c954c4650a93ed`
 
 See `results/latest.md` for the group breakdown and failed-case list, and `results/latest.json` for machine-readable metrics.
 <!-- BENCHMARK_RESULTS_END -->
