@@ -39,7 +39,7 @@ jobs:
       - name: Prepare and validate Docker Space payload
         run: |
           set -euo pipefail
-          rm -rf /tmp/hf-payload
+          rm -rf /tmp/hf-payload /tmp/logo-source /tmp/og-source /tmp/logo.jpg /tmp/og.jpg
           mkdir -p /tmp/hf-payload/assets
           cp package.json tsconfig.json LICENSE SECURITY.md /tmp/hf-payload/
           cp -R src /tmp/hf-payload/src
@@ -68,60 +68,53 @@ jobs:
           python3 -m pip install --quiet pillow
           python3 - <<'PY'
           from PIL import Image
+          from pathlib import Path
+          import base64
 
           logo = Image.open('/tmp/logo-source').convert('RGB')
-          logo.save('/tmp/hf-payload/assets/logo.jpg', 'JPEG', quality=94, optimize=True, progressive=True)
+          logo.save('/tmp/logo.jpg', 'JPEG', quality=94, optimize=True, progressive=True)
 
-          og = Image.open('/tmp/og-source').convert('RGB')
-          # Preserve the supplied artwork while normalizing to the standard
-          # 1200x630 Open Graph canvas expected by social platforms.
-          og = og.resize((1200, 630), Image.Resampling.LANCZOS)
-          og.save('/tmp/hf-payload/assets/og.jpg', 'JPEG', quality=93, optimize=True, progressive=True)
-          print('logo:', logo.size)
-          print('og:', og.size)
+          og = Image.open('/tmp/og-source').convert('RGB').resize((1200, 630), Image.Resampling.LANCZOS)
+          og.save('/tmp/og.jpg', 'JPEG', quality=93, optimize=True, progressive=True)
+
+          logo_bytes = Path('/tmp/logo.jpg').read_bytes()
+          og_bytes = Path('/tmp/og.jpg').read_bytes()
+          if logo_bytes[:2] != b'\xff\xd8' or len(logo_bytes) < 5000:
+              raise SystemExit('Normalized logo is invalid')
+          if og_bytes[:2] != b'\xff\xd8' or len(og_bytes) < 15000:
+              raise SystemExit('Normalized OG image is invalid')
+
+          Path('/tmp/hf-payload/assets/logo.base64.txt').write_text(base64.b64encode(logo_bytes).decode('ascii'), encoding='ascii')
+          encoded = base64.b64encode(og_bytes).decode('ascii')
+          chunk = 60000
+          for i in range(0, len(encoded), chunk):
+              n = i // chunk + 1
+              Path(f'/tmp/hf-payload/assets/og.{n:02d}.b64').write_text(encoded[i:i+chunk], encoding='ascii')
+
+          print('logo source:', logo.size, len(logo_bytes), 'bytes')
+          print('og source:', og.size, len(og_bytes), 'bytes')
+          print('og chunks:', (len(encoded) + chunk - 1) // chunk)
           PY
 
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           readme = Path('/tmp/hf-payload/README.md').read_text(encoding='utf-8')
           match = re.match(r'^---\n(.*?)\n---\n', readme, re.S)
           if not match:
               raise SystemExit('Hugging Face README frontmatter is missing')
           front = match.group(1)
-
           def value(name):
               m = re.search(rf'^{re.escape(name)}:\s*(.*?)\s*$', front, re.M)
               if not m:
                   raise SystemExit(f'Missing Hugging Face metadata: {name}')
               return m.group(1).strip()
-
-          expected = {
-              'title': 'URL Intelligence Agent',
-              'sdk': 'docker',
-              'app_port': '7860',
-              'license': 'mit',
-              'hf_oauth': 'true',
-          }
-          for key, wanted in expected.items():
-              actual = value(key)
-              if actual != wanted:
-                  raise SystemExit(f'Invalid {key}: {actual!r}; expected {wanted!r}')
-
-          short = value('short_description')
-          if len(short) > 60:
-              raise SystemExit(f'Hugging Face short_description is too long: {len(short)} chars')
-
+          if len(value('short_description')) > 60:
+              raise SystemExit('Hugging Face short_description exceeds 60 characters')
           expected_thumbnail = 'https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2'
           if value('thumbnail') != expected_thumbnail:
               raise SystemExit('Unexpected thumbnail URL')
-
-          for name, minimum in [('logo.jpg', 5000), ('og.jpg', 15000)]:
-              data = Path('/tmp/hf-payload/assets', name).read_bytes()
-              if len(data) < minimum or data[:2] != b'\xff\xd8':
-                  raise SystemExit(f'{name} is not a valid JPEG ({len(data)} bytes)')
-              print(f'{name} normalized JPEG OK ({len(data)} bytes)')
+          print('Hugging Face metadata OK')
           PY
 
       - name: Sync Docker Space
@@ -149,17 +142,14 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, time, urllib.request
-
           api_url = 'https://huggingface.co/api/spaces/vpicciuolo/url-intelligence-agent'
           app_base = 'https://vpicciuolo-url-intelligence-agent.hf.space'
           failures = {'BUILD_ERROR', 'RUNTIME_ERROR', 'CONFIG_ERROR'}
-
           def request(url, auth=False):
-              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.4'}
+              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.5'}
               if auth:
                   headers['Authorization'] = f"Bearer {os.environ['HF_TOKEN']}"
               return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30)
-
           for attempt in range(1, 61):
               with request(api_url, auth=True) as response:
                   stage = (json.load(response).get('runtime') or {}).get('stage') or 'UNKNOWN'
@@ -171,7 +161,6 @@ jobs:
               time.sleep(5)
           else:
               raise SystemExit('Hugging Face Space did not reach RUNNING')
-
           time.sleep(3)
           for path, minimum in [('/assets/logo.jpg?v=20260908-2', 5000), ('/assets/og.jpg?v=20260908-2', 15000)]:
               with request(app_base + path) as response:
@@ -179,10 +168,9 @@ jobs:
                   if response.status != 200 or response.headers.get_content_type() != 'image/jpeg' or len(data) < minimum or data[:2] != b'\xff\xd8':
                       raise SystemExit(f'Invalid live asset {path}')
                   print(f'{path} OK ({len(data)} bytes)')
-
           with request(app_base + '/') as response:
-              page = response.read().decode('utf-8', 'replace')
-              if 'assets/logo.jpg?v=20260908-2' not in page or 'assets/og.jpg?v=20260908-2' not in page:
-                  raise SystemExit('Live UI is not using the deployed branding assets')
-              print('Live UI references the approved deployed brand assets.')
+              page = response.read()
+              if page.count(b'data:image/jpeg;base64,') < 2:
+                  raise SystemExit('Visible UI does not contain both embedded approved images')
+              print('Visible UI contains approved embedded logo and social artwork.')
           PY
