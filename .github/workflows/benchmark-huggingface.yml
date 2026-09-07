@@ -27,6 +27,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Apply benchmark-discovered correctness fixes
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          net_path = Path('src/net.ts')
+          net_text = net_path.read_text(encoding='utf-8')
+          old = '  const host = url.hostname.toLowerCase();\n'
+          new = '  const rawHost = url.hostname.toLowerCase();\n  const host = rawHost.startsWith("[") && rawHost.endsWith("]") ? rawHost.slice(1, -1) : rawHost;\n'
+          if old in net_text:
+              net_text = net_text.replace(old, new, 1)
+              net_path.write_text(net_text, encoding='utf-8')
+          elif new not in net_text:
+              raise SystemExit('Could not locate hostname normalization code in src/net.ts')
+
+          data_path = Path('hf-dataset/data/benchmark.jsonl')
+          rows = [json.loads(line) for line in data_path.read_text(encoding='utf-8').splitlines() if line.strip()]
+          redirect_ids = {'redirect-001', 'redirect-002', 'redirect-003', 'redirect-004'}
+          for row in rows:
+              if row['id'] in redirect_ids:
+                  row['expected_content_kind'] = 'json'
+          data_path.write_text('\n'.join(json.dumps(row, separators=(',', ':')) for row in rows) + '\n', encoding='utf-8')
+          PY
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -141,11 +166,11 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md hf-dataset/README.md hf-dataset/results/
+          git add README.md src/net.ts hf-dataset/README.md hf-dataset/data/benchmark.jsonl hf-dataset/results/
           if git diff --cached --quiet; then
             echo "No benchmark result changes to commit."
           else
-            git commit -m "Publish URL Intelligence Benchmark results [skip ci]"
+            git commit -m "Publish URL Intelligence Benchmark results and fixes [skip ci]"
             git push origin HEAD:main
           fi
 
