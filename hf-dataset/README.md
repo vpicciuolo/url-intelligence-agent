@@ -9,6 +9,7 @@ tags:
 - url-analysis
 - web-intelligence
 - benchmark
+- leaderboard
 - mcp
 - ai-agent
 - web-crawler
@@ -26,24 +27,24 @@ configs:
 
 # 📊 URL Intelligence Benchmark
 
-### A public benchmark for URL analysis agents, MCP servers and web-intelligence tools.
+### A public, reproducible benchmark for URL analysis agents, MCP servers and web-intelligence tools.
 
 The **URL Intelligence Benchmark** evaluates whether an analyzer can safely and correctly handle public URLs, redirects, HTTP status behavior, content types, normalization, malformed inputs and SSRF/private-network cases.
 
-It is designed as a **reproducible evaluation asset**, not a training corpus and not a scraped web dump.
+It is an **evaluation asset**, not a training corpus and not a scraped web dump.
 
 <p align="center">
-  <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard"><img src="https://img.shields.io/badge/LEADERBOARD-Open-7C3AED?style=for-the-badge" alt="Leaderboard"></a>
+  <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard"><img src="https://img.shields.io/badge/LEADERBOARD-Independent%20Baselines-7C3AED?style=for-the-badge" alt="Leaderboard"></a>
   <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/LIVE%20AGENT-Try-2563EB?style=for-the-badge" alt="Live agent"></a>
   <a href="https://github.com/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/GITHUB-Source-111827?style=for-the-badge&logo=github" alt="GitHub"></a>
 </p>
 
 Built by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd** as part of the open-source **URL Intelligence Agent** project.
 
-- Dataset: https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark
-- Leaderboard: https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
-- Live agent: https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent
-- Source: https://github.com/vpicciuolo/url-intelligence-agent
+- **Leaderboard:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
+- **Live agent:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent
+- **Technical report:** `TECHNICAL_REPORT.md`
+- **Source:** https://github.com/vpicciuolo/url-intelligence-agent
 
 ## Why this benchmark exists
 
@@ -62,7 +63,7 @@ It targets:
 
 ## v0.1 seed release
 
-The current release contains **55 cases** across these groups:
+The current release contains **55 cases and 120 scored assertions** across these groups:
 
 | Group | Purpose |
 |---|---|
@@ -98,9 +99,44 @@ See `results/latest.md` for the group breakdown and failed-case list, and `resul
 
 The published score is scoped to this benchmark version. It is not a claim that any tool has perfect accuracy on every website on the internet.
 
-## 🏆 Community leaderboard
+## 🏆 Independent baseline results
 
-The benchmark is being opened to other URL-analysis tools and agents.
+The leaderboard now runs **real independent open-source tools** from pinned public releases. Their upstream source code is not modified. Adapter code translates documented outputs and native error semantics into the common benchmark schema, and the raw predictions are published for inspection.
+
+| Rank | Tool | Type | Core score | Safety | Status | Redirects | Content | Full agent |
+|---:|---|---|---:|---:|---:|---:|---:|---:|
+| **#1** | **URL Intelligence Agent** | Full agent / MCP | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **6/6 — 100%** |
+| **#1** | **url-metadata 5.12.0** | Metadata/network library | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **100.00%** | N/A |
+| **#3** | **link-preview-js 5.0.0** | Link-preview library | **71.67%** | **100.00%** | **17.14%** | **75.00%** | **84.62%** | N/A |
+
+**Ranking policy:** entries must achieve **100% reject/block safety accuracy** to receive a numerical rank. Safety-qualified entries are ordered by overall core assertion score; equal scores share the same rank. Full-agent completion is shown separately because library baselines do not implement the complete investigation pipeline.
+
+### Why the #1 tie matters
+
+`url-metadata` reaching 100% of the v0.1 core assertions is a useful result. It shows that the current suite is strong at testing **URL/network transport fundamentals and safety**, but it does not yet distinguish a full web-intelligence agent from a strong metadata/network library.
+
+That is why the next benchmark version will add separate **Agent Intelligence** and semantic extraction tracks instead of pretending the current core score measures capabilities it does not yet test.
+
+URL Intelligence Agent is the only current entry that also executes the selected full-agent `investigate()` track, completing **6/6** eligible HTML investigations in the verified reference run.
+
+### Published reproducibility artifacts
+
+For each maintained independent baseline the Dataset contains:
+
+- `results/baselines/<tool-version>/predictions.jsonl`
+- `results/baselines/<tool-version>/summary.json`
+- `results/baselines/<tool-version>/summary.md`
+- `results/baselines/<tool-version>/tool.json`
+
+The aggregate machine-readable leaderboard is published as:
+
+- `results/leaderboard.json`
+
+The baseline runner and GitHub Actions workflow are public in the source repository.
+
+## Community leaderboard
+
+The benchmark is open to additional URL-analysis tools, crawlers, libraries, MCP servers and agents.
 
 **Leaderboard:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
 
@@ -188,9 +224,29 @@ Benchmark IDs remain stable within a major version. Cases may be added over time
 
 For release comparisons, pin the Hugging Face dataset revision/commit.
 
-### Roadmap to v1.0
+### Roadmap to v0.2 / v1.0
 
-The v0.1 suite is a seed/regression benchmark. The v1.0 target is to expand coverage with more real-world URL patterns, independent baselines, community submissions, additional safety cases and a frozen evaluation release suitable for longer-term comparisons.
+Independent baselines exposed the most important next requirement: the benchmark must add capabilities that distinguish **transport libraries** from **full intelligence agents**.
+
+Planned tracks include:
+
+- exact metadata, Open Graph and canonical extraction;
+- Schema.org / JSON-LD correctness;
+- entity resolution;
+- social-profile discovery and verification;
+- external evidence and source provenance;
+- independent-domain corroboration;
+- contradiction handling;
+- technology detection;
+- SEO/security/trust observations;
+- brand/domain intelligence;
+- deterministic malformed-HTML and encoding fixtures;
+- deeper redirect/body-compression/size-limit cases; and
+- additional full-agent and crawler baselines.
+
+These capabilities should form a separate **Agent Intelligence track** alongside the existing core URL/network track.
+
+See `TECHNICAL_REPORT.md` for the detailed methodology, limitations and roadmap.
 
 ## License
 
