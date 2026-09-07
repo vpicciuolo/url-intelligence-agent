@@ -1,0 +1,147 @@
+name: Deploy Hugging Face Leaderboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'hf-leaderboard/**'
+      - 'hf-space/README.md'
+      - 'hf-dataset/README.md'
+      - '.github/workflows/deploy-huggingface-leaderboard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huggingface-leaderboard-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Hugging Face token
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN is missing."
+            exit 1
+          fi
+
+      - name: Create leaderboard Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python3 -m pip install --quiet --upgrade huggingface_hub
+          python3 - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ['HF_TOKEN'])
+          url = api.create_repo(
+              repo_id='vpicciuolo/url-intelligence-benchmark-leaderboard',
+              repo_type='space',
+              space_sdk='static',
+              private=False,
+              exist_ok=True,
+          )
+          print(f'Leaderboard Space ready: {url}')
+          PY
+
+      - name: Sync static leaderboard Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/hf-leaderboard
+          git clone "https://vpicciuolo:${HF_TOKEN}@huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard" /tmp/hf-leaderboard
+          rsync -av --delete --exclude='.git' hf-leaderboard/ /tmp/hf-leaderboard/
+          cd /tmp/hf-leaderboard
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No leaderboard changes to deploy."
+          else
+            git commit -m "Deploy URL Intelligence Benchmark Leaderboard from GitHub ${GITHUB_SHA}"
+            git push origin HEAD:main
+          fi
+
+      - name: Create or update URL Intelligence Collection
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from huggingface_hub import list_collections, create_collection, add_collection_item, update_collection_metadata
+
+          token = os.environ['HF_TOKEN']
+          title = 'URL Intelligence — Open Source Stack'
+          description = 'Live agent, reproducible benchmark and public leaderboard for evidence-first URL and web intelligence.'
+
+          existing = next((c for c in list_collections(owner='vpicciuolo', token=token) if c.title == title), None)
+          if existing is None:
+              collection = create_collection(
+                  title=title,
+                  namespace='vpicciuolo',
+                  description=description,
+                  private=False,
+                  token=token,
+              )
+          else:
+              collection = existing
+              update_collection_metadata(
+                  collection_slug=collection.slug,
+                  title=title,
+                  description=description,
+                  token=token,
+              )
+
+          items = [
+              ('vpicciuolo/url-intelligence-agent', 'space', 'Flagship live evidence-first URL intelligence agent with Remote MCP.'),
+              ('vpicciuolo/url-intelligence-benchmark', 'dataset', 'Open reproducible benchmark for URL analysis, redirects, content types, normalization and SSRF safety.'),
+              ('vpicciuolo/url-intelligence-benchmark-leaderboard', 'space', 'Public leaderboard for reproducible community benchmark submissions.'),
+          ]
+          for item_id, item_type, note in items:
+              add_collection_item(
+                  collection_slug=collection.slug,
+                  item_id=item_id,
+                  item_type=item_type,
+                  note=note,
+                  exists_ok=True,
+                  token=token,
+              )
+
+          print(f'Collection: https://huggingface.co/collections/{collection.slug}')
+          PY
+
+      - name: Verify Hugging Face assets
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+
+          headers = {
+              'Authorization': f"Bearer {os.environ['HF_TOKEN']}",
+              'User-Agent': 'url-intelligence-leaderboard-deploy-check/1.0',
+          }
+          api_url = 'https://huggingface.co/api/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard'
+          for attempt in range(1, 31):
+              try:
+                  req = urllib.request.Request(api_url, headers=headers)
+                  with urllib.request.urlopen(req, timeout=30) as response:
+                      data = json.load(response)
+                  if data.get('id') == 'vpicciuolo/url-intelligence-benchmark-leaderboard':
+                      print('Leaderboard repository verified.')
+                      break
+              except Exception as exc:
+                  print(f'Attempt {attempt}: {exc}')
+              time.sleep(4)
+          else:
+              raise SystemExit('Leaderboard Space could not be verified')
+          PY
