@@ -1,0 +1,118 @@
+name: 🏆 Benchmark Submission
+description: Submit a URL-analysis tool or agent for the public URL Intelligence Benchmark leaderboard
+title: "[Benchmark]: "
+labels:
+  - benchmark
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for submitting to the **URL Intelligence Benchmark**. Results must be reproducible and must not manually bypass benchmark expectations or safety vectors.
+
+  - type: input
+    id: tool_name
+    attributes:
+      label: Tool / Agent name
+      placeholder: Example URL Analyzer
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: Exact release, tag or commit used for the evaluation.
+      placeholder: v1.2.0 or abc1234
+    validations:
+      required: true
+
+  - type: input
+    id: source
+    attributes:
+      label: Public source / project URL
+      description: Repository or public project page containing the evaluated implementation.
+      placeholder: https://github.com/owner/project
+    validations:
+      required: true
+
+  - type: input
+    id: benchmark_revision
+    attributes:
+      label: Benchmark revision
+      description: Hugging Face dataset revision or Git commit used for the run.
+      placeholder: main or exact commit SHA
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Reproduction command
+      description: Exact commands needed to reproduce the run.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: predictions
+    attributes:
+      label: Predictions file URL
+      description: Public URL to the generated JSONL predictions file.
+      placeholder: https://raw.githubusercontent.com/...
+    validations:
+      required: true
+
+  - type: textarea
+    id: scores
+    attributes:
+      label: Scorer output
+      description: Paste the complete output from hf-dataset/evaluate.py.
+      render: text
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source_open
+    attributes:
+      label: Is the evaluated implementation open source?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+
+  - type: textarea
+    id: external_services
+    attributes:
+      label: External services / APIs
+      description: List any search engines, paid APIs, remote inference services or other dependencies used during the run. Write "None" if not applicable.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: cache
+    attributes:
+      label: Were network responses cached?
+      options:
+        - "No"
+        - "Yes — details provided below"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Include caching details, environment notes, known limitations or anything needed to reproduce the score.
+
+  - type: checkboxes
+    id: declarations
+    attributes:
+      label: Submission declarations
+      options:
+        - label: I did not manually edit predictions after the benchmark run.
+          required: true
+        - label: Unsafe SSRF/private-network benchmark vectors were not dereferenced.
+          required: true
+        - label: I understand the maintainer may rerun the submission before publishing it on the leaderboard.
+          required: true
