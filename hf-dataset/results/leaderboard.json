@@ -1,8 +1,8 @@
 {
   "benchmark": "vpicciuolo/url-intelligence-benchmark",
   "benchmark_version": "v0.1",
-  "generated_at": "2026-09-07T22:36:10.321Z",
-  "ranking_policy": "Only entries with 100% reject/block safety accuracy receive a rank; eligible entries are ordered by overall assertion score.",
+  "generated_at": "2026-09-07T22:39:39.338Z",
+  "ranking_policy": "Only entries with 100% reject/block safety accuracy receive a rank. Eligible entries are ordered by overall assertion score; equal scores share the same rank. Full-agent completion is shown separately because library baselines do not implement the full agent pipeline.",
   "entries": [
     {
       "id": "url-intelligence-agent",
@@ -11,6 +11,7 @@
       "source": "https://github.com/vpicciuolo/url-intelligence-agent",
       "hugging_face": "https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent",
       "license": "MIT",
+      "type": "full agent / MCP",
       "independent": false,
       "adapter": "Native benchmark runner against the repository's real safeFetch and selected investigate() paths.",
       "summary": {
@@ -169,22 +170,23 @@
       "source": "https://github.com/laurengarcia/url-metadata",
       "package": "https://www.npmjs.com/package/url-metadata",
       "license": "MIT",
+      "type": "metadata/network library",
       "independent": true,
-      "adapter": "Native network-only probe (`fields: ['network']`) using the package's built-in request-filtering-agent SSRF protection.",
+      "adapter": "Native network-only probe (`fields: ['network']`) using the package's built-in request-filtering-agent SSRF protection. HTTP response exceptions carrying a status code are normalized to benchmark action=analyze because a response was successfully obtained.",
       "summary": {
         "benchmark": "vpicciuolo/url-intelligence-benchmark",
         "benchmark_cases": 55,
         "predictions": 55,
         "missing": [],
-        "generated_at": "2026-09-07T22:36:10Z",
-        "git_sha": "7991a40157a891562f9441ba507b9a5fcc23d7ea",
-        "overall_score": 89.17,
-        "deterministic_score": 87.85,
+        "generated_at": "2026-09-07T22:39:39Z",
+        "git_sha": "d68ad9298e3f2205d72039fbfb26172bacf228f3",
+        "overall_score": 100,
+        "deterministic_score": 100,
         "metrics": {
           "action": {
-            "ok": 42,
+            "ok": 55,
             "total": 55,
-            "pct": 76.36
+            "pct": 100
           },
           "content_kind": {
             "ok": 26,
@@ -192,9 +194,9 @@
             "pct": 100
           },
           "overall_assertions": {
-            "ok": 107,
+            "ok": 120,
             "total": 120,
-            "pct": 89.17
+            "pct": 100
           },
           "redirects": {
             "ok": 4,
@@ -207,24 +209,24 @@
             "pct": 100
           },
           "case_pass_rate": {
-            "ok": 42,
+            "ok": 55,
             "total": 55,
-            "pct": 76.36
+            "pct": 100
           },
           "deterministic_assertions": {
-            "ok": 94,
+            "ok": 107,
             "total": 107,
-            "pct": 87.85
+            "pct": 100
           },
           "deterministic_case_pass_rate": {
-            "ok": 37,
+            "ok": 50,
             "total": 50,
-            "pct": 74
+            "pct": 100
           },
           "security_action_accuracy": {
-            "ok": 13,
+            "ok": 18,
             "total": 18,
-            "pct": 72.22
+            "pct": 100
           },
           "full_agent_completion": {
             "ok": 0,
@@ -239,9 +241,9 @@
             "pct": 100
           },
           "http_status": {
-            "ok": 4,
+            "ok": 12,
             "total": 12,
-            "pct": 33.33
+            "pct": 100
           },
           "image": {
             "ok": 1,
@@ -249,9 +251,9 @@
             "pct": 100
           },
           "invalid_url": {
-            "ok": 2,
+            "ok": 4,
             "total": 4,
-            "pct": 50
+            "pct": 100
           },
           "normalization": {
             "ok": 8,
@@ -284,9 +286,9 @@
             "pct": 100
           },
           "ssrf": {
-            "ok": 9,
+            "ok": 10,
             "total": 10,
-            "pct": 90
+            "pct": 100
           },
           "structured_document": {
             "ok": 1,
@@ -304,9 +306,9 @@
             "pct": 100
           },
           "unsupported_scheme": {
-            "ok": 2,
+            "ok": 4,
             "total": 4,
-            "pct": 50
+            "pct": 100
           },
           "web_page": {
             "ok": 4,
@@ -314,142 +316,11 @@
             "pct": 100
           }
         },
-        "average_network_elapsed_ms": 45,
-        "failures": [
-          {
-            "id": "status-400",
-            "group": "http_status",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "analyze",
-            "actual_action": "error",
-            "error": "response code 400"
-          },
-          {
-            "id": "status-401",
-            "group": "http_status",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "analyze",
-            "actual_action": "error",
-            "error": "response code 401"
-          },
-          {
-            "id": "status-403",
-            "group": "http_status",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "analyze",
-            "actual_action": "error",
-            "error": "response code 403"
-          },
-          {
-            "id": "status-404",
-            "group": "http_status",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "analyze",
-            "actual_action": "error",
-            "error": "response code 404"
-          },
-          {
-            "id": "status-418",
-            "group": "http_status",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "analyze",
-            "actual_action": "error",
-            "error": "response code 418"
-          },
-          {
-            "id": "status-429",
-            "group": "http_status",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "analyze",
-            "actual_action": "error",
-            "error": "response code 429"
-          },
-          {
-            "id": "status-500",
-            "group": "http_status",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "analyze",
-            "actual_action": "error",
-            "error": "response code 500"
-          },
-          {
-            "id": "status-503",
-            "group": "http_status",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "analyze",
-            "actual_action": "error",
-            "error": "response code 503"
-          },
-          {
-            "id": "invalid-001",
-            "group": "invalid_url",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "reject",
-            "actual_action": "error",
-            "error": "Only absolute URLs are supported"
-          },
-          {
-            "id": "invalid-002",
-            "group": "invalid_url",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "reject",
-            "actual_action": "error",
-            "error": "Only absolute URLs are supported"
-          },
-          {
-            "id": "invalid-005",
-            "group": "unsupported_scheme",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "reject",
-            "actual_action": "error",
-            "error": "Only absolute URLs are supported"
-          },
-          {
-            "id": "invalid-007",
-            "group": "unsupported_scheme",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "reject",
-            "actual_action": "error",
-            "error": "Only absolute URLs are supported"
-          },
-          {
-            "id": "ssrf-008",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "error",
-            "error": "DNS lookup 0.0.0.0(family:undefined, host:undefined) is not allowed. Because, It is meta IP address."
-          }
-        ]
+        "average_network_elapsed_ms": 166,
+        "failures": []
       },
-      "safety_gate_passed": false,
-      "rank": null
+      "safety_gate_passed": true,
+      "rank": 1
     },
     {
       "id": "link-preview-js",
@@ -458,22 +329,23 @@
       "source": "https://github.com/OP-Engineering/link-preview-js",
       "package": "https://www.npmjs.com/package/link-preview-js",
       "license": "MIT",
+      "type": "link-preview library",
       "independent": true,
-      "adapter": "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled.",
+      "adapter": "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled. The library does not expose HTTP response status in its public result, so status-family assertions remain unscored as failures rather than inferred.",
       "summary": {
         "benchmark": "vpicciuolo/url-intelligence-benchmark",
         "benchmark_cases": 55,
         "predictions": 55,
         "missing": [],
-        "generated_at": "2026-09-07T22:36:10Z",
-        "git_sha": "7991a40157a891562f9441ba507b9a5fcc23d7ea",
-        "overall_score": 62.5,
-        "deterministic_score": 62.62,
+        "generated_at": "2026-09-07T22:39:39Z",
+        "git_sha": "d68ad9298e3f2205d72039fbfb26172bacf228f3",
+        "overall_score": 70.83,
+        "deterministic_score": 71.96,
         "metrics": {
           "action": {
-            "ok": 44,
+            "ok": 54,
             "total": 55,
-            "pct": 80
+            "pct": 98.18
           },
           "content_kind": {
             "ok": 22,
@@ -481,9 +353,9 @@
             "pct": 84.62
           },
           "overall_assertions": {
-            "ok": 75,
+            "ok": 85,
             "total": 120,
-            "pct": 62.5
+            "pct": 70.83
           },
           "redirects": {
             "ok": 3,
@@ -496,24 +368,24 @@
             "pct": 17.14
           },
           "case_pass_rate": {
-            "ok": 12,
+            "ok": 22,
             "total": 55,
-            "pct": 21.82
+            "pct": 40
           },
           "deterministic_assertions": {
-            "ok": 67,
+            "ok": 77,
             "total": 107,
-            "pct": 62.62
+            "pct": 71.96
           },
           "deterministic_case_pass_rate": {
-            "ok": 12,
+            "ok": 22,
             "total": 50,
-            "pct": 24
+            "pct": 44
           },
           "security_action_accuracy": {
-            "ok": 7,
+            "ok": 17,
             "total": 18,
-            "pct": 38.89
+            "pct": 94.44
           },
           "full_agent_completion": {
             "ok": 0,
@@ -573,9 +445,9 @@
             "pct": 0
           },
           "ssrf": {
-            "ok": 0,
+            "ok": 10,
             "total": 10,
-            "pct": 0
+            "pct": 100
           },
           "structured_document": {
             "ok": 0,
@@ -603,7 +475,7 @@
             "pct": 0
           }
         },
-        "average_network_elapsed_ms": 32,
+        "average_network_elapsed_ms": 129,
         "failures": [
           {
             "id": "web-001",
@@ -936,106 +808,6 @@
             "expected_action": "reject",
             "actual_action": "error",
             "error": "fetch failed"
-          },
-          {
-            "id": "ssrf-001",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
-          },
-          {
-            "id": "ssrf-002",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
-          },
-          {
-            "id": "ssrf-003",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
-          },
-          {
-            "id": "ssrf-004",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
-          },
-          {
-            "id": "ssrf-005",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
-          },
-          {
-            "id": "ssrf-006",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
-          },
-          {
-            "id": "ssrf-007",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
-          },
-          {
-            "id": "ssrf-008",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
-          },
-          {
-            "id": "ssrf-009",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
-          },
-          {
-            "id": "ssrf-010",
-            "group": "ssrf",
-            "failed_checks": [
-              "action"
-            ],
-            "expected_action": "block",
-            "actual_action": "reject",
-            "error": "link-preview-js did not receive a valid a url or text"
           }
         ]
       },

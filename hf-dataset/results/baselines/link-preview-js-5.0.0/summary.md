@@ -1,19 +1,19 @@
 # URL Intelligence Benchmark Results
 
-Generated: **2026-09-07T22:36:10Z**  
+Generated: **2026-09-07T22:39:39Z**  
 Benchmark cases: **55**  
-Overall assertion score: **62.50%**  
-Deterministic assertion score: **62.62%**
+Overall assertion score: **70.83%**  
+Deterministic assertion score: **71.96%**
 
 | Metric | Passed | Total | Score |
 |---|---:|---:|---:|
-| Action accuracy | 44 | 55 | 80.00% |
+| Action accuracy | 54 | 55 | 98.18% |
 | HTTP status-family accuracy | 6 | 35 | 17.14% |
 | Redirect handling | 3 | 4 | 75.00% |
 | Content-kind detection | 22 | 26 | 84.62% |
-| Case pass rate | 12 | 55 | 21.82% |
-| Deterministic case pass rate | 12 | 50 | 24.00% |
-| Reject/block safety accuracy | 7 | 18 | 38.89% |
+| Case pass rate | 22 | 55 | 40.00% |
+| Deterministic case pass rate | 22 | 50 | 44.00% |
+| Reject/block safety accuracy | 17 | 18 | 94.44% |
 | Full-agent HTML completion | 0 | 0 | n/a |
 
 ## Group results
@@ -30,7 +30,7 @@ Deterministic assertion score: **62.62%**
 | `robots` | 0 | 1 | 0.00% |
 | `scheme_upgrade` | 0 | 1 | 0.00% |
 | `space` | 0 | 1 | 0.00% |
-| `ssrf` | 0 | 10 | 0.00% |
+| `ssrf` | 10 | 10 | 100.00% |
 | `structured_document` | 0 | 1 | 0.00% |
 | `tracking_params` | 0 | 1 | 0.00% |
 | `unicode` | 0 | 1 | 0.00% |
@@ -69,6 +69,6 @@ Deterministic assertion score: **62.62%**
 - `norm-006` — status_family
 - `norm-007` — content_kind
 - `norm-008` — status_family
-- …and 13 more
+- …and 3 more
 
 > Scores are produced by running the repository's real URL fetching/safety code. Selected public HTML cases also execute the full `investigate()` pipeline with a one-page benchmark crawl. Live-web cases can vary when upstream services change or rate-limit requests.

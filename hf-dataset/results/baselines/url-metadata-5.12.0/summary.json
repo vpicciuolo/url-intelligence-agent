@@ -3,15 +3,15 @@
   "benchmark_cases": 55,
   "predictions": 55,
   "missing": [],
-  "generated_at": "2026-09-07T22:36:10Z",
-  "git_sha": "7991a40157a891562f9441ba507b9a5fcc23d7ea",
-  "overall_score": 89.17,
-  "deterministic_score": 87.85,
+  "generated_at": "2026-09-07T22:39:39Z",
+  "git_sha": "d68ad9298e3f2205d72039fbfb26172bacf228f3",
+  "overall_score": 100.0,
+  "deterministic_score": 100.0,
   "metrics": {
     "action": {
-      "ok": 42,
+      "ok": 55,
       "total": 55,
-      "pct": 76.36
+      "pct": 100.0
     },
     "content_kind": {
       "ok": 26,
@@ -19,9 +19,9 @@
       "pct": 100.0
     },
     "overall_assertions": {
-      "ok": 107,
+      "ok": 120,
       "total": 120,
-      "pct": 89.17
+      "pct": 100.0
     },
     "redirects": {
       "ok": 4,
@@ -34,24 +34,24 @@
       "pct": 100.0
     },
     "case_pass_rate": {
-      "ok": 42,
+      "ok": 55,
       "total": 55,
-      "pct": 76.36
+      "pct": 100.0
     },
     "deterministic_assertions": {
-      "ok": 94,
+      "ok": 107,
       "total": 107,
-      "pct": 87.85
+      "pct": 100.0
     },
     "deterministic_case_pass_rate": {
-      "ok": 37,
+      "ok": 50,
       "total": 50,
-      "pct": 74.0
+      "pct": 100.0
     },
     "security_action_accuracy": {
-      "ok": 13,
+      "ok": 18,
       "total": 18,
-      "pct": 72.22
+      "pct": 100.0
     },
     "full_agent_completion": {
       "ok": 0,
@@ -66,9 +66,9 @@
       "pct": 100.0
     },
     "http_status": {
-      "ok": 4,
+      "ok": 12,
       "total": 12,
-      "pct": 33.33
+      "pct": 100.0
     },
     "image": {
       "ok": 1,
@@ -76,9 +76,9 @@
       "pct": 100.0
     },
     "invalid_url": {
-      "ok": 2,
+      "ok": 4,
       "total": 4,
-      "pct": 50.0
+      "pct": 100.0
     },
     "normalization": {
       "ok": 8,
@@ -111,9 +111,9 @@
       "pct": 100.0
     },
     "ssrf": {
-      "ok": 9,
+      "ok": 10,
       "total": 10,
-      "pct": 90.0
+      "pct": 100.0
     },
     "structured_document": {
       "ok": 1,
@@ -131,9 +131,9 @@
       "pct": 100.0
     },
     "unsupported_scheme": {
-      "ok": 2,
+      "ok": 4,
       "total": 4,
-      "pct": 50.0
+      "pct": 100.0
     },
     "web_page": {
       "ok": 4,
@@ -141,137 +141,6 @@
       "pct": 100.0
     }
   },
-  "average_network_elapsed_ms": 45,
-  "failures": [
-    {
-      "id": "status-400",
-      "group": "http_status",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "error",
-      "error": "response code 400"
-    },
-    {
-      "id": "status-401",
-      "group": "http_status",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "error",
-      "error": "response code 401"
-    },
-    {
-      "id": "status-403",
-      "group": "http_status",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "error",
-      "error": "response code 403"
-    },
-    {
-      "id": "status-404",
-      "group": "http_status",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "error",
-      "error": "response code 404"
-    },
-    {
-      "id": "status-418",
-      "group": "http_status",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "error",
-      "error": "response code 418"
-    },
-    {
-      "id": "status-429",
-      "group": "http_status",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "error",
-      "error": "response code 429"
-    },
-    {
-      "id": "status-500",
-      "group": "http_status",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "error",
-      "error": "response code 500"
-    },
-    {
-      "id": "status-503",
-      "group": "http_status",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "analyze",
-      "actual_action": "error",
-      "error": "response code 503"
-    },
-    {
-      "id": "invalid-001",
-      "group": "invalid_url",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "reject",
-      "actual_action": "error",
-      "error": "Only absolute URLs are supported"
-    },
-    {
-      "id": "invalid-002",
-      "group": "invalid_url",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "reject",
-      "actual_action": "error",
-      "error": "Only absolute URLs are supported"
-    },
-    {
-      "id": "invalid-005",
-      "group": "unsupported_scheme",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "reject",
-      "actual_action": "error",
-      "error": "Only absolute URLs are supported"
-    },
-    {
-      "id": "invalid-007",
-      "group": "unsupported_scheme",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "reject",
-      "actual_action": "error",
-      "error": "Only absolute URLs are supported"
-    },
-    {
-      "id": "ssrf-008",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "error",
-      "error": "DNS lookup 0.0.0.0(family:undefined, host:undefined) is not allowed. Because, It is meta IP address."
-    }
-  ]
+  "average_network_elapsed_ms": 166,
+  "failures": []
 }

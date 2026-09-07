@@ -3,15 +3,15 @@
   "benchmark_cases": 55,
   "predictions": 55,
   "missing": [],
-  "generated_at": "2026-09-07T22:36:10Z",
-  "git_sha": "7991a40157a891562f9441ba507b9a5fcc23d7ea",
-  "overall_score": 62.5,
-  "deterministic_score": 62.62,
+  "generated_at": "2026-09-07T22:39:39Z",
+  "git_sha": "d68ad9298e3f2205d72039fbfb26172bacf228f3",
+  "overall_score": 70.83,
+  "deterministic_score": 71.96,
   "metrics": {
     "action": {
-      "ok": 44,
+      "ok": 54,
       "total": 55,
-      "pct": 80.0
+      "pct": 98.18
     },
     "content_kind": {
       "ok": 22,
@@ -19,9 +19,9 @@
       "pct": 84.62
     },
     "overall_assertions": {
-      "ok": 75,
+      "ok": 85,
       "total": 120,
-      "pct": 62.5
+      "pct": 70.83
     },
     "redirects": {
       "ok": 3,
@@ -34,24 +34,24 @@
       "pct": 17.14
     },
     "case_pass_rate": {
-      "ok": 12,
+      "ok": 22,
       "total": 55,
-      "pct": 21.82
+      "pct": 40.0
     },
     "deterministic_assertions": {
-      "ok": 67,
+      "ok": 77,
       "total": 107,
-      "pct": 62.62
+      "pct": 71.96
     },
     "deterministic_case_pass_rate": {
-      "ok": 12,
+      "ok": 22,
       "total": 50,
-      "pct": 24.0
+      "pct": 44.0
     },
     "security_action_accuracy": {
-      "ok": 7,
+      "ok": 17,
       "total": 18,
-      "pct": 38.89
+      "pct": 94.44
     },
     "full_agent_completion": {
       "ok": 0,
@@ -111,9 +111,9 @@
       "pct": 0.0
     },
     "ssrf": {
-      "ok": 0,
+      "ok": 10,
       "total": 10,
-      "pct": 0.0
+      "pct": 100.0
     },
     "structured_document": {
       "ok": 0,
@@ -141,7 +141,7 @@
       "pct": 0.0
     }
   },
-  "average_network_elapsed_ms": 32,
+  "average_network_elapsed_ms": 129,
   "failures": [
     {
       "id": "web-001",
@@ -474,106 +474,6 @@
       "expected_action": "reject",
       "actual_action": "error",
       "error": "fetch failed"
-    },
-    {
-      "id": "ssrf-001",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
-    },
-    {
-      "id": "ssrf-002",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
-    },
-    {
-      "id": "ssrf-003",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
-    },
-    {
-      "id": "ssrf-004",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
-    },
-    {
-      "id": "ssrf-005",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
-    },
-    {
-      "id": "ssrf-006",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
-    },
-    {
-      "id": "ssrf-007",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
-    },
-    {
-      "id": "ssrf-008",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
-    },
-    {
-      "id": "ssrf-009",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
-    },
-    {
-      "id": "ssrf-010",
-      "group": "ssrf",
-      "failed_checks": [
-        "action"
-      ],
-      "expected_action": "block",
-      "actual_action": "reject",
-      "error": "link-preview-js did not receive a valid a url or text"
     }
   ]
 }
