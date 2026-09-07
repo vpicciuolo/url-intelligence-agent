@@ -38,6 +38,7 @@ jobs:
 
       - name: Prepare Docker Space payload
         run: |
+          set -euo pipefail
           rm -rf /tmp/hf-payload
           mkdir -p /tmp/hf-payload
           cp package.json tsconfig.json LICENSE SECURITY.md /tmp/hf-payload/
@@ -48,6 +49,26 @@ jobs:
           cp hf-space/patch-ui.mjs /tmp/hf-payload/patch-ui.mjs
           cp hf-space/ui-v2.css /tmp/hf-payload/ui-v2.css
           cp hf-space/ui-v2.js /tmp/hf-payload/ui-v2.js
+
+          # Hugging Face rejects Space card metadata when short_description
+          # exceeds 60 characters. Keep the SEO-friendly source copy while
+          # guaranteeing that the deploy payload always satisfies Hub limits.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('/tmp/hf-payload/README.md')
+          text = path.read_text(encoding='utf-8')
+          replacement = 'short_description: Evidence-first URL intelligence, reports and Remote MCP.'
+          text, count = re.subn(r'^short_description:.*$', replacement, text, count=1, flags=re.M)
+          if count != 1:
+              raise SystemExit('Hugging Face short_description metadata not found')
+          value = replacement.split(':', 1)[1].strip()
+          if len(value) > 60:
+              raise SystemExit(f'Hugging Face short_description is too long: {len(value)}')
+          path.write_text(text, encoding='utf-8')
+          print(f'Hugging Face short_description validated: {len(value)} chars')
+          PY
 
           # Keep the Space git repository text-safe. The Docker build decodes
           # these embedded base64 sources into /assets/logo.jpg and /assets/og.jpg.
@@ -67,6 +88,8 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          set -euo pipefail
+          rm -rf /tmp/hf-space
           git clone https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent /tmp/hf-space
           rsync -av --delete --exclude='.git' /tmp/hf-payload/ /tmp/hf-space/
           cd /tmp/hf-space
