@@ -140,21 +140,61 @@ function extractPublishedAt(page: PageSignal): string | undefined {
   return dates[0];
 }
 
-function configuredProvider(): string | undefined {
-  const requested = String(process.env.URL_AGENT_SEARCH_PROVIDER || "").trim().toLowerCase();
-  if (requested === "off" || requested === "none" || requested === "disabled") return undefined;
-  if (requested === "duckduckgo" || requested === "ddg") return "duckduckgo";
-  if (requested === "searxng" && process.env.URL_AGENT_SEARCH_ENDPOINT) return "searxng";
-  if (requested === "brave" && process.env.BRAVE_SEARCH_API_KEY) return "brave";
-  if (requested === "serper" && process.env.SERPER_API_KEY) return "serper";
-  if (requested === "tavily" && process.env.TAVILY_API_KEY) return "tavily";
-  if (requested === "google-cse" && process.env.GOOGLE_CSE_API_KEY && process.env.GOOGLE_CSE_CX) return "google-cse";
-  if (process.env.URL_AGENT_SEARCH_ENDPOINT) return "searxng";
-  if (process.env.BRAVE_SEARCH_API_KEY) return "brave";
-  if (process.env.SERPER_API_KEY) return "serper";
-  if (process.env.TAVILY_API_KEY) return "tavily";
-  if (process.env.GOOGLE_CSE_API_KEY && process.env.GOOGLE_CSE_CX) return "google-cse";
-  return "duckduckgo";
+export type SearchProviderName = "google-cse" | "duckduckgo" | "brave" | "serper" | "tavily" | "searxng";
+
+const SEARCH_PROVIDER_LABELS: Record<SearchProviderName, string> = {
+  "google-cse": "Google Custom Search",
+  duckduckgo: "DuckDuckGo",
+  brave: "Brave Search",
+  serper: "Serper (Google index)",
+  tavily: "Tavily",
+  searxng: "SearXNG"
+};
+
+function normalizeProvider(value: unknown): SearchProviderName | undefined {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return undefined;
+  if (raw === "google" || raw === "google-cse" || raw === "google_custom_search") return "google-cse";
+  if (raw === "ddg" || raw === "duckduckgo") return "duckduckgo";
+  if (raw === "brave") return "brave";
+  if (raw === "serper") return "serper";
+  if (raw === "tavily") return "tavily";
+  if (raw === "searx" || raw === "searxng") return "searxng";
+  return undefined;
+}
+
+function providerAvailable(provider: SearchProviderName): boolean {
+  if (provider === "duckduckgo") return true;
+  if (provider === "google-cse") return Boolean(process.env.GOOGLE_CSE_API_KEY && process.env.GOOGLE_CSE_CX);
+  if (provider === "brave") return Boolean(process.env.BRAVE_SEARCH_API_KEY);
+  if (provider === "serper") return Boolean(process.env.SERPER_API_KEY);
+  if (provider === "tavily") return Boolean(process.env.TAVILY_API_KEY);
+  if (provider === "searxng") return Boolean(process.env.URL_AGENT_SEARCH_ENDPOINT);
+  return false;
+}
+
+export function searchProviderStatus() {
+  const preferred = normalizeProvider(process.env.URL_AGENT_SEARCH_PROVIDER) || "google-cse";
+  const providers = (Object.keys(SEARCH_PROVIDER_LABELS) as SearchProviderName[]).map(id => ({
+    id,
+    label: SEARCH_PROVIDER_LABELS[id],
+    available: providerAvailable(id),
+    requiresConfiguration: id !== "duckduckgo"
+  }));
+  const fallback = providers.find(p => p.id === preferred && p.available)?.id
+    || providers.find(p => p.id === "google-cse" && p.available)?.id
+    || "duckduckgo";
+  return { preferred, default: fallback, providers };
+}
+
+function configuredProvider(requestedProvider?: string): SearchProviderName | undefined {
+  const explicit = normalizeProvider(requestedProvider);
+  if (requestedProvider && !explicit) throw new Error(`Unsupported search provider: ${requestedProvider}`);
+  if (explicit) {
+    if (!providerAvailable(explicit)) throw new Error(`${SEARCH_PROVIDER_LABELS[explicit]} is not configured on this runtime.`);
+    return explicit;
+  }
+  return searchProviderStatus().default as SearchProviderName;
 }
 
 function unwrapDuckDuckGo(raw: string): string | undefined {
@@ -351,13 +391,13 @@ function coverageLevel(score: number): WebResearchReport["coverageLevel"] {
   return "none";
 }
 
-export async function researchExternalWeb(rootUrl: string, entityName: string, pages: PageSignal[]): Promise<WebResearchReport> {
+export async function researchExternalWeb(rootUrl: string, entityName: string, pages: PageSignal[], requestedProvider?: string): Promise<WebResearchReport> {
   const enabled = process.env.URL_AGENT_EXTERNAL_RESEARCH !== "false";
   if (!enabled) return { enabled: false, searchConfigured: false, queries: [], candidateUrls: 0, fetchedSources: 0, thirdPartySources: 0, thirdPartyDomains: 0, corroboratingThirdPartySources: 0, corroboratingThirdPartyDomains: 0, platformSources: 0, sourceCoverageScore: 0, coverageLevel: "none", sources: [], notes: ["External web research is disabled by configuration."] };
 
   const rootHost = new URL(rootUrl).hostname.toLowerCase();
   const rootDomain = registrableDomain(rootHost);
-  const provider = configuredProvider();
+  const provider = configuredProvider(requestedProvider);
   const candidates = new Map<string, Candidate>();
   const notes: string[] = [];
 
@@ -421,7 +461,8 @@ export async function researchExternalWeb(rootUrl: string, entityName: string, p
   if (sources.length && !corroboratingThirdParty.length) notes.push("External sources were discovered, but no fetched third-party page produced a clear entity mention or direct link back to the target. Treat external corroboration as unverified.");
   if (corroboratingThirdPartyDomains === 1) notes.push("Only one corroborating third-party domain was observed. A single external domain should not be treated as broad consensus.");
   if (backlinkSources.length) notes.push(`${backlinkSources.length} fetched third-party source(s) linked directly back to the target across ${backlinkDomains} independent domain(s).`);
-  if (provider === "duckduckgo") notes.push("Web-wide discovery used the built-in public DuckDuckGo search fallback. For higher-volume or more reproducible coverage, configure SearXNG, Brave Search, Serper, Tavily or Google CSE.");
+  if (provider === "duckduckgo") notes.push("Web-wide discovery used the built-in public DuckDuckGo index. Google Custom Search is the preferred hosted provider when GOOGLE_CSE_API_KEY and GOOGLE_CSE_CX are configured; users can choose an available provider in the web interface.");
+  if (provider === "google-cse") notes.push("Web-wide discovery used Google Custom Search as the external index selected for this investigation.");
   notes.push("No live crawler can guarantee discovery of every backlink or every page on the public web. This stage performs bounded live discovery plus search-index discovery; exhaustive backlink coverage depends on the external index available to the runtime.");
   notes.push("Source coverage is a measure of independent-domain corroboration, not a probability that every claim is true. Claim-level verification still depends on the evidence attached to each assertion.");
 

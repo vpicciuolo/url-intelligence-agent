@@ -142,17 +142,17 @@ function disabledWebResearch(): WebResearchReport {
   return { enabled: false, searchConfigured: false, queries: [], candidateUrls: 0, fetchedSources: 0, thirdPartySources: 0, thirdPartyDomains: 0, corroboratingThirdPartySources: 0, corroboratingThirdPartyDomains: 0, platformSources: 0, sourceCoverageScore: 0, coverageLevel: "none", sources: [], notes: ["External web research was not requested for this action."] };
 }
 
-export type InvestigateOptions = { profile?: string; crawl?: Partial<CrawlPolicy>; force?: boolean; externalResearch?: boolean };
+export type InvestigateOptions = { profile?: string; crawl?: Partial<CrawlPolicy>; force?: boolean; externalResearch?: boolean; searchProvider?: string };
 
 export async function investigate(rawUrl: string, profileOrOptions: string | InvestigateOptions = process.env.URL_AGENT_PROFILE || "full-intelligence"): Promise<IntelligenceResult> {
   const options: InvestigateOptions = typeof profileOrOptions === "string" ? { profile: profileOrOptions } : profileOrOptions;
   const profile = options.profile || process.env.URL_AGENT_PROFILE || "full-intelligence";
   const externalResearch = options.externalResearch ?? profile === "full-intelligence";
-  const cacheKey = `investigate:${rawUrl}:${profile}:${externalResearch ? "web" : "site"}:${JSON.stringify(options.crawl || {})}`;
+  const cacheKey = `investigate:${rawUrl}:${profile}:${externalResearch ? "web" : "site"}:${options.searchProvider || "default"}:${JSON.stringify(options.crawl || {})}`;
   if (!options.force) { const hit = await cache.get<IntelligenceResult>(cacheKey); if (hit) return hit; }
   const crawl = await crawlSite(rawUrl, options.crawl); const pages = crawl.pages; const root = pages[0]; if (!root) throw new Error("No page could be collected");
   const name = resolveName(pages); const type = resolveType(pages); const description = findDescription(pages);
-  const webResearch = externalResearch ? await researchExternalWeb(root.url, name.value, pages) : disabledWebResearch();
+  const webResearch = externalResearch ? await researchExternalWeb(root.url, name.value, pages, options.searchProvider) : disabledWebResearch();
   const extractionConfidence = Math.min(name.confidence, type.confidence);
   const confidenceAssessment = {
     extractionConfidence,
@@ -193,7 +193,7 @@ export async function runAction(name: string, args: Record<string, any>): Promis
   if (name === "compare_urls") return compareResults(await investigate(args.url, { profile: args.profile, externalResearch: false }), await investigate(args.url2, { profile: args.profile, externalResearch: false }));
   if (name === "batch_investigate") { const urls = Array.isArray(args.urls) ? args.urls : []; const queue = new WorkerQueue(Number(args.concurrency || process.env.URL_AGENT_WORKER_CONCURRENCY || 4)); urls.forEach((url: string) => queue.add("investigate", { url, profile: args.profile })); return queue.run(async job => investigate((job.payload as any).url, { profile: (job.payload as any).profile, externalResearch: false })); }
   const externalResearch = args.externalResearch !== undefined ? Boolean(args.externalResearch) : (name === "investigate_url" || name === "resolve_entity");
-  const result = await investigate(args.url, { profile: args.profile, force: Boolean(args.force), crawl: args.crawl, externalResearch });
+  const result = await investigate(args.url, { profile: args.profile, force: Boolean(args.force), crawl: args.crawl, externalResearch, searchProvider: args.searchProvider });
   if (name === "investigate_url") return result;
   if (name === "map_site" || name === "deep_crawl") return { meta: result.meta, rootUrl: result.finalUrl, importantPages: result.importantPages, sitemapUrls: result.sitemapUrls, pages: result.pages };
   if (name === "resolve_entity") return { meta: result.meta, entity: result.entity, confidenceAssessment: result.confidenceAssessment, webResearch: result.webResearch, contradictions: result.contradictions, graph: result.graph };

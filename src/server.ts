@@ -7,6 +7,7 @@ import { actionNames, runAction } from "./agent.js";
 import { PROJECT, attributionObject, creditsLine } from "./credits.js";
 import { MCP_PROTOCOL_VERSIONS, processMcpMessage, type McpMessage } from "./mcp.js";
 import { exportFilename, generateHtml, generateJson, generateMarkdown, generatePdf, type ExportReport } from "./export-report.js";
+import { searchProviderStatus } from "./research.js";
 
 const buckets = new Map<string, { count: number; reset: number }>();
 let uiHtml: string | undefined;
@@ -284,6 +285,18 @@ function validateUrl(value: unknown): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+function validateSearchProvider(value: unknown): { ok: true; provider?: string } | { ok: false; message: string } {
+  if (value === undefined || value === null || String(value).trim() === "") return { ok: true };
+  const requested = String(value).trim().toLowerCase();
+  const aliases: Record<string, string> = { google: "google-cse", "google_custom_search": "google-cse", ddg: "duckduckgo", searx: "searxng" };
+  const id = aliases[requested] || requested;
+  const status = searchProviderStatus();
+  const provider = status.providers.find(p => p.id === id);
+  if (!provider) return { ok: false, message: `Unsupported external search provider: ${requested}` };
+  if (!provider.available) return { ok: false, message: `${provider.label} is not configured on this Hugging Face runtime. Choose an available provider or configure its Space secret(s).` };
+  return { ok: true, provider: provider.id };
 }
 
 function recent(entry: UsageEntry | undefined, now = Date.now()): boolean {
@@ -587,6 +600,10 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
         json(res, 200, { actions: actionNames(), publicDemoActions: [...PUBLIC_DEMO_ACTIONS], remoteMcp: meta.mcp, attribution: attributionObject() });
         return;
       }
+      if (u.pathname === "/search-providers" && req.method === "GET") {
+        json(res, 200, { ...searchProviderStatus(), note: "Google Custom Search is the preferred hosted index. The runtime falls back to DuckDuckGo when Google credentials are not configured." });
+        return;
+      }
 
       const actionMatch = u.pathname.match(/^\/action\/([a-z0-9_:-]+)$/i);
       if (actionMatch) {
@@ -615,6 +632,9 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
         const url = validateUrl(args.url);
         if (!url) { json(res, 400, { error: "Provide a valid public http/https URL", attribution: attributionObject() }); return; }
         args.url = url;
+        const selected = validateSearchProvider(args.searchProvider);
+        if (!selected.ok) { json(res, 400, { error: selected.message, providers: searchProviderStatus(), attribution: attributionObject() }); return; }
+        if (selected.provider) args.searchProvider = selected.provider;
         const before = currentDemoStatus(req, user);
         if (!before.allowed) { rateLimited(res, before); return; }
         const demo = await reserveDemoRequest(req, user);
@@ -624,7 +644,7 @@ export async function startApiServer(port = Number(process.env.PORT || 8787), ho
         return;
       }
 
-      json(res, 404, { error: "Not found", available: ["/", "/health", "/me", "/actions", "/investigate", "/action/:name", "/mcp", "/.well-known/mcp.json", "/llms.txt"], attribution: attributionObject() });
+      json(res, 404, { error: "Not found", available: ["/", "/health", "/me", "/actions", "/search-providers", "/investigate", "/action/:name", "/mcp", "/.well-known/mcp.json", "/llms.txt"], attribution: attributionObject() });
     } catch (error) {
       json(res, 400, { error: error instanceof Error ? error.message : String(error), attribution: attributionObject() });
     }
