@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 import urlMetadata from "url-metadata";
@@ -17,7 +17,8 @@ const BASELINES = [
     source: "https://github.com/laurengarcia/url-metadata",
     package: "https://www.npmjs.com/package/url-metadata",
     license: "MIT",
-    adapter: "Native network-only probe (`fields: ['network']`) using the package's built-in request-filtering-agent SSRF protection.",
+    type: "metadata/network library",
+    adapter: "Native network-only probe (`fields: ['network']`) using the package's built-in request-filtering-agent SSRF protection. HTTP response exceptions carrying a status code are normalized to benchmark action=analyze because a response was successfully obtained.",
   },
   {
     id: "link-preview-js",
@@ -26,7 +27,8 @@ const BASELINES = [
     source: "https://github.com/OP-Engineering/link-preview-js",
     package: "https://www.npmjs.com/package/link-preview-js",
     license: "MIT",
-    adapter: "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled.",
+    type: "link-preview library",
+    adapter: "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled. The library does not expose HTTP response status in its public result, so status-family assertions remain unscored as failures rather than inferred.",
   },
 ];
 
@@ -52,12 +54,46 @@ function messageOf(error) {
   return error instanceof Error ? error.message : String(error);
 }
 
-function classifyBaselineFailure(error) {
+function isPrivateIp(hostname) {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, "").split("%", 1)[0];
+  const family = isIP(host);
+  if (family === 4) {
+    const [a, b, c] = host.split(".").map(Number);
+    return a === 0 || a === 10 || a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 192 && b === 0 && c === 2) ||
+      (a === 198 && b === 51 && c === 100) ||
+      (a === 203 && b === 0 && c === 113) || a >= 224;
+  }
+  if (family === 6) {
+    return host === "::" || host === "::1" || /^f[cd]/.test(host) || /^fe[89ab]/.test(host);
+  }
+  return false;
+}
+
+function inputTargetsPrivateNetwork(input) {
+  try {
+    const parsed = new URL(input);
+    if (!/^https?:$/.test(parsed.protocol)) return false;
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    return host === "localhost" || host.endsWith(".localhost") || isPrivateIp(host);
+  } catch {
+    return false;
+  }
+}
+
+function classifyBaselineFailure(error, input) {
   const message = messageOf(error);
-  if (/ssrf|private|reserved|loopback|request[- ]filter|blocked|forbidden ip|local network/i.test(message)) {
+  if (
+    /ssrf|private|reserved|loopback|request[- ]filter|blocked|forbidden ip|local network|meta ip|dns lookup .* not allowed/i.test(message) ||
+    (inputTargetsPrivateNetwork(input) && /valid (?:a )?url|not allowed|fetch failed/i.test(message))
+  ) {
     return { action: "block", error: message };
   }
-  if (/valid (?:a )?url|invalid url|unsupported protocol|only http|protocol.*not supported|failed to parse url|scheme/i.test(message)) {
+  if (/valid (?:a )?url|invalid url|unsupported protocol|only http|only absolute urls|protocol.*not supported|failed to parse url|scheme/i.test(message)) {
     return { action: "reject", error: message };
   }
   return { action: "error", error: message };
@@ -106,9 +142,11 @@ async function runUrlMetadata(item) {
       error: null,
     };
   } catch (error) {
-    const failure = classifyBaselineFailure(error);
     const redirects = error?.redirects || { count: 0, chain: [] };
     const status = error?.statusCode ?? null;
+    const failure = status != null
+      ? { action: "analyze", error: messageOf(error) }
+      : classifyBaselineFailure(error, item.url);
     return {
       ...basePrediction(item, started),
       action: failure.action,
@@ -161,7 +199,11 @@ async function runLinkPreview(item) {
       error: null,
     };
   } catch (error) {
-    const failure = classifyBaselineFailure(error);
+    const message = messageOf(error);
+    const failure = (
+      /ssrf/i.test(message) ||
+      (inputTargetsPrivateNetwork(item.url) && (resolverCalls === 0 || /valid (?:a )?url|fetch failed/i.test(message)))
+    ) ? { action: "block", error: message } : classifyBaselineFailure(error, item.url);
     return {
       ...basePrediction(item, started),
       action: failure.action,
