@@ -3,17 +3,19 @@ import fs from "node:fs";
 const file = "/app/index.html";
 let html = fs.readFileSync(file, "utf8");
 
-// Visible branding should use the exact deployed image files. The deploy
-// workflow downloads the requested logo and social image into /assets.
-// Keep paths relative so they also resolve when the Space is rendered through
-// the huggingface.co/spaces/... proxy path.
+const logo = fs.readFileSync('/app/assets/logo.jpg').toString('base64');
+const og = fs.readFileSync('/app/assets/og.jpg').toString('base64');
+
+// Embed the approved production images directly in the visible UI so they do
+// not depend on Hugging Face proxy/base-path routing. Metadata continues to
+// use the public /assets URLs for social crawlers and previews.
 html = html.replace(
   /src=(['"])\/assets\/logo\.jpg(?:\?[^'\"]*)?\1/g,
-  'src="assets/logo.jpg?v=20260908-2"'
+  `src="data:image/jpeg;base64,${logo}"`
 );
 html = html.replace(
   /src=(['"])\/assets\/og\.jpg(?:\?[^'\"]*)?\1/g,
-  'src="assets/og.jpg?v=20260908-2"'
+  `src="data:image/jpeg;base64,${og}"`
 );
 
 if (!html.includes("url-agent-ui-enhancement-v3")) {
@@ -31,4 +33,4 @@ if (!html.includes("url-agent-ui-enhancement-v3")) {
 }
 
 fs.writeFileSync(file, html);
-console.log("UI branding paths normalized for Hugging Face proxy rendering");
+console.log("Approved branding embedded into visible Hugging Face UI");
