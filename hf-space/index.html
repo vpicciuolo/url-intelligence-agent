@@ -2,243 +2,280 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Try the open-source URL Intelligence Agent live on Hugging Face. Evidence-first URL intelligence, SEO, security, social, technology, brand and trust analysis." />
-  <title>URL Intelligence Agent · Live Demo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>URL Intelligence Agent – Open Source Remote MCP & Web Intelligence AI Agent</title>
+  <meta name="description" content="Open-source URL Intelligence Agent for crawling, entity resolution, SEO, security, trust, social discovery, technology detection, RAG, API and remote MCP." />
+  <meta name="keywords" content="URL intelligence agent, web intelligence AI, remote MCP server, MCP AI agent, URL analyzer, SEO audit AI, security audit, entity resolution, social discovery, technology detection, web crawler, RAG, open source AI agent" />
+  <meta name="author" content="Vincenzo Picciuolo" />
+  <meta name="creator" content="Vincenzo Picciuolo" />
+  <meta name="publisher" content="HRN Innovation Technologies Ltd" />
+  <meta name="application-name" content="URL Intelligence Agent" />
+  <meta name="theme-color" content="#07101c" />
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <link rel="canonical" href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent" />
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM information" />
+  <link rel="icon" type="image/jpeg" href="/assets/logo.jpg" />
+  <link rel="apple-touch-icon" href="/assets/logo.jpg" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="URL Intelligence Agent" />
+  <meta property="og:title" content="URL Intelligence Agent – URL in. Identity, Evidence & Intelligence out." />
+  <meta property="og:description" content="Try the evidence-first open-source web intelligence AI agent live. Connect through remote MCP, HTTP API, CLI or Docker." />
+  <meta property="og:url" content="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent" />
+  <meta property="og:image" content="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg" />
+  <meta property="og:image:secure_url" content="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="URL Intelligence Agent – open-source evidence-first web intelligence for AI agents and developers" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="URL Intelligence Agent – Open Source Remote MCP" />
+  <meta name="twitter:description" content="URL in. Identity, evidence and intelligence out. Try the live agent or connect it to your AI through remote MCP." />
+  <meta name="twitter:image" content="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg" />
+  <meta name="twitter:image:alt" content="URL Intelligence Agent capabilities" />
+  <meta name="twitter:creator" content="@vpicciuolo" />
+
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@graph":[
+      {
+        "@type":"SoftwareApplication",
+        "@id":"https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent#software",
+        "name":"URL Intelligence Agent",
+        "alternateName":"URL Intelligence AI Agent",
+        "description":"Evidence-first open-source URL and web intelligence agent with crawling, entity resolution, social discovery, SEO, security, trust, technology detection, RAG, HTTP API, CLI and remote MCP.",
+        "applicationCategory":"DeveloperApplication",
+        "operatingSystem":"Cross-platform",
+        "softwareVersion":"1.0.0",
+        "isAccessibleForFree":true,
+        "license":"https://opensource.org/license/mit",
+        "url":"https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent",
+        "downloadUrl":"https://github.com/vpicciuolo/url-intelligence-agent",
+        "codeRepository":"https://github.com/vpicciuolo/url-intelligence-agent",
+        "image":"https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg",
+        "creator":{"@id":"https://github.com/vpicciuolo#person"},
+        "publisher":{"@type":"Organization","name":"HRN Innovation Technologies Ltd","url":"https://horno.net"},
+        "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
+        "featureList":["URL intelligence","Deep crawl","Entity resolution","Social discovery","Contact discovery","SEO audit","Security audit","Trust analysis","Technology detection","Brand intelligence","RAG export","Remote MCP server","HTTP API","CLI","Docker"]
+      },
+      {
+        "@type":"Person",
+        "@id":"https://github.com/vpicciuolo#person",
+        "name":"Vincenzo Picciuolo",
+        "url":"https://github.com/vpicciuolo",
+        "sameAs":["https://github.com/vpicciuolo","https://huggingface.co/vpicciuolo","https://www.linkedin.com/in/vpicciuolo/"]
+      },
+      {
+        "@type":"WebSite",
+        "name":"URL Intelligence Agent",
+        "url":"https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent",
+        "description":"Live Docker Space and remote MCP endpoint for URL Intelligence Agent."
+      }
+    ]
+  }
+  </script>
+
   <style>
-    :root{color-scheme:dark;--bg:#07101c;--panel:#0c1828;--soft:#122239;--line:#263a57;--text:#f6f9fc;--muted:#9fb0c7;--accent:#74e0b2;--blue:#7bb7ff;--warn:#ffca6a;--bad:#ff8d8d}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 15% -10%,#173152 0,transparent 33%),var(--bg);color:var(--text)}
-    a{color:inherit;text-decoration:none}button,input,select{font:inherit}.wrap{max-width:1180px;margin:auto;padding:24px}.top{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:8px 0 38px}.brand{display:flex;align-items:center;gap:12px;font-weight:850}.logo{width:42px;height:42px;border:1px solid var(--line);border-radius:12px;display:grid;place-items:center;background:var(--soft);font-size:22px}.nav{display:flex;gap:9px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 15px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-weight:750;cursor:pointer}.btn:hover{border-color:#45648e}.btn.primary{background:var(--accent);border-color:transparent;color:#06130e}.btn.small{padding:8px 11px;font-size:13px}.btn:disabled{opacity:.5;cursor:not-allowed}.hero{display:grid;grid-template-columns:1.08fr .92fr;gap:30px;align-items:center}.eyebrow{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;color:var(--accent);background:#0b1a2a;font-size:12px;font-weight:850}.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 16px var(--accent)}h1{font-size:clamp(48px,7vw,82px);line-height:.95;letter-spacing:-.055em;margin:18px 0}.lead{font-size:19px;line-height:1.65;color:var(--muted);max-width:750px}.hero-card,.panel,.card{background:linear-gradient(180deg,var(--panel),#091523);border:1px solid var(--line);border-radius:18px}.hero-card{padding:20px}.status-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--line)}.status{display:flex;gap:8px;align-items:center;font-weight:800}.muted{color:var(--muted)}.quota{margin-top:16px;padding:14px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}.quota strong{display:block;margin-bottom:5px}.quota-line{display:flex;justify-content:space-between;gap:14px;align-items:center}.section{margin-top:68px}.section h2{font-size:34px;letter-spacing:-.03em;margin:0 0 9px}.section>p{color:var(--muted);font-size:16px;line-height:1.6;max-width:840px}.demo{padding:22px;margin-top:22px}.form-grid{display:grid;grid-template-columns:1fr 240px auto;gap:10px}.input,.select{width:100%;border:1px solid var(--line);background:#08131f;color:var(--text);border-radius:11px;padding:13px 14px;outline:none}.input:focus,.select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(123,183,255,.12)}.notice{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:12px 14px;border:1px solid #5f532b;background:#1a180d;border-radius:11px;color:#e7d79e;font-size:13px;line-height:1.5}.result{margin-top:18px;border:1px solid var(--line);border-radius:14px;overflow:hidden;display:none}.result-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 13px;background:var(--soft);border-bottom:1px solid var(--line);font-size:13px}.result pre{margin:0;max-height:620px;overflow:auto;padding:17px;background:#040912;color:#cfdded;font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}.loading{display:none;margin-top:14px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}.card{padding:19px}.card h3{margin:0 0 8px;font-size:17px}.card p{margin:0;color:var(--muted);line-height:1.55;font-size:14px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}.tab{border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:var(--soft);color:#c7d6e9;font-size:13px;font-weight:750}.code-card{margin-top:13px;background:#040912;border:1px solid var(--line);border-radius:14px;overflow:hidden}.code-head{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:#0b1522;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}pre.code{margin:0;padding:17px;overflow:auto;color:#ccdcec;font:12.5px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.green{color:var(--accent)}.blue{color:var(--blue)}.bad{color:var(--bad)}.pillrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.pill{border:1px solid var(--line);background:var(--soft);color:#c8d6e8;padding:7px 9px;border-radius:999px;font-size:12px}.footer{margin:70px 0 10px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:13px}
-    @media(max-width:860px){.hero{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.top{align-items:flex-start}.nav{justify-content:flex-end}h1{font-size:52px}.wrap{padding:18px}}
+    :root{color-scheme:dark;--bg:#050b14;--panel:#0b1728;--panel2:#0f2037;--soft:#122641;--line:#203a5d;--text:#f5f9ff;--muted:#9eb2cc;--cyan:#1fe0ff;--blue:#3a8cff;--violet:#a458ff;--pink:#f253ff;--ok:#49e1aa;--warn:#ffd36e;--bad:#ff8585;--shadow:0 24px 70px rgba(0,0,0,.35)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 15% -10%,#102c53 0,transparent 33%),radial-gradient(circle at 90% 20%,#29124b 0,transparent 27%),var(--bg);color:var(--text)}
+    a{color:inherit;text-decoration:none}button,input,select{font:inherit}.wrap{max-width:1240px;margin:auto;padding:22px}.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 0 24px;background:linear-gradient(180deg,rgba(5,11,20,.96),rgba(5,11,20,.76),transparent);backdrop-filter:blur(8px)}.brand{display:flex;align-items:center;gap:11px;font-weight:850;letter-spacing:-.02em}.brand img{width:44px;height:44px;object-fit:cover;border-radius:12px;border:1px solid #31517b;box-shadow:0 0 24px rgba(31,224,255,.2)}.nav{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 15px;border-radius:11px;border:1px solid var(--line);background:rgba(12,24,40,.94);color:var(--text);font-weight:780;cursor:pointer;transition:.18s ease}.btn:hover{transform:translateY(-1px);border-color:#4778b5}.btn.primary{border:0;background:linear-gradient(100deg,var(--cyan),var(--blue) 55%,var(--violet));color:#030912;box-shadow:0 10px 28px rgba(31,224,255,.18)}.btn.small{padding:8px 11px;font-size:13px}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding:34px 0 12px}.eyebrow{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #2a517f;border-radius:999px;background:#07192b;color:#72edff;font-weight:850;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 16px var(--ok)}h1{font-size:clamp(46px,7.2vw,84px);line-height:.94;letter-spacing:-.055em;margin:18px 0}.gradient{background:linear-gradient(100deg,var(--cyan),var(--blue) 48%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}.lead{color:var(--muted);font-size:19px;line-height:1.65;max-width:760px}.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.chip{border:1px solid var(--line);background:#0b1a2d;color:#c8d8ed;padding:7px 10px;border-radius:999px;font-size:12px}.hero-card,.panel,.card,.mcpbox{background:linear-gradient(180deg,rgba(13,29,50,.96),rgba(8,19,33,.96));border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}.hero-card{padding:20px}.status-row,.quota-line{display:flex;justify-content:space-between;align-items:center;gap:12px}.status-row{padding-bottom:14px;border-bottom:1px solid var(--line)}.status{display:flex;align-items:center;gap:8px;font-weight:800}.muted{color:var(--muted)}.quota{margin-top:15px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#0d2138}.quota strong{display:block;margin-bottom:7px}.quota-line{font-size:14px;padding:3px 0}.hero-image{margin-top:34px;border:1px solid #233f63;border-radius:20px;overflow:hidden;box-shadow:var(--shadow);background:#02060c}.hero-image img{display:block;width:100%;height:auto}.section{margin-top:72px}.section h2{font-size:34px;letter-spacing:-.035em;margin:0 0 9px}.section>p{max-width:870px;color:var(--muted);font-size:16px;line-height:1.65}.demo{padding:22px;margin-top:21px}.form-grid{display:grid;grid-template-columns:minmax(0,1fr) 230px auto;gap:10px}.input,.select{width:100%;padding:13px 14px;border-radius:11px;border:1px solid var(--line);background:#050f1c;color:var(--text);outline:none}.input:focus,.select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(31,224,255,.1)}.notice{display:flex;gap:10px;margin-top:12px;padding:12px 14px;border:1px solid #5b522a;background:#1a170b;border-radius:11px;color:#eadb9e;font-size:13px;line-height:1.5}.signin-note{border-color:#234b76;background:#091b30;color:#bcd9f8}.loading{display:none;margin-top:15px;color:var(--muted)}.result-shell{display:none;margin-top:22px}.result-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:13px;border:1px solid var(--line);border-radius:14px 14px 0 0;background:#102642}.exports{display:flex;gap:8px;flex-wrap:wrap}.report-view{border:1px solid var(--line);border-top:0;background:#06101d;padding:18px;border-radius:0 0 14px 14px}.result-section{margin:0 0 12px;border:1px solid #1c3555;border-radius:12px;overflow:hidden;background:#0a1728}.result-section summary{cursor:pointer;padding:13px 15px;font-weight:800;background:#0e2139}.result-section .inside{padding:14px}.kv{display:grid;grid-template-columns:minmax(130px,.35fr) 1fr;gap:8px 14px;padding:7px 0;border-bottom:1px solid rgba(44,69,101,.45);font-size:13px}.kv:last-child{border-bottom:0}.k{color:#90a6c1;font-weight:700;word-break:break-word}.v{word-break:break-word;white-space:pre-wrap}.array{margin:6px 0 0;padding-left:18px;color:#d7e5f5}.raw{margin-top:14px;background:#02070e;border:1px solid var(--line);border-radius:12px;overflow:hidden}.raw-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#0c1a2c;color:var(--muted);font-size:12px}.raw pre{margin:0;padding:16px;max-height:650px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:#c8d8eb;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}.card{padding:19px}.card h3{margin:0 0 8px;font-size:17px}.card p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}.mcpbox{padding:22px;margin-top:22px;border-color:#315a8a}.mcpurl{display:flex;gap:9px;align-items:center;margin-top:14px}.mcpurl code{flex:1;min-width:0;padding:13px 14px;border:1px solid #31577f;background:#020912;border-radius:11px;color:#79ebff;overflow:auto;white-space:nowrap}.mcp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px}.code-card{margin-top:13px;background:#02070e;border:1px solid var(--line);border-radius:14px;overflow:hidden}.code-head{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:#0b1727;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}pre.code{margin:0;padding:17px;overflow:auto;color:#cbdced;font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.cyan{color:var(--cyan)}.footer{margin:72px 0 12px;padding:24px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+    @media(max-width:900px){.hero{grid-template-columns:1fr}.grid,.mcp-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.top{position:relative;align-items:flex-start}.nav{justify-content:flex-end}h1{font-size:52px}.wrap{padding:17px}.kv{grid-template-columns:1fr}.mcpurl{align-items:stretch;flex-direction:column}}
   </style>
 </head>
 <body>
   <main class="wrap">
     <header class="top">
-      <div class="brand"><div class="logo">🧠</div><span>URL Intelligence Agent</span></div>
-      <nav class="nav">
-        <a class="btn small" href="#try">Live demo</a>
-        <a class="btn small" href="#cli">CLI</a>
-        <a class="btn small" href="#api">API</a>
-        <a class="btn small" href="#mcp">MCP</a>
-        <a class="btn small" href="https://github.com/vpicciuolo/url-intelligence-agent" target="_blank" rel="noreferrer">GitHub ↗</a>
+      <a class="brand" href="#top" aria-label="URL Intelligence Agent home"><img src="/assets/logo.jpg" alt="URL Intelligence Agent logo" /><span>URL Intelligence Agent</span></a>
+      <nav class="nav" aria-label="Main navigation">
+        <a class="btn small" href="#try">Live demo</a><a class="btn small" href="#remote-mcp">Remote MCP</a><a class="btn small" href="#cli">CLI</a><a class="btn small" href="#api">API</a><a class="btn small" href="https://github.com/vpicciuolo/url-intelligence-agent" target="_blank" rel="noreferrer">GitHub ↗</a>
       </nav>
     </header>
 
-    <section class="hero">
+    <section class="hero" id="top">
       <div>
-        <span class="eyebrow"><span class="dot"></span> LIVE DOCKER SPACE · OPEN SOURCE · MIT</span>
-        <h1>URL in.<br/>Intelligence out.</h1>
-        <p class="lead">Evidence-first URL intelligence for crawling, entity resolution, social discovery, technology detection, brand signals, SEO, security, trust, RAG and agent workflows.</p>
-        <div class="tabs">
-          <span class="tab">TypeScript</span><span class="tab">Node.js</span><span class="tab">HTTP API</span><span class="tab">MCP</span><span class="tab">Docker</span><span class="tab">RAG</span>
-        </div>
+        <span class="eyebrow"><span class="dot"></span> LIVE DOCKER SPACE · REMOTE MCP · OPEN SOURCE · MIT</span>
+        <h1>URL in.<br><span class="gradient">Intelligence out.</span></h1>
+        <p class="lead">Evidence-first URL and web intelligence for AI agents, developers and research workflows. Crawl public websites, resolve entities, discover social and contact signals, detect technologies, audit SEO, security and trust, export branded reports, or connect the agent directly to compatible AI clients through remote MCP.</p>
+        <div class="chips"><span class="chip">Remote MCP</span><span class="chip">TypeScript</span><span class="chip">Node.js</span><span class="chip">Docker</span><span class="chip">HTTP API</span><span class="chip">CLI</span><span class="chip">RAG</span><span class="chip">MIT</span></div>
       </div>
-
-      <aside class="hero-card">
-        <div class="status-row">
-          <div class="status"><span id="healthDot" class="dot"></span><span id="healthText">Checking runtime…</span></div>
-          <span class="muted">v1.0.0</span>
-        </div>
+      <aside class="hero-card" aria-label="Runtime status">
+        <div class="status-row"><div class="status"><span id="healthDot" class="dot"></span><span id="healthText">Checking runtime…</span></div><span class="muted">v1.0.0</span></div>
         <div class="quota">
-          <strong>Hosted demo protection</strong>
-          <div class="quota-line"><span class="muted">Allowance</span><span>1 analysis / 24h</span></div>
-          <div class="quota-line"><span class="muted">Identity</span><span id="identityText">Checking…</span></div>
+          <strong>Hosted web demo</strong>
+          <div class="quota-line"><span class="muted">Authentication</span><span id="authState">Checking…</span></div>
+          <div class="quota-line"><span class="muted">Allowance</span><span id="allowanceText">1 / 24h</span></div>
           <div class="quota-line"><span class="muted">Remaining</span><span id="remainingText">Checking…</span></div>
         </div>
         <div id="authBox" style="margin-top:14px"></div>
       </aside>
     </section>
 
+    <div class="hero-image"><img src="/assets/og.jpg" width="1200" height="630" alt="URL Intelligence Agent features: crawl and map, metadata, SEO, security, trust, monitoring, entity resolution, contact and social discovery" /></div>
+
     <section class="section" id="try">
-      <h2>Try the agent live</h2>
-      <p>Enter one public URL and choose an analysis. The hosted demo is deliberately limited to protect compute. For unlimited use, clone the project and run it locally.</p>
+      <h2>Try the URL Intelligence Agent live</h2>
+      <p>Sign in with Hugging Face, enter a public URL and select an intelligence action. The hosted web demo allows one analysis every 24 hours per account. Each successful analysis can be exported as a fully branded PDF, JSON, Markdown or HTML report.</p>
       <div class="panel demo">
         <div class="form-grid">
           <input id="urlInput" class="input" type="url" inputmode="url" autocomplete="url" placeholder="https://example.com" aria-label="Public URL" />
           <select id="actionSelect" class="select" aria-label="Analysis type">
-            <option value="/investigate">Full investigation</option>
-            <option value="/action/audit_seo">SEO audit</option>
-            <option value="/action/audit_security">Security audit</option>
-            <option value="/action/audit_trust">Trust signals</option>
-            <option value="/action/find_social_profiles">Social discovery</option>
-            <option value="/action/detect_technologies">Technology detection</option>
-            <option value="/action/brand_intelligence">Brand intelligence</option>
-            <option value="/action/domain_intelligence">Domain intelligence</option>
-            <option value="/action/structured_data">Structured data</option>
+            <option value="/investigate">Full investigation</option><option value="/action/audit_seo">SEO audit</option><option value="/action/audit_security">Security audit</option><option value="/action/audit_trust">Trust signals</option><option value="/action/find_social_profiles">Social discovery</option><option value="/action/detect_technologies">Technology detection</option><option value="/action/brand_intelligence">Brand intelligence</option><option value="/action/domain_intelligence">Domain intelligence</option><option value="/action/structured_data">Structured data</option>
           </select>
-          <button id="runBtn" class="btn primary">Run analysis</button>
+          <button id="runBtn" class="btn primary" disabled>Run analysis</button>
         </div>
-        <div class="notice"><span>⚠️</span><span><strong>1 hosted request per Hugging Face account or anonymous IP every 24 hours.</strong> The request is consumed when analysis starts. Sign in with Hugging Face for account-based quota tracking.</span></div>
-        <div id="loading" class="loading">Analyzing URL… this can take a little time depending on the target.</div>
-        <div id="result" class="result">
-          <div class="result-head"><span id="resultTitle">Result</span><button class="btn small" id="copyResult">Copy JSON</button></div>
-          <pre id="resultPre"></pre>
+        <div id="demoNotice" class="notice signin-note"><span>🔐</span><span><strong>Hugging Face login is required.</strong> Sign in to use the hosted analysis and report export features. Local/self-hosted usage remains unrestricted under the MIT License.</span></div>
+        <div id="loading" class="loading">Analyzing the URL and collecting evidence… this may take a little time.</div>
+        <div id="resultShell" class="result-shell">
+          <div class="result-toolbar"><strong id="resultTitle">Analysis result</strong><div class="exports"><a id="pdfExport" class="btn small primary" href="#">PDF report</a><a id="jsonExport" class="btn small" href="#">JSON</a><a id="mdExport" class="btn small" href="#">Markdown</a><a id="htmlExport" class="btn small" href="#">HTML</a><button id="copyResult" class="btn small">Copy JSON</button></div></div>
+          <div class="report-view"><div id="structuredResult"></div><div class="raw"><div class="raw-head"><span>Complete raw response</span></div><pre id="resultPre"></pre></div></div>
         </div>
       </div>
     </section>
 
+    <section class="section" id="remote-mcp">
+      <h2>Connect your AI directly with Remote MCP</h2>
+      <p>The Space exposes a public <strong>Streamable HTTP MCP endpoint</strong>. Compatible remote-MCP clients can discover the available URL intelligence tools and call them directly from an AI conversation. This includes clients and platforms with remote MCP support such as Claude and ChatGPT custom apps/connectors where the feature is available.</p>
+      <div class="mcpbox">
+        <strong>Public Remote MCP endpoint</strong>
+        <div class="mcpurl"><code id="mcpUrl">https://vpicciuolo-url-intelligence-agent.hf.space/mcp</code><button class="btn small" data-copy="mcpUrl">Copy endpoint</button></div>
+        <p class="muted" style="line-height:1.6">Transport: Streamable HTTP · Public read-only demo tools · No API key required for connection · One analysis tool call per MCP session every 24 hours. Tool discovery, initialization and health checks do not consume the analysis allowance.</p>
+        <div class="mcp-grid">
+          <div class="card"><h3>ChatGPT</h3><p>In a ChatGPT workspace/account with custom MCP app support, enable developer/custom app mode, create an app, paste the endpoint above, choose no authentication for this public demo, scan tools, then ask ChatGPT to investigate a URL using the connected app.</p></div>
+          <div class="card"><h3>Claude / other MCP clients</h3><p>Add the URL above as a remote Streamable HTTP MCP server. After initialization, the client can discover the public URL intelligence tools and call one analysis for the demo session.</p></div>
+        </div>
+        <div class="code-card"><div class="code-head"><span>Protocol test</span><button class="btn small" data-copy="mcpCurl">Copy</button></div><pre class="code" id="mcpCurl">curl -i https://vpicciuolo-url-intelligence-agent.hf.space/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0"}}}'</pre></div>
+      </div>
+    </section>
+
     <section class="section">
-      <h2>What it can inspect</h2>
-      <p>The same core runtime powers the hosted demo, CLI, API and MCP entry points.</p>
+      <h2>Evidence-first web intelligence capabilities</h2>
+      <p>The same core runtime powers the hosted interface, CLI, HTTP API, Docker service and MCP transports.</p>
       <div class="grid">
-        <article class="card"><h3>Deep URL intelligence</h3><p>Redirects, DNS, TLS, metadata, structured data, crawling, links and freshness signals.</p></article>
-        <article class="card"><h3>Entity & brand resolution</h3><p>Organizations, people, social profiles, public contacts, technologies and brand evidence.</p></article>
-        <article class="card"><h3>SEO, security & trust</h3><p>SEO posture, security headers, quality, transparency and public compliance indicators.</p></article>
-        <article class="card"><h3>RAG & knowledge export</h3><p>Provenance-aware facts and documents ready for downstream retrieval and AI workflows.</p></article>
-        <article class="card"><h3>Monitoring & comparison</h3><p>Snapshots, diffs, URL comparison, batch enrichment and evidence-first reports.</p></article>
-        <article class="card"><h3>Agent integration</h3><p>Use the CLI, HTTP service, Docker runtime or MCP server depending on your stack.</p></article>
+        <article class="card"><h3>Deep URL crawling & mapping</h3><p>Redirects, robots policy, sitemaps, multi-page crawling, links, metadata, structured data and freshness signals.</p></article>
+        <article class="card"><h3>Entity & brand resolution</h3><p>Organizations, people, products, public profiles, logos, brand signals and evidence-linked identity resolution.</p></article>
+        <article class="card"><h3>SEO, security & trust audits</h3><p>Search metadata, canonical/Open Graph signals, crawl discoverability, HTTP security headers, transparency and public trust indicators.</p></article>
+        <article class="card"><h3>Social & contact discovery</h3><p>Normalize public social profiles, emails, phone numbers and important contact/about pages from observable evidence.</p></article>
+        <article class="card"><h3>Technology intelligence</h3><p>Detect public web technologies and implementation signals using deterministic fingerprints and confidence scoring.</p></article>
+        <article class="card"><h3>RAG, monitoring & reports</h3><p>Generate provenance-aware knowledge exports, snapshots, diffs, structured data and branded intelligence reports.</p></article>
       </div>
     </section>
 
     <section class="section" id="cli">
-      <h2>Run locally with the CLI</h2>
-      <p>Local usage is not subject to the hosted demo quota.</p>
-      <div class="code-card">
-        <div class="code-head"><span>Quick start</span><button class="btn small copy" data-target="cliCode">Copy</button></div>
-        <pre class="code" id="cliCode"><span class="green">git clone</span> https://github.com/vpicciuolo/url-intelligence-agent.git
-<span class="green">cd</span> url-intelligence-agent
-<span class="green">npm install</span>
-<span class="green">npm run build</span>
+      <h2>Run the agent locally with the CLI</h2>
+      <p>Clone the MIT-licensed repository for unrestricted local use, development, automation and self-hosting.</p>
+      <div class="code-card"><div class="code-head"><span>Quick start</span><button class="btn small" data-copy="cliCode">Copy</button></div><pre class="code" id="cliCode"><span class="cyan">git clone</span> https://github.com/vpicciuolo/url-intelligence-agent.git
+<span class="cyan">cd</span> url-intelligence-agent
+<span class="cyan">npm install</span>
+<span class="cyan">npm run build</span>
 
-# Full investigation
 node dist/src/cli.js investigate https://example.com
-
-# SEO
 node dist/src/cli.js seo https://example.com
-
-# Security
 node dist/src/cli.js security https://example.com
-
-# Social profiles
 node dist/src/cli.js socials https://example.com
-
-# Technology detection
-node dist/src/cli.js technologies https://example.com</pre>
-      </div>
+node dist/src/cli.js technologies https://example.com</pre></div>
     </section>
 
     <section class="section" id="api">
-      <h2>Use it as an HTTP API</h2>
-      <p>Start the server locally, or call the public Hugging Face demo endpoint subject to the 24-hour quota.</p>
-      <div class="code-card">
-        <div class="code-head"><span>Local server</span><button class="btn small copy" data-target="apiLocal">Copy</button></div>
-        <pre class="code" id="apiLocal">npm run serve
-# default local API: http://127.0.0.1:8787
-
-curl "http://127.0.0.1:8787/investigate?url=https://example.com"
-curl "http://127.0.0.1:8787/action/audit_seo?url=https://example.com"
-curl "http://127.0.0.1:8787/health"
-curl "http://127.0.0.1:8787/actions"</pre>
-      </div>
-      <div class="code-card">
-        <div class="code-head"><span>Hosted demo API</span><button class="btn small copy" data-target="apiHosted">Copy</button></div>
-        <pre class="code" id="apiHosted">curl "https://vpicciuolo-url-intelligence-agent.hf.space/investigate?url=https://example.com"
-
-# 1 analysis request per HF account / anonymous IP every 24h</pre>
-      </div>
-    </section>
-
-    <section class="section" id="mcp">
-      <h2>Run as an MCP server</h2>
-      <p>Expose the agent actions to compatible AI clients and agent runtimes through the project MCP entry point.</p>
-      <div class="code-card">
-        <div class="code-head"><span>MCP</span><button class="btn small copy" data-target="mcpCode">Copy</button></div>
-        <pre class="code" id="mcpCode">npm run mcp
-
-# or directly
-node dist/src/cli.js mcp</pre>
+      <h2>HTTP API, Docker and local MCP</h2>
+      <p>Use the runtime as a service or integrate it into other agent stacks. The hosted web analysis requires Hugging Face login; the public remote MCP demo has its own session quota.</p>
+      <div class="grid">
+        <article class="card"><h3>HTTP API</h3><p><code>npm run serve</code><br><br>Endpoints include <code>/health</code>, <code>/actions</code>, <code>/investigate</code> and <code>/action/:name</code>.</p></article>
+        <article class="card"><h3>Local MCP</h3><p><code>npm run mcp</code><br><br>Starts the stdio MCP server for compatible local AI clients and development tools.</p></article>
+        <article class="card"><h3>Docker</h3><p>Build and run the same Node.js runtime as a portable container for private infrastructure or production integrations.</p></article>
       </div>
     </section>
 
     <section class="section">
-      <h2>Open source by design</h2>
-      <p>The hosted Space is a controlled public demo. The full project remains available under the MIT License for local development, self-hosting, integration, testing and extension.</p>
-      <div class="pillrow">
-        <span class="pill">Evidence-first</span><span class="pill">Entity resolution</span><span class="pill">Deep crawl</span><span class="pill">SEO</span><span class="pill">Security</span><span class="pill">Trust</span><span class="pill">RAG</span><span class="pill">MCP</span><span class="pill">API</span><span class="pill">MIT</span>
-      </div>
-      <div style="margin-top:20px"><a class="btn primary" href="https://github.com/vpicciuolo/url-intelligence-agent" target="_blank" rel="noreferrer">View source on GitHub ↗</a></div>
+      <h2>Open source, inspectable and reusable</h2>
+      <p>URL Intelligence Agent is available under the MIT License. Inspect the source, run it locally, self-host it, integrate it into an AI workflow or contribute improvements on GitHub.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px"><a class="btn primary" href="https://github.com/vpicciuolo/url-intelligence-agent" target="_blank" rel="noreferrer">View source on GitHub ↗</a><a class="btn" href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent" target="_blank" rel="noreferrer">Hugging Face Space ↗</a></div>
     </section>
 
-    <footer class="footer">
-      <span>Created by Vincenzo Picciuolo · HRN Innovation Technologies Ltd</span>
-      <span>HORNO ecosystem · Open source under MIT</span>
-    </footer>
+    <footer class="footer"><span>Created by Vincenzo Picciuolo · HRN Innovation Technologies Ltd</span><span>GitHub: vpicciuolo/url-intelligence-agent · Hugging Face: vpicciuolo/url-intelligence-agent · MIT License</span></footer>
   </main>
 
   <script>
-    const $ = (id) => document.getElementById(id);
-    let quota = null;
+    const $ = id => document.getElementById(id);
+    let session = null;
+    let lastResponse = null;
 
-    function formatReset(iso){
-      if(!iso) return "";
-      try{return new Date(iso).toLocaleString();}catch{return iso;}
+    const formatReset = iso => { if(!iso) return ''; try{return new Date(iso).toLocaleString()}catch{return iso} };
+    const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
+
+    function valueNode(value, depth=0){
+      if(value === null || value === undefined){const s=document.createElement('span');s.className='muted';s.textContent=String(value);return s;}
+      if(Array.isArray(value)){
+        if(!value.length){const s=document.createElement('span');s.className='muted';s.textContent='Empty list';return s;}
+        const ul=document.createElement('ul');ul.className='array';
+        value.forEach(item=>{const li=document.createElement('li'); if(item && typeof item==='object'){li.appendChild(valueNode(item,depth+1))}else{li.textContent=String(item)} ul.appendChild(li)});return ul;
+      }
+      if(typeof value==='object'){
+        const box=document.createElement('div');
+        Object.entries(value).forEach(([k,v])=>{const row=document.createElement('div');row.className='kv';const key=document.createElement('div');key.className='k';key.textContent=k.replaceAll('_',' ');const val=document.createElement('div');val.className='v';val.appendChild(valueNode(v,depth+1));row.append(key,val);box.appendChild(row)});return box;
+      }
+      const s=document.createElement('span');s.textContent=String(value);return s;
+    }
+
+    function renderStructured(result){
+      const target=$('structuredResult');clear(target);
+      if(!result || typeof result!=='object'){target.appendChild(valueNode(result));return;}
+      Object.entries(result).forEach(([key,value],i)=>{
+        const d=document.createElement('details');d.className='result-section';if(i<5)d.open=true;
+        const summary=document.createElement('summary');summary.textContent=key.replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase());
+        const inside=document.createElement('div');inside.className='inside';inside.appendChild(valueNode(value));d.append(summary,inside);target.appendChild(d);
+      });
+    }
+
+    function setExports(report){
+      const map={pdfExport:'pdf',jsonExport:'json',mdExport:'markdown',htmlExport:'html'};
+      Object.entries(map).forEach(([id,key])=>{const el=$(id);el.style.display=report?.exports?.[key]?'inline-flex':'none';if(report?.exports?.[key])el.href=report.exports[key]});
     }
 
     async function refreshStatus(){
       try{
-        const [healthRes, meRes] = await Promise.all([fetch('/health',{cache:'no-store'}), fetch('/me',{cache:'no-store'})]);
-        const health = await healthRes.json();
-        const me = await meRes.json();
-        $('healthText').textContent = health.ok ? 'Runtime online' : 'Runtime issue';
-        $('healthDot').style.background = health.ok ? 'var(--accent)' : 'var(--bad)';
-        quota = me.demo;
-        $('identityText').textContent = me.user ? '@'+me.user.username : 'Anonymous IP';
-        $('remainingText').textContent = quota.remaining === 1 ? '1 request' : '0 · resets '+formatReset(quota.resetAt);
-        $('runBtn').disabled = quota.remaining === 0;
-
+        const [healthRes,meRes]=await Promise.all([fetch('/health',{cache:'no-store'}),fetch('/me',{cache:'no-store'})]);
+        const health=await healthRes.json();const me=await meRes.json();session=me;
+        $('healthText').textContent=health.ok?'Runtime online':'Runtime issue';$('healthDot').style.background=health.ok?'var(--ok)':'var(--bad)';
         if(me.user){
-          const avatar = me.user.avatar ? `<img src="${me.user.avatar}" alt="" style="width:24px;height:24px;border-radius:50%;vertical-align:middle;margin-right:7px">` : '';
-          $('authBox').innerHTML = `<div class="quota-line"><span>${avatar}Signed in as <strong>@${me.user.username}</strong></span><a class="btn small" href="/auth/logout">Sign out</a></div>`;
-        }else if(me.oauthEnabled){
-          $('authBox').innerHTML = `<a class="btn" href="/auth/login" target="_blank" rel="noreferrer" style="width:100%">Sign in with Hugging Face</a>`;
+          $('authState').textContent='@'+me.user.username;
+          $('allowanceText').textContent=me.demo.unlimited?'Unlimited':'1 / 24h';
+          $('remainingText').textContent=me.demo.unlimited?'Unlimited':(me.demo.remaining===1?'1 request':'0 · resets '+formatReset(me.demo.resetAt));
+          $('runBtn').disabled=!me.demo.allowed;
+          const avatar=me.user.avatar?`<img src="${me.user.avatar}" alt="" style="width:25px;height:25px;border-radius:50%;vertical-align:middle;margin-right:7px">`:'';
+          $('authBox').innerHTML=`<div class="quota-line"><span>${avatar}Signed in as <strong>@${me.user.username}</strong></span><a class="btn small" href="/auth/logout">Sign out</a></div>`;
+          $('demoNotice').className='notice';
+          $('demoNotice').innerHTML=me.demo.unlimited?'<span>✓</span><span><strong>Owner account:</strong> hosted analysis quota is not applied to this account.</span>':'<span>⚠️</span><span><strong>1 hosted analysis every 24 hours.</strong> Your quota is consumed when analysis begins. Successful results can be exported without consuming another request.</span>';
         }else{
-          $('authBox').innerHTML = `<span class="muted">Hugging Face sign-in is unavailable; quota is tracked by IP.</span>`;
+          $('authState').textContent='Sign-in required';$('allowanceText').textContent='1 / 24h';$('remainingText').textContent='Sign in';$('runBtn').disabled=true;
+          $('authBox').innerHTML=me.oauthEnabled?'<a class="btn primary" href="/auth/login" target="_blank" rel="noreferrer" style="width:100%">Sign in with Hugging Face</a>':'<span class="muted">Hugging Face sign-in is currently unavailable.</span>';
+          $('demoNotice').className='notice signin-note';$('demoNotice').innerHTML='<span>🔐</span><span><strong>Hugging Face login is required.</strong> Sign in to use hosted analysis and branded report exports.</span>';
         }
-      }catch(err){
-        $('healthText').textContent = 'Unable to read runtime status';
-        $('healthDot').style.background = 'var(--bad)';
-      }
+      }catch(e){$('healthText').textContent='Runtime status unavailable';$('healthDot').style.background='var(--bad)';$('runBtn').disabled=true;}
     }
 
     async function runAnalysis(){
-      const raw = $('urlInput').value.trim();
-      let parsed;
-      try{parsed = new URL(raw); if(!['http:','https:'].includes(parsed.protocol)) throw new Error();}
-      catch{$('result').style.display='block';$('resultTitle').textContent='Invalid URL';$('resultPre').textContent='Enter a complete public URL beginning with http:// or https://';return;}
-
-      if(quota && quota.remaining === 0){
-        $('result').style.display='block';
-        $('resultTitle').textContent='Daily demo limit reached';
-        $('resultPre').textContent='Your hosted demo request is already used. Reset: '+formatReset(quota.resetAt)+'\n\nClone the GitHub repository for unrestricted local use.';
-        return;
-      }
-
-      $('runBtn').disabled = true;
-      $('loading').style.display='block';
-      $('result').style.display='none';
+      if(!session?.user){$('authBox').scrollIntoView({behavior:'smooth'});return;}
+      const raw=$('urlInput').value.trim();let url;
+      try{url=new URL(raw);if(!['http:','https:'].includes(url.protocol))throw new Error()}catch{showError('Invalid URL','Enter a complete public URL beginning with http:// or https://');return;}
+      if(session.demo && !session.demo.allowed){showError('Daily demo limit reached','Your hosted analysis request has already been used. Reset: '+formatReset(session.demo.resetAt));return;}
+      $('runBtn').disabled=true;$('loading').style.display='block';$('resultShell').style.display='none';
       try{
-        const res = await fetch($('actionSelect').value,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:parsed.toString()})});
-        const data = await res.json();
-        $('result').style.display='block';
-        $('resultTitle').textContent = res.ok ? 'Analysis result' : `Request failed · ${res.status}`;
-        $('resultPre').textContent = JSON.stringify(data,null,2);
-      }catch(err){
-        $('result').style.display='block';
-        $('resultTitle').textContent='Request failed';
-        $('resultPre').textContent=String(err);
-      }finally{
-        $('loading').style.display='none';
-        await refreshStatus();
-      }
+        const res=await fetch($('actionSelect').value,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:url.toString()})});
+        const data=await res.json();lastResponse=data;$('resultShell').style.display='block';$('resultTitle').textContent=res.ok?'Analysis report':'Request failed · '+res.status;$('resultPre').textContent=JSON.stringify(data,null,2);
+        renderStructured(res.ok?data.result:data);setExports(res.ok?data.report:null);
+      }catch(e){showError('Request failed',String(e));}
+      finally{$('loading').style.display='none';await refreshStatus();}
     }
 
-    $('runBtn').addEventListener('click',runAnalysis);
-    $('urlInput').addEventListener('keydown',(e)=>{if(e.key==='Enter')runAnalysis();});
-    $('copyResult').addEventListener('click',()=>navigator.clipboard.writeText($('resultPre').textContent||''));
-    document.querySelectorAll('.copy').forEach(btn=>btn.addEventListener('click',()=>{
-      const el=$(btn.dataset.target); navigator.clipboard.writeText(el.innerText); btn.textContent='Copied'; setTimeout(()=>btn.textContent='Copy',1200);
-    }));
+    function showError(title,text){$('resultShell').style.display='block';$('resultTitle').textContent=title;$('resultPre').textContent=text;renderStructured({error:text});setExports(null);}
+
+    $('runBtn').addEventListener('click',runAnalysis);$('urlInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAnalysis()});$('copyResult').addEventListener('click',()=>navigator.clipboard.writeText(JSON.stringify(lastResponse,null,2)||$('resultPre').textContent||''));
+    document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',()=>{const el=$(btn.dataset.copy);navigator.clipboard.writeText(el.innerText||el.textContent||'');const old=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=old,1200)}));
     refreshStatus();
   </script>
 </body>
