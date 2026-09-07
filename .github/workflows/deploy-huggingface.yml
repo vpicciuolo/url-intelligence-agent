@@ -45,6 +45,7 @@ jobs:
           cp hf-space/README.md /tmp/hf-payload/README.md
           cp hf-space/Dockerfile /tmp/hf-payload/Dockerfile
           cp hf-space/index.html /tmp/hf-payload/index.html
+          cp hf-space/patch-ui.mjs /tmp/hf-payload/patch-ui.mjs
 
           # Hugging Face rejects normal git pushes containing binary files.
           # Keep only text-safe asset sources in the Space repository.
