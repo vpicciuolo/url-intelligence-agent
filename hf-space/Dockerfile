@@ -19,7 +19,9 @@ RUN npm install --omit=dev --ignore-scripts
 COPY --from=build /app/dist ./dist
 COPY README.md LICENSE SECURITY.md ./
 COPY index.html ./index.html
+COPY patch-ui.mjs ./patch-ui.mjs
 COPY assets ./assets
+RUN node /app/patch-ui.mjs
 RUN node -e "const fs=require('fs'); const primary='https://storage.mlcdn.com/account_image/2365654/SBclntVJrYefyxse6bLdZKk0T9ORWjRmMxH0KVCM.jpg'; fetch(primary).then(async r=>{if(!r.ok) throw new Error('logo download '+r.status); fs.writeFileSync('/app/assets/logo.jpg',Buffer.from(await r.arrayBuffer()));}).catch(e=>{console.error(e); const s=fs.readFileSync('/app/assets/logo.base64.txt','utf8').trim(); fs.writeFileSync('/app/assets/logo.jpg',Buffer.from(s,'base64'));});" \
  && node -e "const fs=require('fs'); const urls=['https://storage.mlcdn.com/account_image/2365654/ceTJNoztKxv1AW3dpdSaf5XSHWNMbhlKAzyFdUJN.jpg','https://storage.mlcdn.com/account_image/2365654/725Q0AzeY15nwDK3JocgKXq5AhxRoNC53LUBchc7.png']; (async()=>{for(const u of urls){try{const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);fs.writeFileSync('/app/assets/og.jpg',Buffer.from(await r.arrayBuffer()));return;}catch(e){console.error('asset fallback',u,e.message)}}throw new Error('Unable to download OG image');})().catch(e=>{console.error(e);process.exit(1)});"
 EXPOSE 7860
