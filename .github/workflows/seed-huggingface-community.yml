@@ -1,0 +1,80 @@
+name: Seed Hugging Face Community
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/seed-huggingface-community.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discussions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create community discussions if missing
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --upgrade huggingface_hub
+          python3 - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          token = os.environ['HF_TOKEN']
+          api = HfApi(token=token)
+
+          targets = [
+              {
+                  'repo_id': 'vpicciuolo/url-intelligence-agent',
+                  'repo_type': 'space',
+                  'title': 'URL Intelligence Benchmark + public leaderboard are live — feedback welcome',
+                  'description': '''The URL Intelligence Agent now has a public, reproducible benchmark and a separate Hugging Face leaderboard.
+
+Current v0.1 coverage includes 55 URL/network cases and 120 scored assertions across HTTP status handling, redirects, content types, normalization, malformed input and SSRF/private-network safety.
+
+- Benchmark: https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark
+- Leaderboard: https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
+- Source: https://github.com/vpicciuolo/url-intelligence-agent
+
+I would especially value technical feedback on missing URL edge cases, safety vectors and evaluation dimensions. If you maintain another URL-analysis tool, MCP server or web-intelligence agent, reproducible benchmark submissions are welcome through the public submission template linked from the leaderboard.'''
+              },
+              {
+                  'repo_id': 'vpicciuolo/url-intelligence-benchmark',
+                  'repo_type': 'dataset',
+                  'title': 'Submit your URL-analysis tool to the public benchmark leaderboard',
+                  'description': '''This benchmark is open to other URL-analysis tools, MCP servers and web-intelligence agents.
+
+To keep results useful, submissions should include the exact tool version/commit, benchmark revision, generated prediction JSONL, scorer output and reproduction command. External APIs and caching behavior should also be disclosed.
+
+Submission form:
+https://github.com/vpicciuolo/url-intelligence-agent/issues/new?template=benchmark-submission.yml
+
+Leaderboard:
+https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
+
+Suggestions for new deterministic cases and stronger safety coverage are also welcome.'''
+              }
+          ]
+
+          for target in targets:
+              existing = list(api.get_repo_discussions(
+                  repo_id=target['repo_id'],
+                  repo_type=target['repo_type'],
+                  token=token,
+              ))
+              if any(d.title == target['title'] for d in existing):
+                  print(f"Discussion already exists: {target['repo_id']} / {target['title']}")
+                  continue
+              discussion = api.create_discussion(
+                  repo_id=target['repo_id'],
+                  repo_type=target['repo_type'],
+                  title=target['title'],
+                  description=target['description'],
+                  token=token,
+              )
+              print(f"Created: {discussion.url}")
+          PY
