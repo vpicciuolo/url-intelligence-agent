@@ -4,8 +4,9 @@ import re
 APP = "https://vpicciuolo-url-intelligence-agent.hf.space/"
 APP_NO_SLASH = APP.rstrip("/")
 HF = "https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"
-OG = f"{APP_NO_SLASH}/assets/og.jpg?v=20260907-3"
-LOGO = "/assets/logo.jpg?v=20260907-3"
+OG = f"{APP_NO_SLASH}/assets/og.jpg?v=20260908-1"
+LOGO = "/assets/logo.jpg?v=20260908-1"
+SHORT_DESCRIPTION = "Evidence-first URL intelligence, reports and Remote MCP."
 
 
 def replace_once(text: str, old: str, new: str, label: str) -> str:
@@ -25,7 +26,9 @@ front = frontmatter_match.group(1)
 
 # Add/replace supported Hugging Face Space card metadata.
 front = re.sub(r"^title:.*$", "title: URL Intelligence Agent", front, flags=re.M)
-front = re.sub(r"^short_description:.*$", "short_description: Evidence-first web intelligence, source verification, reports & Remote MCP.", front, flags=re.M)
+front = re.sub(r"^short_description:.*$", f"short_description: {SHORT_DESCRIPTION}", front, flags=re.M)
+if len(SHORT_DESCRIPTION) > 60:
+    raise SystemExit(f"Hugging Face short_description is too long: {len(SHORT_DESCRIPTION)}")
 if re.search(r"^colorFrom:", front, re.M):
     front = re.sub(r"^colorFrom:.*$", "colorFrom: blue", front, flags=re.M)
 else:
@@ -38,8 +41,8 @@ if re.search(r"^thumbnail:", front, re.M):
     front = re.sub(r"^thumbnail:.*$", f"thumbnail: {OG}", front, flags=re.M)
 else:
     front = front.replace(
-        "short_description: Evidence-first web intelligence, source verification, reports & Remote MCP.",
-        "short_description: Evidence-first web intelligence, source verification, reports & Remote MCP.\n" + f"thumbnail: {OG}"
+        f"short_description: {SHORT_DESCRIPTION}",
+        f"short_description: {SHORT_DESCRIPTION}\nthumbnail: {OG}"
     )
 
 extra_tags = [
@@ -49,6 +52,8 @@ extra_tags = [
     "due-diligence",
     "open-graph",
     "social-discovery",
+    "competitive-intelligence",
+    "website-monitoring",
 ]
 for tag in extra_tags:
     if f"  - {tag}" not in front:
@@ -63,7 +68,7 @@ live_links = (
     f"**Public Remote MCP:** {APP_NO_SLASH}/mcp\n\n"
     f"**Hugging Face Space:** {HF}\n\n"
 )
-if "**Live app:**" not in readme:
+if "**Live app:**" not in readme and live_marker in readme:
     readme = replace_once(readme, live_marker, live_links, "Live hosted demo heading")
 
 readme_path.write_text(readme, encoding="utf-8")
@@ -103,7 +108,8 @@ if 'name="googlebot"' not in head:
 
 head = re.sub(r'<link rel="icon" type="image/jpeg" href="[^"]*"\s*/>', f'<link rel="icon" type="image/jpeg" href="{LOGO}" />', head, count=1)
 head = re.sub(r'<link rel="apple-touch-icon" href="[^"]*"\s*/>', f'<link rel="apple-touch-icon" href="{LOGO}" />', head, count=1)
-if 'rel="preload" as="image" href="/assets/logo.jpg' not in head:
+head = re.sub(r'<link rel="preload" as="image" href="[^"]*" fetchpriority="high"\s*/>', f'<link rel="preload" as="image" href="{LOGO}" fetchpriority="high" />', head, count=1)
+if 'rel="preload" as="image"' not in head:
     head = head.replace(
         f'<link rel="apple-touch-icon" href="{LOGO}" />',
         f'<link rel="apple-touch-icon" href="{LOGO}" />\n  <link rel="preload" as="image" href="{LOGO}" fetchpriority="high" />'
@@ -132,7 +138,6 @@ head = re.sub(r'<meta name="twitter:image:alt" content="[^"]*"\s*/>', '<meta nam
 
 # Canonical structured-data URLs belong to the public app. Keep the Hugging Face
 # repository as an explicit identity/discovery relationship rather than canonical.
-head = head.replace(HF, APP)
 software_repo_line = '"codeRepository":"https://github.com/vpicciuolo/url-intelligence-agent",'
 if '"sameAs":["https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"' not in head:
     head = head.replace(
@@ -142,8 +147,9 @@ if '"sameAs":["https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"'
 
 html = head + body
 
-# Public logo is present regardless of OAuth/session state. Avoid exposing broken
-# image alt text if a browser is mid-rebuild; the adjacent text still identifies the project.
+# Public logo is present regardless of OAuth/session state. The Docker patcher
+# replaces visible logo/hero image src attributes with verified embedded data URIs,
+# while metadata keeps absolute public URLs for crawlers and social previews.
 html = html.replace(
     '<img src="/assets/logo.jpg" alt="URL Intelligence Agent logo" />',
     f'<img src="{LOGO}" alt="URL Intelligence Agent logo" width="52" height="52" fetchpriority="high" decoding="async" />',
