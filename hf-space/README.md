@@ -52,7 +52,7 @@ Open-source URL and web-intelligence agent by **Vincenzo Picciuolo / HRN Innovat
 <p align="center">
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/"><img src="https://img.shields.io/badge/TRY%20LIVE-Open%20Web%20Demo-2563EB?style=for-the-badge" alt="Try live"></a>
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/mcp"><img src="https://img.shields.io/badge/REMOTE%20MCP-Connect-7C3AED?style=for-the-badge" alt="Remote MCP"></a>
-  <a href="https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark"><img src="https://img.shields.io/badge/BENCHMARK-100%25-059669?style=for-the-badge" alt="Benchmark"></a>
+  <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard"><img src="https://img.shields.io/badge/LEADERBOARD-3%20Verified%20Tools-059669?style=for-the-badge" alt="Independent benchmark leaderboard"></a>
   <a href="https://github.com/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/GITHUB-Open%20Source-111827?style=for-the-badge&logo=github" alt="GitHub"></a>
 </p>
 
@@ -74,26 +74,23 @@ External evidence + source verification + contradictions
 PDF / JSON / Markdown / HTML / MCP
 ```
 
-## 🧪 Reproducible benchmark
+## 🧪 Reproducible benchmark + independent baselines
 
-The project is continuously tested against the public **URL Intelligence Benchmark** on Hugging Face.
+The project is continuously tested against the public **URL Intelligence Benchmark** on Hugging Face. The same core suite is also run against pinned independent open-source tools; raw predictions and scorer outputs are published with the Dataset.
 
-| Metric | Latest official result |
-|---|---:|
-| Benchmark cases | **55 / 55 passed** |
-| Assertions | **120 / 120 passed** |
-| Overall score | **100.00%** |
-| Deterministic assertions | **100.00%** |
-| HTTP status-family handling | **100.00%** |
-| Redirect handling | **100.00%** |
-| Content-kind detection | **100.00%** |
-| Reject / block safety | **100.00%** |
-| Full-agent HTML completion | **100.00%** |
+| Tool | Type | Core score | Safety | Status | Redirects | Content | Full agent |
+|---|---|---:|---:|---:|---:|---:|---:|
+| **URL Intelligence Agent** | Full agent / MCP | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **6/6 — 100%** |
+| **url-metadata 5.12.0** | Independent metadata/network library | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **100.00%** | N/A |
+| **link-preview-js 5.0.0** | Independent link-preview library | **71.67%** | **100.00%** | **17.14%** | **75.00%** | **84.62%** | N/A |
+
+The #1 core-score tie with `url-metadata` is deliberate to show transparently: **v0.1 measures URL/network fundamentals and safety, not the complete intelligence depth of an agent.** URL Intelligence Agent additionally completes the selected full `investigate()` track, while library baselines do not implement that pipeline. Future benchmark versions will add a separate Agent Intelligence track for entity resolution, evidence provenance, external corroboration, social verification, structured-data accuracy, technology detection and related semantic capabilities.
 
 **Dataset:** https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark  
-**Leaderboard:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
+**Leaderboard:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard  
+**Technical report:** https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark/blob/main/TECHNICAL_REPORT.md
 
-The score refers to the current published benchmark version, not a claim of perfect performance on every website on the internet.
+The scores refer to the current published benchmark version, not a claim of perfect performance on every website on the internet.
 
 ## 🚀 Try it live
 
