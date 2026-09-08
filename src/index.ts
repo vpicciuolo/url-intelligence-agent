@@ -2,6 +2,7 @@ export * from "./types.js";
 export * from "./credits.js";
 export * from "./net.js";
 export * from "./extract.js";
+export * from "./provenance.js";
 export * from "./crawler.js";
 export * from "./render.js";
 export * from "./domain.js";
