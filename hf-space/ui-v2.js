@@ -84,55 +84,60 @@
   function observationEvidenceNode(observation, preferredId) {
     const item = document.createElement("article");
     item.className = `conflict-observation${observation?.id === preferredId ? " preferred" : ""}`;
-
     const top = document.createElement("div"); top.className = "conflict-observation-top";
     const layer = document.createElement("span"); layer.className = "web-source-pill"; layer.textContent = sourceLabel(observation); top.appendChild(layer);
     if (observation?.id === preferredId) { const preferred = document.createElement("span"); preferred.className = "web-source-pill verified"; preferred.textContent = "Selected by resolver"; top.appendChild(preferred); }
     const confidence = observation?.quality?.extractionConfidence;
     if (Number.isFinite(Number(confidence))) { const p = document.createElement("span"); p.className = "web-source-pill"; p.textContent = `${Math.round(Number(confidence) * 100)}% extraction`; top.appendChild(p); }
-
     const value = document.createElement("div"); value.className = "conflict-observation-value"; value.textContent = compactValue(observation?.rawValue);
     item.append(top, value);
-
     const source = observation?.source || {};
     const details = [source.locator ? `Locator: ${source.locator}` : "", source.visibility ? `Visibility: ${titleCaseLocal(source.visibility)}` : "", observation?.temporal?.observedAt ? `Observed: ${observation.temporal.observedAt}` : ""].filter(Boolean);
     if (details.length) { const meta = document.createElement("div"); meta.className = "web-source-meta"; meta.textContent = details.join(" · "); item.appendChild(meta); }
-
     const normalized = observation?.normalizedValue;
     if (normalized) { const normalizedBox = document.createElement("details"); normalizedBox.className = "conflict-normalized"; const summary = document.createElement("summary"); summary.textContent = "Normalized value"; const body = document.createElement("div"); body.textContent = compactValue(normalized, 420); normalizedBox.append(summary, body); item.appendChild(normalizedBox); }
-
     const href = source.finalUrl || source.pageUrl;
     if (href) { const link = document.createElement("a"); link.className = "web-source-url"; link.href = href; link.target = "_blank"; link.rel = "noreferrer"; link.textContent = `Open evidence page ↗  ${href}`; item.appendChild(link); }
     return item;
   }
 
-  function conflictExplorerCard(claim, observationMap, index) {
+  function groupConflictClaims(claims, observationMap) {
+    const groups = new Map();
+    claims.forEach(claim => {
+      const observations = (claim.observationIds || []).map(id => observationMap.get(id)).filter(Boolean);
+      const values = [...new Set(observations.map(obs => compactValue(obs.rawValue, 5000)))].sort();
+      const signature = `${claim.predicate}\u0000${values.join("\u0001")}`;
+      if (!groups.has(signature)) groups.set(signature, { claim, subjects: [], claimIds: [] });
+      const group = groups.get(signature);
+      if (claim.subject && !group.subjects.includes(claim.subject)) group.subjects.push(claim.subject);
+      if (claim.id) group.claimIds.push(claim.id);
+    });
+    return [...groups.values()];
+  }
+
+  function conflictExplorerCard(group, observationMap, index) {
+    const claim = group.claim;
     const card = document.createElement("article"); card.className = "conflict-card";
     const obs = (claim.observationIds || []).map(id => observationMap.get(id)).filter(Boolean);
     const severities = (claim.conflicts || []).map(c => c.severity).filter(Boolean);
     const severity = severities.includes("high") ? "high" : severities.includes("medium") ? "medium" : severities.includes("low") ? "low" : "unknown";
-
     const head = document.createElement("div"); head.className = "conflict-card-head";
     const left = document.createElement("div");
-    const eyebrow = document.createElement("div"); eyebrow.className = "conflict-eyebrow"; eyebrow.textContent = `Conflict ${index + 1} · ${titleCaseLocal(claim.predicate)}`;
-    const title = document.createElement("div"); title.className = "conflict-title"; title.textContent = claim.subject || "Observed field disagreement";
+    const eyebrow = document.createElement("div"); eyebrow.className = "conflict-eyebrow"; eyebrow.textContent = `Conflict pattern ${index + 1} · ${titleCaseLocal(claim.predicate)}`;
+    const title = document.createElement("div"); title.className = "conflict-title"; title.textContent = group.subjects.length > 1 ? `${group.subjects.length} pages share this same disagreement` : group.subjects[0] || claim.subject || "Observed field disagreement";
     left.append(eyebrow, title);
     const badge = document.createElement("span"); badge.className = `conflict-severity ${severity}`; badge.textContent = `${severity} severity`;
     head.append(left, badge); card.appendChild(head);
-
     const summary = document.createElement("div"); summary.className = "conflict-summary";
     summary.textContent = `${obs.length} evidence values were compared. The resolver selected one value, but the alternatives are preserved below so you can see the exact disagreement instead of only a generic “value_conflict” label.`;
     card.appendChild(summary);
-
     const grid = document.createElement("div"); grid.className = "conflict-observation-grid";
     obs.forEach(observation => grid.appendChild(observationEvidenceNode(observation, claim.resolution?.preferredObservationId)));
     card.appendChild(grid);
-
     if (Array.isArray(claim.conflicts) && claim.conflicts.length) {
       const reasons = document.createElement("div"); reasons.className = "conflict-reasons";
       const heading = document.createElement("strong"); heading.textContent = "Why it was flagged"; reasons.appendChild(heading);
-      const list = document.createElement("ul");
-      const seen = new Set();
+      const list = document.createElement("ul"); const seen = new Set();
       claim.conflicts.forEach(conflict => {
         const message = `${titleCaseLocal(conflict.relation)} · ${conflict.explanation || "Values differ."}`;
         if (seen.has(message)) return; seen.add(message);
@@ -140,11 +145,20 @@
       });
       reasons.appendChild(list); card.appendChild(reasons);
     }
-
     if (claim.resolution?.explanation?.length) {
       const resolution = document.createElement("div"); resolution.className = "conflict-resolution";
       resolution.textContent = `Resolver: ${claim.resolution.explanation.join(" ")}`;
       card.appendChild(resolution);
+    }
+    if (group.subjects.length > 1) {
+      const affected = document.createElement("details"); affected.className = "conflict-affected";
+      const affectedSummary = document.createElement("summary"); affectedSummary.textContent = `Affected pages (${group.subjects.length})`;
+      const list = document.createElement("div"); list.className = "source-list";
+      group.subjects.slice(0, 50).forEach(subject => {
+        if (/^https?:\/\//i.test(subject)) { const link = document.createElement("a"); link.className = "source-link"; link.href = subject; link.target = "_blank"; link.rel = "noreferrer"; link.textContent = subject; list.appendChild(link); }
+        else { const row = document.createElement("div"); row.className = "web-source-meta"; row.textContent = subject; list.appendChild(row); }
+      });
+      affected.append(affectedSummary, list); card.appendChild(affected);
     }
     return card;
   }
@@ -155,18 +169,19 @@
     const conflicts = provenance.claims.filter(claim => claim.status === "conflict");
     if (!conflicts.length) return;
     const observationMap = new Map(provenance.observations.map(obs => [obs.id, obs]));
+    const groups = groupConflictClaims(conflicts, observationMap);
     const legacy = [...target.querySelectorAll("details.result-section")].find(node => node.querySelector("summary")?.textContent?.includes("Disputed / contradictory evidence"));
     if (!legacy) return;
     const summary = legacy.querySelector("summary");
-    if (summary) summary.textContent = `⚠ Conflict explorer · ${conflicts.length} conflicting field${conflicts.length === 1 ? "" : "s"}`;
+    if (summary) summary.textContent = `⚠ Conflict explorer · ${groups.length} pattern${groups.length === 1 ? "" : "s"} · ${conflicts.length} affected claim${conflicts.length === 1 ? "" : "s"}`;
     let inside = legacy.querySelector(".inside");
     if (!inside) { inside = document.createElement("div"); inside.className = "inside"; legacy.appendChild(inside); }
     inside.replaceChildren();
     const explainer = document.createElement("div"); explainer.className = "conflict-intro";
-    explainer.textContent = "This section now shows the actual competing values, where each value came from, which one the resolver selected, and why the field was flagged.";
+    explainer.textContent = "This section now shows the actual competing values, where each value came from, which one the resolver selected, and why the field was flagged. Identical conflict patterns repeated across several pages are grouped together.";
     inside.appendChild(explainer);
-    conflicts.slice(0, 30).forEach((claim, index) => inside.appendChild(conflictExplorerCard(claim, observationMap, index)));
-    if (conflicts.length > 30) { const note = document.createElement("div"); note.className = "web-explanation"; note.textContent = `Showing 30 of ${conflicts.length} conflicts. The complete provenance data remains available in the structured/raw result.`; inside.appendChild(note); }
+    groups.slice(0, 30).forEach((group, index) => inside.appendChild(conflictExplorerCard(group, observationMap, index)));
+    if (groups.length > 30) { const note = document.createElement("div"); note.className = "web-explanation"; note.textContent = `Showing 30 of ${groups.length} conflict patterns. Complete provenance remains available in the structured/raw result.`; inside.appendChild(note); }
   }
 
   function provenanceClaimCard(claim, observations) {
@@ -221,21 +236,8 @@
   }
 
   const ANALYSIS_STAGES = {
-    investigate_url: [
-      "Preparing investigation",
-      "Crawling first-party pages and metadata",
-      "Building claim-level provenance",
-      "Checking drift and contradictory evidence",
-      "Researching independent public sources",
-      "Assembling the evidence report"
-    ],
-    default: [
-      "Preparing request",
-      "Collecting URL evidence",
-      "Resolving structured intelligence",
-      "Checking consistency and confidence",
-      "Preparing the result"
-    ]
+    investigate_url: ["Preparing investigation", "Crawling first-party pages and metadata", "Building claim-level provenance", "Checking drift and contradictory evidence", "Researching independent public sources", "Assembling the evidence report"],
+    default: ["Preparing request", "Collecting URL evidence", "Resolving structured intelligence", "Checking consistency and confidence", "Preparing the result"]
   };
 
   let overlayTimer = null;
@@ -293,10 +295,7 @@
     }, 500);
     overlayStageTimer = setInterval(() => {
       if (overlayStage < stages.length - 1) { overlayStage += 1; renderOverlayStages(stages); }
-      else {
-        const current = document.getElementById("analysisThinkingCurrent");
-        if (current) current.textContent = "Still working — deeper investigations can take a little longer";
-      }
+      else { const current = document.getElementById("analysisThinkingCurrent"); if (current) current.textContent = "Still working — deeper investigations can take a little longer"; }
     }, action === "investigate_url" ? 2600 : 1800);
   }
 
@@ -324,10 +323,8 @@
   function installAnalysisUX() {
     const run = document.getElementById("runBtn"), input = document.getElementById("urlInput"), loading = document.getElementById("loading"), result = document.getElementById("resultShell");
     if (!run || !loading || !result) return;
-
-    run.addEventListener("click", () => { if (validRunnableUrl()) showAnalysisOverlay(); }, true);
-    if (input) input.addEventListener("keydown", event => { if (event.key === "Enter" && validRunnableUrl()) showAnalysisOverlay(); }, true);
-
+    run.addEventListener("click", () => { if (!run.disabled && validRunnableUrl()) showAnalysisOverlay(); }, true);
+    if (input) input.addEventListener("keydown", event => { if (event.key === "Enter" && !run.disabled && validRunnableUrl()) showAnalysisOverlay(); }, true);
     const observer = new MutationObserver(() => {
       const loadingVisible = loading.style.display !== "none" && getComputedStyle(loading).display !== "none";
       const resultVisible = result.style.display !== "none" && getComputedStyle(result).display !== "none";
