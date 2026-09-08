@@ -1,0 +1,81 @@
+name: One-shot Hosted UI Version Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-shot-hf-version-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync hosted UI to current release
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          current = '1.3.0'
+
+          index_path = Path('hf-space/index.html')
+          index = index_path.read_text(encoding='utf-8')
+
+          old_status = '<span class="muted">v1.0.0</span>'
+          new_status = f'<span id="runtimeVersion" class="muted">v{current}</span>'
+          if old_status in index:
+              index = index.replace(old_status, new_status, 1)
+          elif 'id="runtimeVersion"' not in index:
+              raise SystemExit('Runtime version badge anchor not found')
+
+          old_health = "$('healthText').textContent=health.ok?'Runtime online':'Runtime issue';$('healthDot').style.background=health.ok?'var(--ok)':'var(--bad)';"
+          new_health = "$('healthText').textContent=health.ok?'Runtime online':'Runtime issue';$('healthDot').style.background=health.ok?'var(--ok)':'var(--bad)';const liveVersion=health?.attribution?.version||health?.version||'" + current + "';const runtimeVersionEl=$('runtimeVersion');if(runtimeVersionEl)runtimeVersionEl.textContent='v'+String(liveVersion).replace(/^v/i,'');"
+          if old_health in index:
+              index = index.replace(old_health, new_health, 1)
+          elif 'const liveVersion=health?.attribution?.version' not in index:
+              raise SystemExit('Health/version sync anchor not found')
+
+          # Structured metadata was already current, but enforce one source of truth for this release.
+          index = index.replace('"softwareVersion":"1.2.0"', f'"softwareVersion":"{current}"')
+          index = index.replace('"softwareVersion":"1.0.0"', f'"softwareVersion":"{current}"')
+          index_path.write_text(index, encoding='utf-8')
+
+          ui_path = Path('hf-space/ui-v2.js')
+          ui = ui_path.read_text(encoding='utf-8')
+          old_lead = 'Evidence-first URL and web intelligence for AI agents, developers and research workflows. v1.2 resolves field-level claim provenance across metadata, structured data and visible content, detects drift/conflicts, and separates target-side extraction from independent public corroboration.'
+          new_lead = 'Evidence-first URL and web intelligence for AI agents, developers and research workflows. v1.3 adds Semantic Conflict Intelligence on top of claim-level provenance, distinguishing harmless wording variation from factual disagreement and logical contradiction while separating target-side extraction from independent public corroboration.'
+          if old_lead in ui:
+              ui = ui.replace(old_lead, new_lead, 1)
+          elif 'v1.3 adds Semantic Conflict Intelligence' not in ui:
+              raise SystemExit('Hero lead version anchor not found')
+          ui_path.write_text(ui, encoding='utf-8')
+
+          # Guard against the exact stale strings visible in the hosted hero.
+          final_index = index_path.read_text(encoding='utf-8')
+          final_ui = ui_path.read_text(encoding='utf-8')
+          if '<span class="muted">v1.0.0</span>' in final_index:
+              raise SystemExit('Stale v1.0.0 runtime badge remains')
+          if 'v1.2 resolves field-level claim provenance' in final_ui:
+              raise SystemExit('Stale v1.2 hero copy remains')
+          if f'v{current}' not in final_index or 'v1.3 adds Semantic Conflict Intelligence' not in final_ui:
+              raise SystemExit('Current hosted release markers missing')
+          print('Hosted UI version synchronized to v1.3.0 and runtime badge made dynamic.')
+          PY
+
+      - name: Commit hosted UI sync
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hf-space/index.html hf-space/ui-v2.js
+          if git diff --cached --quiet; then
+            echo "No hosted UI changes needed."
+            exit 0
+          fi
+          git commit -m "Sync hosted UI version to v1.3.0"
+          git push origin HEAD:main
