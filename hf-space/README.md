@@ -6,7 +6,7 @@ colorTo: purple
 sdk: docker
 app_port: 7860
 license: mit
-short_description: Evidence-first URL intelligence + claim provenance + Remote MCP.
+short_description: URL intelligence, provenance and Remote MCP.
 thumbnail: https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2
 pinned: true
 fullWidth: true
@@ -43,280 +43,293 @@ tags:
 ---
 
 <p align="center">
-  <img src="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2" alt="URL Intelligence Agent — evidence-first web intelligence" width="100%">
+  <img src="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2" alt="URL Intelligence Agent — evidence-first URL and web intelligence" width="100%">
 </p>
 
-# 🧠 URL Intelligence Agent
+# 🧠 URL Intelligence Agent v1.2.0
 
 ### Public URL in. Evidence, provenance, consistency and intelligence out.
 
-Open-source URL and web-intelligence agent by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd**. v1.2.0 adds a **Claim Provenance & Temporal Consistency Engine** that preserves where values came from, normalizes them, compares metadata/structured/visible representations, distinguishes compatible variation from real contradiction, and exposes the result through the web app, API and Remote MCP.
+Open-source URL and web intelligence agent created by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd** and developed inside the **HORNO Network** ecosystem.
+
+v1.2.0 introduces the **Claim Provenance & Temporal Consistency Engine**. The agent preserves where values came from, normalizes field values, compares metadata/structured/visible representations, separates compatible variation from real contradiction, detects drift and explains why a preferred value was selected.
 
 <p align="center">
   <img src="https://img.shields.io/badge/release-v1.2.0-00c853?style=for-the-badge" alt="v1.2.0">
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/"><img src="https://img.shields.io/badge/TRY%20LIVE-Evidence%20Inspector-2563EB?style=for-the-badge" alt="Try live"></a>
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/mcp"><img src="https://img.shields.io/badge/REMOTE%20MCP-2026--07--28-7C3AED?style=for-the-badge" alt="Remote MCP"></a>
-  <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard"><img src="https://img.shields.io/badge/LEADERBOARD-Independent%20Baselines-059669?style=for-the-badge" alt="Independent benchmark leaderboard"></a>
   <a href="https://github.com/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/GITHUB-Open%20Source-111827?style=for-the-badge&logo=github" alt="GitHub"></a>
 </p>
 
-## 🔬 What v1.2.0 changes
+## 🔬 Claim provenance instead of one flattened answer
 
-Most URL extractors flatten a page into one title, one description and a few metadata values. URL Intelligence Agent now preserves a deeper evidence model.
-
-For each claim it can retain:
-
-- raw value and normalized value;
-- page URL and final URL;
-- source representation (`source_html`, optional `rendered_dom`, HTTP/runtime evidence);
-- source layer (meta, Open Graph, Twitter Card, JSON-LD, Microdata, RDFa, visible content, HTTP headers, runtime API);
-- property/locator, JSON Pointer and source positions when available;
-- observed time and HTTP validators;
-- document and observation SHA-256 hashes;
-- extraction, source-authority and freshness confidence dimensions;
-- conflict/drift status and an explainable resolution policy.
-
-### Example: not every difference is a contradiction
+Example:
 
 ```text
 Open Graph description:  80,000+ pages indexed
 Rendered content:       100,502 pages indexed
 ```
 
-`80,000+` means **at least 80,000**, so `100,502` is logically compatible. The useful result is instead:
+`80,000+` is a lower bound. `100,502` satisfies it, so the two statements are logically compatible even though the page representations have drifted.
+
+URL Intelligence Agent can report:
 
 ```text
-logical conflict         NO
-precision difference     YES
-representation drift     YES
-freshness divergence     YES
-stale metadata suspected YES
-preferred exact value    100,502
+logical conflict          NO
+precision difference      YES
+representation drift      YES
+freshness divergence      YES
+stale metadata suspected  YES
+preferred exact value     100502
 ```
 
-That distinction is designed for AI agents, RAG systems, monitoring, research and verification workflows.
+That distinction is useful for AI agents, RAG, monitoring, search/SEO intelligence and verification workflows.
 
-## ⚡ Investigation pipeline
+## Evidence Inspector
+
+The hosted web app now displays an **Evidence Inspector** with:
+
+- observation count;
+- resolved claim count;
+- drift/conflict counts;
+- suspected stale metadata;
+- source representations;
+- evidence layers;
+- claim-level flags;
+- resolution confidence and explanations.
+
+## Evidence model
+
+Each observation can preserve:
+
+```text
+raw value
+normalized value
+page URL / final URL
+representation
+source layer
+property / locator
+JSON Pointer
+source positions
+timestamp
+request variant
+document SHA-256
+observation SHA-256
+extraction confidence
+source authority
+freshness confidence
+```
+
+Claim states:
+
+```text
+consensus
+compatible_variation
+drift
+conflict
+insufficient_evidence
+```
+
+Evidence layers include:
+
+```text
+HTTP headers
+source HTML
+meta
+Open Graph
+Twitter Cards
+JSON-LD
+Microdata
+RDFa
+visible content
+optional rendered DOM
+bounded same-origin runtime JSON
+```
+
+## Investigation pipeline
 
 ```text
 Public URL
    ↓
-Guarded HTTP collection + redirects + charset decoding
+Guarded HTTP collection
    ↓
 Source HTML representation
-   ├─ HTTP headers / validators
-   ├─ meta / Open Graph / Twitter Cards
+   ├─ headers / validators
+   ├─ meta / Open Graph / Twitter
    ├─ JSON-LD / Microdata / RDFa
-   └─ visible content claims
+   └─ visible claims
    ↓
-Optional isolated browser representation
+Optional browser representation
    ├─ rendered DOM
-   └─ bounded same-origin runtime JSON evidence
+   └─ bounded same-origin JSON evidence
    ↓
 EvidenceObservation records
    ↓
-Field-aware normalization + claim grouping
+field-aware normalization
    ↓
-Consensus / compatible variation / drift / conflict
+claim grouping + consistency comparison
    ↓
-Preferred value + explanation + hashes + provenance graph
+consensus / compatible variation / drift / conflict
    ↓
-External public corroboration (Full Investigation)
+resolved claims + explanations + hashes
    ↓
-Web Evidence Inspector / JSON / PDF / Markdown / HTML / MCP / RAG
+entity / SEO / security / trust / technology / brand / RAG
+   ↓
+Web UI / API / MCP / reports
 ```
 
-## 🧪 Reproducible benchmark + independent baselines
+## Try it live
 
-The project is continuously tested against the public **URL Intelligence Benchmark** on Hugging Face. Independent pinned open-source tools are also run against the core track; raw predictions and scorer outputs are published.
+Live app:
 
-| Tool | Type | Core score | Safety | Status | Redirects | Content | Full agent |
-|---|---|---:|---:|---:|---:|---:|---:|
-| **URL Intelligence Agent** | Full agent / MCP | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **6/6 — 100%** |
-| **url-metadata 5.12.0** | Independent metadata/network library | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **100.00%** | N/A |
-| **link-preview-js 5.0.0** | Independent link-preview library | **71.67%** | **100.00%** | **17.14%** | **75.00%** | **84.62%** | N/A |
+```text
+https://vpicciuolo-url-intelligence-agent.hf.space/
+```
 
-The core tie is intentionally transparent: the current core benchmark measures URL/network fundamentals, while URL Intelligence Agent additionally runs a full intelligence path. v1.2.0 adds deterministic provenance fixtures for claim attribution, normalization, false-conflict prevention and drift/conflict handling; these form the basis of the expanding Agent Intelligence track.
+The hosted web demo requires Hugging Face sign-in.
 
-**Dataset:** https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark  
-**Leaderboard:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard  
-**Technical report:** https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark/blob/main/TECHNICAL_REPORT.md
+Public demo policy:
 
-Scores describe the published benchmark, not perfect performance on every website.
+```text
+1 analysis request per signed-in Hugging Face account every 24 hours
+owner account vpicciuolo is exempt
+```
 
-## 🚀 Try it live
+Clone or self-host the MIT-licensed repository for unrestricted use.
 
-**Web app:** https://vpicciuolo-url-intelligence-agent.hf.space/
+## Remote MCP
 
-The hosted Docker Space runs the real open-source engine. Sign in with Hugging Face to run hosted analysis and export reports.
-
-The hosted web demo is limited to **1 analysis request per signed-in Hugging Face account every 24 hours** to reduce automated abuse. The owner account `vpicciuolo` is exempt. Clone/self-host the MIT-licensed project for unrestricted use.
-
-The v1.2 UI includes an **Evidence Inspector** showing:
-
-- observation count;
-- resolved claims;
-- drift count;
-- conflict count;
-- suspected stale metadata;
-- source layers and representations;
-- claim-level resolution explanations.
-
-## 🔌 Remote MCP
+Endpoint:
 
 ```text
 https://vpicciuolo-url-intelligence-agent.hf.space/mcp
 ```
 
-Machine-readable discovery:
+Discovery:
 
 ```text
 https://vpicciuolo-url-intelligence-agent.hf.space/.well-known/mcp.json
 ```
 
-v1.2.0 supports:
+Supported protocol revisions:
 
-- **MCP 2026-07-28** modern stateless HTTP;
-- 2025-11-25;
-- 2025-06-18;
-- 2025-03-26;
-- strict input/output schemas;
-- modern discovery/routing metadata;
-- persisted `io.modelcontextprotocol/tasks` for supported long-running calls;
-- legacy initialization/session compatibility.
+```text
+2026-07-28
+2025-11-25
+2025-06-18
+2025-03-26
+```
 
-New evidence-focused tools:
+v1.2 adds modern stateless MCP behavior, `server/discover`, routing metadata, cache hints, strict per-tool schemas and optional MCP Tasks support while retaining legacy client compatibility.
+
+New provenance tools:
 
 ```text
 inspect_provenance
 verify_claim
 ```
 
-The public Remote MCP demo exposes a bounded subset of tools and applies a **1 analysis call per IP / 24h** anti-abuse limit. Self-hosting removes this hosted-demo policy.
+The hosted Remote MCP uses a bounded anti-abuse policy. The open-source runtime exposes all 36 actions when self-hosted.
 
-## 🔎 Core capabilities
+## Core capabilities
 
-- Claim-level source provenance and evidence hashes
-- Metadata vs visible-content consistency analysis
-- Source HTML vs optional rendered-DOM drift analysis
-- Exact/range/lower-bound/approximate numeric semantics
-- JSON-LD, Microdata and RDFa evidence extraction
-- Open Graph, Twitter Card, standard meta and HTTP evidence
-- Claim verification (`supported`, `compatible`, `contradicted`, `not_found`)
-- W3C PROV-shaped evidence export
-- Provenance-aware temporal snapshots and claim diffs
-- ETag / Last-Modified collection and conditional HTTP support
-- Full URL investigation and deep crawl
-- External article/reference discovery and verification
-- Entity resolution and social/contact discovery
-- SEO, security, quality and trust audits
-- Technology, brand and domain intelligence
-- Competitive intelligence and website monitoring
-- RAG and knowledge export
-- Branded PDF, JSON, Markdown and HTML reports
-- HTTP API, CLI, Docker, local MCP and Remote MCP
+- claim-level provenance and evidence hashes;
+- metadata vs visible-content consistency;
+- source HTML vs rendered-DOM drift analysis;
+- exact/range/lower-bound/approximate numeric semantics;
+- JSON-LD, Microdata and RDFa evidence extraction;
+- Open Graph, Twitter Card, standard meta and HTTP evidence;
+- claim verification: `supported`, `compatible`, `contradicted`, `not_found`;
+- W3C PROV-shaped export;
+- provenance-aware temporal snapshots and claim diffs;
+- ETag / Last-Modified support;
+- full URL investigation and bounded deep crawl;
+- entity resolution;
+- social/contact discovery;
+- technology and brand intelligence;
+- domain intelligence;
+- SEO/security/quality/trust audits;
+- external public corroboration;
+- competitor/commerce/content freshness intelligence;
+- RAG and knowledge export;
+- branded PDF, JSON, Markdown and HTML reports;
+- CLI, HTTP API, Docker, stdio MCP and Remote MCP.
 
-## 🧠 Evidence-first architecture
+## Security model
 
-The project deliberately separates evidence dimensions:
+Core HTTP collection uses:
 
-1. **Target-side extraction** — what the submitted site and its first-party representations say.
-2. **Claim provenance** — exactly which layer/representation produced each value and how it was normalized/resolved.
-3. **External corroboration** — independent/public-platform evidence fetched outside the target domain.
+- public HTTP/HTTPS validation;
+- preflight DNS validation;
+- connect-time DNS validation inside the actual Undici socket resolver;
+- private/reserved address blocking;
+- mixed public/private DNS answer rejection;
+- redirect revalidation;
+- bounded time/bytes/redirects;
+- charset-aware decoding.
 
-Extraction confidence, resolution confidence and external corroboration are separate. None is presented as a universal probability that a real-world claim is true.
+Optional browser rendering is a **separate network trust boundary**. v1.2 adds browser request filtering/bounds and same-origin runtime evidence capture, but security-sensitive self-hosters should still isolate browser egress at the infrastructure level.
 
-## 🛡️ Safety model — v1.2.0
+Security output is observational auditing, not penetration testing. Trust/compliance signals are not legal or financial determinations.
 
-The core HTTP collector retains the v1.1.0 two-stage SSRF boundary:
+## Benchmark
 
-- validates HTTP/HTTPS URLs, credentials, hostnames and DNS answers before collection;
-- blocks loopback, private, link-local, cloud-metadata, mapped/translation, selected tunnel/transition and reserved address classes;
-- rejects mixed DNS answers if any returned address is non-public;
-- validates DNS again inside the guarded Undici socket resolver, closing the normal DNS-rebinding/TOCTOU gap for core HTTP collection;
-- manually revalidates every redirect target;
-- bounds request time, response bytes and redirect count.
-
-v1.2 additionally adds charset-aware decoding and conditional HTTP validators.
-
-Optional Playwright rendering is a **separate browser network trust boundary**. The implementation adds public-address request interception, request bounds, service-worker/download blocking and bounded same-origin runtime JSON capture. Browser automation is still disabled by default in this public Space unless a separately controlled renderer is configured. Security-sensitive self-hosters should combine browser rendering with infrastructure-level egress isolation.
-
-Technical details: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/NETWORK_SECURITY.md
-
-Security output is observational auditing, not penetration testing; trust/compliance output is not a legal or financial determination.
-
-## 📄 Reports and exports
-
-Signed-in users can export completed investigations as:
-
-- Branded PDF
-- JSON
-- Markdown
-- HTML
-
-The full JSON result includes the provenance model. Reports preserve project, repository, Hugging Face and creator attribution.
-
-## 🌐 Web-wide discovery
-
-Direct external URLs referenced by the target can be researched without a search credential. Broader discovery can use:
-
-- SearXNG via `URL_AGENT_SEARCH_ENDPOINT`
-- Brave Search via `BRAVE_SEARCH_API_KEY`
-- Serper via `SERPER_API_KEY`
-- Tavily via `TAVILY_API_KEY`
-- Google Custom Search via `GOOGLE_CSE_API_KEY` + `GOOGLE_CSE_CX`
-
-No bounded crawler can guarantee every backlink on the public internet. External corroboration only strengthens after eligible sources are fetched/verified.
-
-## 🧰 Full runtime action catalog
-
-The open-source runtime contains **36 actions**:
-
-`investigate_url`, `inspect_provenance`, `verify_claim`, `probe_url`, `domain_intelligence`, `render_page`, `map_site`, `deep_crawl`, `resolve_entity`, `find_social_profiles`, `find_contacts`, `detect_technologies`, `brand_intelligence`, `audit_seo`, `audit_security`, `audit_quality`, `audit_trust`, `entity_graph`, `competitor_intelligence`, `generate_listing`, `rag_export`, `structured_data`, `api_discovery`, `compliance_signals`, `people_team`, `commerce_intelligence`, `content_freshness`, `link_intelligence`, `check_links`, `knowledge_export`, `compare_urls`, `batch_investigate`, `create_snapshot`, `diff_snapshot`, `ai_reason`, `list_plugins`.
-
-## 🔗 Main endpoints
+Dataset:
 
 ```text
-/health
-/me
-/actions
-/investigate
-/action/:name
-/mcp
-/.well-known/mcp.json
-/llms.txt
-/robots.txt
-/sitemap.xml
+https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark
 ```
 
-## 🔥 Built inside HORNO Network. Now open source.
+Leaderboard:
 
-URL Intelligence Agent was developed and refined inside the **HORNO Network ecosystem** for production-oriented web intelligence and evidence workflows. **HORNO Network founder Vincenzo Picciuolo** released the project as open source so developers, researchers and companies can inspect, self-host, extend and build on it.
+```text
+https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
+```
 
-Related:
+v1.2 adds deterministic provenance consistency fixtures covering lower-bound compatibility, exact conflicts, URL/date normalization and duplicate metadata preservation.
 
-- URL Metadata & Social Profile Fetcher: https://github.com/vpicciuolo/url-metadata-social-fetcher
-- HORNO Network: https://horno.net/
-- HORNO Space: https://space.horno.net/
+Published benchmark scores describe the benchmark scope; they are not a claim of perfect performance on every website.
 
-## 📚 Documentation
+## Reports
 
-- GitHub: https://github.com/vpicciuolo/url-intelligence-agent
-- Claim provenance: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/PROVENANCE.md
-- Versioning: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/VERSIONING.md
-- Network security: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/NETWORK_SECURITY.md
-- Security policy: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/SECURITY.md
-- Actions: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/ACTIONS.md
-- Web research: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/WEB_RESEARCH.md
-- MCP: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/MCP.md
-- Remote MCP: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/REMOTE_MCP.md
+Signed-in hosted investigations can be exported as:
 
-## 👤 Creator
+```text
+PDF
+JSON
+Markdown
+HTML
+```
 
-Created by **Vincenzo Picciuolo**  
+The JSON result contains the full provenance model. Reports include project, GitHub, Hugging Face, creator and company attribution.
+
+## Open source
+
+Repository:
+
+```text
+https://github.com/vpicciuolo/url-intelligence-agent
+```
+
+Lightweight standalone metadata fetcher:
+
+```text
+https://github.com/vpicciuolo/url-metadata-social-fetcher
+```
+
+## HORNO Network
+
+```text
+https://horno.net
+https://space.horno.net
+https://easy.horno.net
+```
+
+## Creator
+
+**Vincenzo Picciuolo**  
 **HRN Innovation Technologies Ltd**
 
-- Hugging Face: https://huggingface.co/vpicciuolo
-- GitHub: https://github.com/vpicciuolo
-- X: https://x.com/vpicciuolo
-- LinkedIn: https://www.linkedin.com/in/vpicciuolo/
+GitHub: https://github.com/vpicciuolo  
+Hugging Face: https://huggingface.co/vpicciuolo  
+X: https://x.com/vpicciuolo
