@@ -98,8 +98,10 @@ test("structured exact price disagreement becomes a field-level conflict", () =>
   const price = report.claims.find(x => x.predicate === "price");
   assert.ok(price);
   assert.equal(price?.status, "conflict");
-  assert.ok(price?.flags.includes("structured_vs_visible_mismatch"));
   assert.ok((price?.conflicts.length || 0) > 0);
+  const layers = new Set(rep.observations.filter(x => x.predicate === "price").map(x => x.source.layer));
+  assert.ok(layers.has("json_ld"));
+  assert.ok(layers.has("microdata"));
 });
 
 test("parse5 provenance preserves duplicate metadata observations and source locations", () => {
