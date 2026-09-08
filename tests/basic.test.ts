@@ -4,14 +4,17 @@ import { PROJECT, creditsLine } from "../src/credits.js";
 import { parsePage, classifyImportant, pagePriority } from "../src/extract.js";
 import { detectTechnologies, extractBrand } from "../src/analyzers.js";
 import { discoverApiSurfaces, extractCommerceSignals, structuredDataInventory } from "../src/extensions.js";
+import { analyzeRepresentation, buildProvenanceReport, exportProvJson, normalizeEvidenceValue, verifyClaim } from "../src/provenance.js";
 import { diffSnapshots } from "../src/monitor.js";
 import { assertPublicAddresses, isBlockedIp } from "../src/net.js";
-import type { Snapshot } from "../src/types.js";
+import type { PageSignal, Snapshot } from "../src/types.js";
 
-test("credits are embedded in the unified release", () => {
+test("credits are embedded in the provenance release", () => {
   assert.match(creditsLine(), /Vincenzo Picciuolo/);
   assert.match(creditsLine(), /horno\.net/);
-  assert.equal(PROJECT.version, "1.1.0");
+  assert.match(creditsLine(), /HORNO Network/);
+  assert.equal(PROJECT.version, "1.2.0");
+  assert.equal(PROJECT.release, "Provenance & Consistency Release");
   assert.equal(PROJECT.website, "https://horno.net");
 });
 
@@ -49,54 +52,107 @@ test("discovers structured data, API surfaces and commerce hints", () => {
   assert.ok(extractCommerceSignals([page]).prices.includes("$29"));
 });
 
+test("normalizes lower bounds and exact values without creating a false contradiction", () => {
+  const lower = normalizeEvidenceValue("80,000+", "metric:pages_indexed");
+  const exact = normalizeEvidenceValue("100,502", "metric:pages_indexed");
+  assert.equal(lower.kind, "number");
+  assert.equal(exact.kind, "number");
+  if (lower.kind === "number") {
+    assert.equal(lower.exact, false);
+    assert.equal(lower.min, 80000);
+    assert.equal(lower.max, null);
+  }
+  if (exact.kind === "number") assert.equal(exact.value, 100502);
+});
+
+function provenancePage(sourceHtml: string, renderedHtml: string): PageSignal {
+  const url = "https://stats.test/";
+  const source = analyzeRepresentation(sourceHtml, url, "source_html", { finalUrl: url, observedAt: "2026-09-08T06:00:00.000Z" });
+  const rendered = analyzeRepresentation(renderedHtml, url, "rendered_dom", { finalUrl: url, observedAt: "2026-09-08T06:00:01.000Z" });
+  return { ...parsePage(renderedHtml, url, 200), rendered: true, representations: [source, rendered], observations: [...source.observations, ...rendered.observations] };
+}
+
+test("80,000+ metadata vs 100,502 rendered is drift, not logical contradiction", () => {
+  const page = provenancePage(
+    `<html><head><meta property="og:description" content="80,000+ pages indexed"></head><body><h1>Stats</h1></body></html>`,
+    `<html><head><meta property="og:description" content="80,000+ pages indexed"></head><body><h1>Stats</h1><div>100,502 pages indexed</div></body></html>`
+  );
+  const report = buildProvenanceReport([page]);
+  const claim = report.claims.find(x => x.predicate === "metric:pages_indexed");
+  assert.ok(claim, "metric claim should be resolved");
+  assert.notEqual(claim?.status, "conflict");
+  assert.ok(claim?.flags.includes("representation_drift"));
+  assert.ok(claim?.flags.includes("precision_difference"));
+  assert.ok(claim?.flags.includes("freshness_divergence"));
+  assert.ok(claim?.flags.includes("stale_metadata_suspected"));
+  assert.equal(claim?.displayValue, 100502);
+  assert.equal(report.summary.conflictClaims, 0);
+});
+
+test("structured exact price disagreement becomes a field-level conflict", () => {
+  const url = "https://shop.test/product";
+  const html = `<html><head><script type="application/ld+json">{"@type":"Product","name":"Pro","offers":{"@type":"Offer","price":"49","priceCurrency":"USD"}}</script></head><body><div itemscope itemtype="https://schema.org/Product"><span itemprop="price">$59</span><meta itemprop="priceCurrency" content="USD"></div></body></html>`;
+  const rep = analyzeRepresentation(html, url, "rendered_dom", { finalUrl: url });
+  const page: PageSignal = { ...parsePage(html, url, 200), rendered: true, representations: [rep], observations: rep.observations };
+  const report = buildProvenanceReport([page]);
+  const price = report.claims.find(x => x.predicate === "price");
+  assert.ok(price);
+  assert.equal(price?.status, "conflict");
+  assert.ok(price?.flags.includes("structured_vs_visible_mismatch"));
+  assert.ok((price?.conflicts.length || 0) > 0);
+});
+
+test("parse5 provenance preserves duplicate metadata observations and source locations", () => {
+  const url = "https://dup.test/";
+  const html = `<html><head><meta name="description" content="First"><meta name="description" content="Second"></head><body>Demo</body></html>`;
+  const rep = analyzeRepresentation(html, url, "source_html", { finalUrl: url });
+  const descriptions = rep.observations.filter(x => x.predicate === "description");
+  assert.equal(descriptions.length, 2);
+  assert.ok(descriptions.every(x => typeof x.source.sourceRange?.start === "number"));
+  assert.notEqual(descriptions[0].integrity.observationHash, descriptions[1].integrity.observationHash);
+});
+
+test("claim verification reports supported, compatible and contradicted states", () => {
+  const page = provenancePage(
+    `<html><head><meta property="og:description" content="80,000+ pages indexed"></head><body></body></html>`,
+    `<html><body><div>100,502 pages indexed</div></body></html>`
+  );
+  const report = buildProvenanceReport([page]);
+  assert.equal(verifyClaim(report, "pages_indexed", 100502).status, "supported");
+  assert.equal(verifyClaim(report, "pages_indexed", "90,000").status, "compatible");
+});
+
+test("provenance can be exported as PROV-shaped JSON", () => {
+  const url = "https://prov.test/";
+  const html = `<html><head><meta name="description" content="Evidence first"></head><body>42 customers</body></html>`;
+  const rep = analyzeRepresentation(html, url, "source_html", { finalUrl: url });
+  const page: PageSignal = { ...parsePage(html, url, 200), representations: [rep], observations: rep.observations };
+  const report = buildProvenanceReport([page]);
+  const prov = exportProvJson(report) as any;
+  assert.ok(prov.agent["url-intelligence-agent"]);
+  assert.ok(Object.keys(prov.entity).length >= report.observations.length);
+  assert.ok(Object.keys(prov.activity).length >= 1);
+});
+
 test("snapshot diff is explicit and field based", () => {
   const base: Snapshot = { meta: {}, url: "https://a.test/", entityName: "A", fingerprint: "1", contentFingerprint: "c1", seoScore: 90, trustScore: 80, technologies: ["A"], socials: [], contacts: [], importantPages: {}, observedAt: "2026-01-01T00:00:00Z" };
-  const current: Snapshot = { ...base, fingerprint: "2", contentFingerprint: "c2", seoScore: 95, technologies: ["A", "B"], observedAt: "2026-01-02T00:00:00Z" };
+  const current: Snapshot = { ...base, fingerprint: "2", contentFingerprint: "c2", provenanceFingerprint: "p2", claimValues: { "https://a.test/::users": 100 }, seoScore: 95, technologies: ["A", "B"], observedAt: "2026-01-02T00:00:00Z" };
   const diff = diffSnapshots(base, current);
   assert.equal(diff.changed, true);
   assert.ok(diff.changes.some(x => x.field === "contentFingerprint"));
+  assert.ok(diff.changes.some(x => x.field === "provenanceFingerprint"));
+  assert.ok(diff.changes.some(x => x.field === "claimValues"));
   assert.ok(diff.changes.some(x => x.field === "technologies"));
 });
 
 test("SSRF guard blocks private, reserved, tunneled and mapped address classes", () => {
-  const blocked = [
-    "0.0.0.0",
-    "10.1.2.3",
-    "100.64.0.1",
-    "127.0.0.1",
-    "169.254.169.254",
-    "172.31.255.255",
-    "192.168.1.1",
-    "198.18.0.1",
-    "::",
-    "::1",
-    "::ffff:127.0.0.1",
-    "64:ff9b::7f00:1",
-    "fc00::1",
-    "fe90::1",
-    "febf::1",
-    "fec0::1",
-    "ff02::1",
-    "2001:db8::1",
-    "2002::1"
-  ];
+  const blocked = ["0.0.0.0", "10.1.2.3", "100.64.0.1", "127.0.0.1", "169.254.169.254", "172.31.255.255", "192.168.1.1", "198.18.0.1", "::", "::1", "::ffff:127.0.0.1", "64:ff9b::7f00:1", "fc00::1", "fe90::1", "febf::1", "fec0::1", "ff02::1", "2001:db8::1", "2002::1"];
   for (const ip of blocked) assert.equal(isBlockedIp(ip), true, `expected ${ip} to be blocked`);
-
   const publicAddresses = ["8.8.8.8", "1.1.1.1", "2606:4700:4700::1111", "2001:4860:4860::8888"];
   for (const ip of publicAddresses) assert.equal(isBlockedIp(ip), false, `expected ${ip} to be public`);
 });
 
 test("DNS guard rejects mixed public/private answers instead of selecting the public one", () => {
-  assert.throws(
-    () => assertPublicAddresses([
-      { address: "93.184.216.34", family: 4 },
-      { address: "127.0.0.1", family: 4 }
-    ]),
-    /Private\/reserved destination blocked/
-  );
-
-  assert.doesNotThrow(() => assertPublicAddresses([
-    { address: "93.184.216.34", family: 4 },
-    { address: "2606:4700:4700::1111", family: 6 }
-  ]));
+  assert.throws(() => assertPublicAddresses([{ address: "93.184.216.34", family: 4 }, { address: "127.0.0.1", family: 4 }]), /Private\/reserved destination blocked/);
+  assert.doesNotThrow(() => assertPublicAddresses([{ address: "93.184.216.34", family: 4 }, { address: "2606:4700:4700::1111", family: 6 }]));
 });
