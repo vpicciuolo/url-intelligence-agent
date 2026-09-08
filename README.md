@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-v1.0.0-00c853?style=for-the-badge" alt="v1.0.0">
+  <img src="https://img.shields.io/badge/release-v1.1.0-00c853?style=for-the-badge" alt="v1.1.0">
   <img src="https://img.shields.io/badge/TypeScript-first-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Node-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18+">
+  <img src="https://img.shields.io/badge/Node-18.17%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18.17+">
   <img src="https://img.shields.io/badge/MCP-native-111827?style=for-the-badge" alt="MCP native">
   <img src="https://img.shields.io/badge/AI-optional-7c3aed?style=for-the-badge" alt="AI optional">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT">
@@ -94,12 +94,11 @@ https://vpicciuolo-url-intelligence-agent.hf.space/.well-known/mcp.json
 
 **Live app:** https://vpicciuolo-url-intelligence-agent.hf.space/
 
-
 ---
 
-## 🔥 Already running inside the HORNO ecosystem — now open source
+## 🔥 Already running inside the HORNO Network ecosystem — now open source
 
-**URL Intelligence Agent** is one of the intelligence components used inside the **HORNO ecosystem** to understand public URLs, normalize entities, enrich profiles and listings, discover public relationships, evaluate web signals and prepare structured information for product workflows.
+**URL Intelligence Agent** is one of the intelligence components used inside the **HORNO Network ecosystem** to understand public URLs, normalize entities, enrich profiles and listings, discover public relationships, evaluate web signals and prepare structured information for product workflows.
 
 The complete agent architecture is available here as open source so developers can inspect it, self-host it, extend it and integrate the same evidence-first approach into their own applications and AI systems.
 
@@ -199,6 +198,8 @@ npm install
 npm run build
 ```
 
+Requires **Node.js 18.17+**.
+
 ## 2. Investigate a public URL
 
 ```bash
@@ -240,24 +241,25 @@ url-agent mcp
 
 ```mermaid
 flowchart LR
-    A[Public URL] --> B[URL safety + DNS validation]
-    B --> C[robots.txt + sitemap discovery]
-    C --> D[Bounded crawl]
-    D --> E[Optional JS render fallback]
-    D --> F[Metadata + JSON-LD + links]
-    E --> F
-    F --> G[Entity / social / contact resolution]
-    F --> H[Tech / brand / domain intelligence]
-    G --> I[Evidence + confidence + provenance]
-    H --> I
-    I --> J[SEO / security / quality / trust]
-    J --> K[Structured intelligence result]
-    K --> L[CLI]
-    K --> M[HTTP API]
-    K --> N[MCP]
-    K --> O[Reports / RAG / knowledge export]
-    K --> P[Snapshots / monitoring / webhooks]
-    K --> Q[Optional AI reasoning]
+    A[Public URL] --> B[URL safety + preflight DNS validation]
+    B --> C[Connect-time DNS guard / SSRF boundary]
+    C --> D[robots.txt + sitemap discovery]
+    D --> E[Bounded crawl]
+    E --> F[Optional JS render fallback]
+    E --> G[Metadata + JSON-LD + links]
+    F --> G
+    G --> H[Entity / social / contact resolution]
+    G --> I[Tech / brand / domain intelligence]
+    H --> J[Evidence + confidence + provenance]
+    I --> J
+    J --> K[SEO / security / quality / trust]
+    K --> L[Structured intelligence result]
+    L --> M[CLI]
+    L --> N[HTTP API]
+    L --> O[MCP]
+    L --> P[Reports / RAG / knowledge export]
+    L --> Q[Snapshots / monitoring / webhooks]
+    L --> R[Optional AI reasoning]
 ```
 
 Every major resolved field can carry:
@@ -280,11 +282,11 @@ That provenance model is one of the central differences between this project and
 
 # 🧩 What it can do
 
-The 1.0.0 runtime exposes **34 machine-callable core actions** through the action registry. The interactive CLI combines them with reporting, watching, benchmarking, server and plugin operations for **39 menu choices**. Plugins can extend the action surface further.
+The 1.1.0 runtime exposes **34 machine-callable core actions** through the action registry. The interactive CLI combines them with reporting, watching, benchmarking, server and plugin operations for **39 menu choices**. Plugins can extend the action surface further.
 
 | Intelligence area | What the agent does |
 | --- | --- |
-| **Safe URL collection** | HTTP/HTTPS validation, DNS checks, private-network blocking, redirect re-validation, bounded time/bytes |
+| **Safe URL collection** | HTTP/HTTPS validation, CIDR-aware public-address policy, preflight DNS checks, connect-time DNS-rebinding/TOCTOU protection, mixed-answer rejection, redirect re-validation, bounded time/bytes |
 | **Crawl & map** | robots.txt, sitemaps, sitemap indexes, same-origin crawl, important-page discovery |
 | **Entity resolution** | Person, creator, startup, organization, product, service, software, business, event and website inference |
 | **Metadata** | title, description, canonical, Open Graph, headings, JSON-LD, images, favicons |
@@ -315,7 +317,7 @@ The 1.0.0 runtime exposes **34 machine-callable core actions** through the actio
 | **Plugins** | runtime enrichers and custom actions |
 | **MCP** | native stdio MCP server exposing the runtime action registry |
 | **HTTP API** | authenticated/rate-limited JSON action server |
-| **Reports** | Markdown, standalone HTML and JSON output with attribution |
+| **Reports** | Markdown, standalone HTML, PDF and JSON output with attribution |
 
 <details>
 <summary><strong>Show the complete 39-option interactive menu</strong></summary>
@@ -555,10 +557,10 @@ POST /action/:name
 ## Docker CLI
 
 ```bash
-docker build -t url-intelligence-agent:1.0.0 .
+docker build -t url-intelligence-agent:1.1.0 .
 
 docker run --rm \
-  url-intelligence-agent:1.0.0 \
+  url-intelligence-agent:1.1.0 \
   investigate https://example.com
 ```
 
@@ -573,7 +575,7 @@ docker run -d \
   --env-file .env \
   -p 8787:8787 \
   -v url_agent_data:/app/.url-agent \
-  url-intelligence-agent:1.0.0 \
+  url-intelligence-agent:1.1.0 \
   serve --host 0.0.0.0 --port 8787
 ```
 
@@ -598,7 +600,7 @@ Optional PostgreSQL service:
 docker compose --profile postgres up -d --build
 ```
 
-The deployment guide also includes a Linux **systemd** service example, **Nginx reverse proxy**, production authentication, data persistence, renderer setup and deployment verification checklist.
+The deployment guide also includes a Linux **systemd** service example, **Nginx reverse proxy**, production authentication, data persistence, renderer setup, network hardening and deployment verification checklist.
 
 👉 **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
 
@@ -735,7 +737,7 @@ Direct render action:
 url-agent render https://example.com
 ```
 
-Keep rendering disabled when you do not need it; browser automation is significantly heavier than deterministic HTTP collection.
+Keep rendering disabled when you do not need it; browser automation is significantly heavier than deterministic HTTP collection. Playwright/Chromium also has its own network stack, so production rendering should be isolated with infrastructure-level egress controls. The connect-time DNS guard used by `safeFetch()` does not automatically intercept browser subresource requests.
 
 ---
 
@@ -820,25 +822,30 @@ The default settings intentionally bound network and crawl behavior. Increase th
 
 Every submitted URL is treated as untrusted input.
 
-The network layer includes protections such as:
+Version 1.1.0 uses a two-stage network boundary for core HTTP collection:
 
 - HTTP/HTTPS-only policy
 - embedded credential rejection
-- DNS resolution before collection
-- localhost blocking
-- private/reserved IPv4 blocking
-- loopback/ULA/link-local IPv6 blocking
-- redirect destination re-validation
+- local-only hostname rejection
+- **preflight DNS resolution of all returned addresses**
+- CIDR-aware private/reserved IPv4 and IPv6 blocking
+- IPv4-mapped, NAT64/translation and selected transition/tunnel address blocking
+- rejection of mixed public/private DNS answers
+- **connect-time guarded DNS resolution used by the actual outbound socket**
+- DNS-rebinding / TOCTOU protection between validation and connection
+- redirect destination re-validation on every hop
 - bounded redirects
 - bounded response bytes
 - timeouts
 - explicit User-Agent
 
+The guarded dispatcher is scoped to the untrusted `safeFetch()` path rather than changing the process-global fetch behavior. The protection is connection-scoped, not long-lived DNS pinning, so hostnames remain intact for TLS SNI, certificates, virtual hosting and normal CDN behavior.
+
 The crawler is designed for **public web intelligence**. It does not intentionally bypass authentication, CAPTCHAs or access controls.
 
 Security/trust scores are public signal summaries — **not penetration tests, legal opinions, fraud determinations or guarantees of security**.
 
-See **[SECURITY.md](SECURITY.md)**.
+See **[SECURITY.md](SECURITY.md)** and **[docs/NETWORK_SECURITY.md](docs/NETWORK_SECURITY.md)**.
 
 ---
 
@@ -849,7 +856,7 @@ The codebase is intentionally modular:
 ```text
 src/
 ├── agent.ts        orchestration + action registry
-├── net.ts          URL safety / fetching / probing
+├── net.ts          URL safety / guarded fetching / SSRF + DNS-rebinding boundary
 ├── crawler.ts      robots / sitemap / bounded crawling
 ├── extract.ts      deterministic page extraction
 ├── render.ts       Playwright / remote render adapters
@@ -862,8 +869,8 @@ src/
 ├── ai.ts           optional OpenAI-compatible reasoning
 ├── plugins.ts      plugin SDK/runtime
 ├── report.ts       terminal / Markdown / HTML reports
-├── server.ts       HTTP API
-├── mcp.ts          MCP stdio server
+├── server.ts       HTTP API + hosted service
+├── mcp.ts          MCP server
 ├── benchmark.ts    reliability benchmark runner
 └── cli.ts          interactive + command-line experience
 ```
@@ -882,7 +889,9 @@ More detail: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 | **[HTTP API Guide](docs/API.md)** | You want endpoint, auth, curl, JS and Python examples |
 | **[Action Reference](docs/ACTIONS.md)** | You want the runtime action catalog |
 | **[Architecture](docs/ARCHITECTURE.md)** | You want to understand internal modules and design |
-| **[Security](SECURITY.md)** | You want the public-URL/network safety model |
+| **[Network Security](docs/NETWORK_SECURITY.md)** | You want the SSRF, DNS-rebinding and connect-time destination model |
+| **[Security](SECURITY.md)** | You want the public-URL/network safety policy |
+| **[Changelog](CHANGELOG.md)** | You want release-by-release changes |
 | **[Contributing](CONTRIBUTING.md)** | You want to improve the project |
 
 ---
@@ -934,7 +943,7 @@ Benchmark:
 npm run benchmark
 ```
 
-The repository includes a benchmark fixture under `benchmarks/urls.json` for repeatable reliability testing.
+The repository includes a benchmark fixture under `benchmarks/urls.json` for repeatable reliability testing. The automated test suite also includes address-classification and mixed-DNS-answer regression checks for the v1.1.0 SSRF boundary.
 
 ---
 
@@ -978,7 +987,7 @@ GitHub README files cannot safely execute Stripe JavaScript widgets, so the butt
 **Created by Vincenzo Picciuolo**  
 Founder & Lead Engineer — **HRN Innovation Technologies Ltd**
 
-Built as part of the technology work behind the **HORNO ecosystem** and released openly for developers and builders.
+Built as part of the technology work behind the **HORNO Network ecosystem** and released openly for developers and builders.
 
 - HORNO Network: https://horno.net
 - Easy HORNO: https://easy.horno.net
