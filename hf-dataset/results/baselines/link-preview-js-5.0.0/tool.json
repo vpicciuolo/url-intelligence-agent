@@ -7,5 +7,5 @@
   "license": "MIT",
   "type": "link-preview library",
   "adapter": "Public getLinkPreview API with documented resolveDNSHost SSRF protection and manual redirect validation enabled. The library does not expose HTTP response status in its public result, so status-family assertions remain failures rather than being inferred.",
-  "generated_at": "2026-09-07T22:40:20.946Z"
+  "generated_at": "2026-09-08T09:16:27.042Z"
 }

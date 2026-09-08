@@ -7,5 +7,5 @@
   "license": "MIT",
   "type": "metadata/network library",
   "adapter": "Native network-only probe (`fields: ['network']`) using the package's built-in request-filtering-agent SSRF protection. HTTP response exceptions carrying a status code are normalized to benchmark action=analyze because a response was successfully obtained.",
-  "generated_at": "2026-09-07T22:40:13.606Z"
+  "generated_at": "2026-09-08T09:16:18.171Z"
 }
