@@ -1,91 +1,265 @@
 # URL Intelligence Agent — Public Remote MCP
 
-**URL in. Identity, evidence and intelligence out.**
-
-URL Intelligence Agent exposes a public **Streamable HTTP MCP** endpoint from its Hugging Face Docker Space so compatible AI clients can discover and call URL intelligence tools directly.
-
-## Public endpoint
+Official hosted endpoint:
 
 ```text
 https://vpicciuolo-url-intelligence-agent.hf.space/mcp
 ```
 
-Hugging Face Space:
-
-https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent
-
-GitHub source:
-
-https://github.com/vpicciuolo/url-intelligence-agent
-
-MCP discovery metadata:
+Discovery:
 
 ```text
 https://vpicciuolo-url-intelligence-agent.hf.space/.well-known/mcp.json
 ```
 
-## What it exposes
+Current application release: **1.2.0**
 
-The public hosted MCP endpoint exposes a controlled read-only subset of the URL Intelligence Agent runtime for testing:
+## Protocol versions
 
-- `investigate_url`
-- `audit_seo`
-- `audit_security`
-- `audit_trust`
-- `find_social_profiles`
-- `detect_technologies`
-- `brand_intelligence`
-- `domain_intelligence`
-- `structured_data`
-
-The complete repository contains many additional tools for local/self-hosted deployments.
-
-## Transport
-
-The hosted endpoint uses MCP over **Streamable HTTP** on a single `/mcp` URL. The server supports initialization, tool discovery, tool calls, ping, resources and MCP session IDs.
-
-A minimal initialize request:
-
-```bash
-curl -i https://vpicciuolo-url-intelligence-agent.hf.space/mcp \
-  -H 'Content-Type: application/json' \
-  -H 'Accept: application/json, text/event-stream' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0"}}}'
-```
-
-The server returns an `Mcp-Session-Id`. Send that session ID on subsequent MCP requests.
-
-## AI client usage
-
-For clients that support custom remote MCP servers, add the endpoint:
+The runtime supports:
 
 ```text
-https://vpicciuolo-url-intelligence-agent.hf.space/mcp
+2026-07-28
+2025-11-25
+2025-06-18
+2025-03-26
 ```
 
-Then let the client scan/discover the available tools. This can be used with platforms that expose remote MCP/custom app functionality, including ChatGPT and Claude configurations where that functionality is available on the user’s account or workspace.
+For MCP 2026-07-28 the server supports the stateless protocol path, discovery, routing metadata, cache hints, structured tool schemas and optional Tasks behavior. Older clients retain legacy initialize/session compatibility.
 
-## Hosted demo protection
+## Public hosted tools
 
-The public remote MCP endpoint is designed for evaluation rather than unrestricted compute. Tool discovery and initialization do not consume an analysis call. The hosted MCP demo currently limits analysis tool execution to **one analysis per MCP session every 24 hours**.
+The Hugging Face Remote MCP intentionally exposes a bounded subset:
 
-For unrestricted use, clone and self-host the MIT-licensed repository or run the local stdio MCP server:
+```text
+investigate_url
+inspect_provenance
+verify_claim
+audit_seo
+audit_security
+audit_trust
+find_social_profiles
+detect_technologies
+brand_intelligence
+domain_intelligence
+structured_data
+```
+
+The open source/self hosted runtime exposes the full action registry.
+
+## Provenance tools
+
+### `inspect_provenance`
+
+Returns claim observations and resolution details.
+
+Example arguments:
+
+```json
+{
+  "url": "https://example.com",
+  "predicate": "pages_indexed",
+  "limit": 100,
+  "format": "json"
+}
+```
+
+Set `format` to `prov` for the W3C PROV shaped export.
+
+### `verify_claim`
+
+```json
+{
+  "url": "https://example.com",
+  "predicate": "pages_indexed",
+  "value": 100502
+}
+```
+
+Status:
+
+```text
+supported
+compatible
+contradicted
+not_found
+```
+
+## Modern MCP 2026-07-28
+
+A modern client may first call:
+
+```text
+server/discover
+```
+
+The server returns current version/capability metadata and the Tasks extension declaration.
+
+HTTP routing headers can include:
+
+```text
+MCP-Protocol-Version: 2026-07-28
+Mcp-Method: tools/call
+Mcp-Name: inspect_provenance
+```
+
+The JSON body remains JSON-RPC.
+
+The server validates that routing metadata is consistent with the JSON-RPC call on the modern path.
+
+## Legacy clients
+
+Legacy clients may still use:
+
+```text
+initialize
+notifications/initialized
+tools/list
+tools/call
+resources/list
+resources/read
+```
+
+and an `Mcp-Session-Id` returned by the hosted server.
+
+This compatibility path exists so existing 2025-era clients do not need to migrate immediately.
+
+## Tasks extension
+
+When a modern client advertises:
+
+```text
+io.modelcontextprotocol/tasks
+```
+
+selected expensive tools can return a task object instead of blocking the request.
+
+Task capable tools:
+
+```text
+investigate_url
+deep_crawl
+compare_urls
+batch_investigate
+```
+
+The public hosted allowlist may prevent some of these from being callable remotely even though the full runtime supports them.
+
+Task methods:
+
+```text
+tasks/get
+tasks/update
+tasks/cancel
+```
+
+Use `sync: true` to request a synchronous result where supported.
+
+## Strict schemas
+
+v1.2 publishes action specific `inputSchema` values.
+
+Examples:
+
+- `verify_claim` requires `url`, `predicate`, `value`;
+- `inspect_provenance` accepts `predicate`, `limit`, `format`;
+- `compare_urls` requires `url` and `url2`;
+- `batch_investigate` requires an array of URLs.
+
+The provenance tools also expose structured output schemas.
+
+## Resources
+
+MCP resources include:
+
+```text
+url-intelligence://about
+url-intelligence://provenance-schema
+```
+
+The provenance schema resource describes the observation/claim model and consistency taxonomy.
+
+## Hosted anti abuse policy
+
+The public Remote MCP is a demonstration endpoint, not an unlimited free crawler.
+
+The hosted server applies a bounded analysis allowance and tracks IP usage so creating a new legacy MCP session cannot simply reset the analysis window.
+
+The exact hosted limit is returned in discovery/metadata and can be changed operationally.
+
+For unrestricted usage, self host the MIT licensed repository.
+
+## Origin checks
+
+The hosted endpoint checks browser `Origin` values against an allowlist appropriate for known MCP clients/platforms and the Space itself.
+
+Non browser MCP clients may not send an Origin header.
+
+## Public URL requirement
+
+The hosted MCP validates tool URL arguments before execution. Only public HTTP/HTTPS targets are intended.
+
+Core URL collection also passes through the guarded network layer documented in `docs/NETWORK_SECURITY.md`.
+
+## Browser rendering
+
+The public Space does not enable unrestricted local Playwright rendering by default.
+
+Optional rendering is a separate network trust boundary. Self hosters who enable it should use isolated browser egress controls.
+
+## Manual modern discovery example
+
+Conceptually:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "server/discover",
+  "_meta": {
+    "protocolVersion": "2026-07-28"
+  }
+}
+```
+
+## Manual legacy initialize example
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "manual-test",
+      "version": "1.0"
+    }
+  }
+}
+```
+
+## Self hosting
+
+Run the local HTTP/MCP server:
 
 ```bash
-git clone https://github.com/vpicciuolo/url-intelligence-agent.git
-cd url-intelligence-agent
 npm install
 npm run build
-npm run mcp
+npm run serve
 ```
+
+Then use:
+
+```text
+http://127.0.0.1:8787/mcp
+```
+
+Use `URL_AGENT_API_TOKEN` and normal TLS/reverse proxy controls if exposing a private deployment to the internet.
 
 ## Attribution
 
-Remote MCP results include project attribution.
+Remote results include URL Intelligence Agent project attribution, version, creator, company and repository metadata.
 
-**Project:** URL Intelligence Agent  
-**Creator:** Vincenzo Picciuolo  
-**Company:** HRN Innovation Technologies Ltd  
-**GitHub:** https://github.com/vpicciuolo/url-intelligence-agent  
-**Hugging Face:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent  
-**Remote MCP:** https://vpicciuolo-url-intelligence-agent.hf.space/mcp
+Created by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd** inside the **HORNO Network** ecosystem.
