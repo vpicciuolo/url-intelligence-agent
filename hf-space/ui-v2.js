@@ -194,7 +194,9 @@
     const layers = [...new Set(obs.map(x => `${x.source?.representation || "?"}/${x.source?.layer || "?"}`))];
     const meta = document.createElement("div"); meta.className = "web-source-meta"; meta.textContent = `${claim.observationIds?.length || 0} observation(s) · ${layers.join(" · ")} · resolution ${pct(claim.resolution?.confidence)}`;
     card.append(top, title, meta);
-    if (claim.status === "conflict" && obs.length) {
+    const relationKinds = [...new Set((claim.conflicts || []).map(x => x.relation).filter(x => !["exact_match", "normalized_match"].includes(x)))];
+    relationKinds.slice(0, 4).forEach(relation => { const pill = document.createElement("span"); pill.className = `web-source-pill ${relation === "logical_contradiction" || relation === "factual_disagreement" ? "status-bad" : relation === "wording_variation" ? "status-warn" : "verified"}`; pill.textContent = titleCaseLocal(relation); top.appendChild(pill); });
+    if ((claim.status === "conflict" || claim.status === "compatible_variation") && obs.length) {
       const preview = document.createElement("div"); preview.className = "claim-conflict-preview";
       obs.slice(0, 3).forEach(observation => {
         const row = document.createElement("div"); row.className = "claim-conflict-row";
@@ -217,16 +219,16 @@
     const head = document.createElement("div"); head.className = "open-web-head";
     const hgroup = document.createElement("div"), h3 = document.createElement("h3"), intro = document.createElement("p"), badge = document.createElement("span");
     h3.textContent = "Evidence Inspector · Claim Provenance";
-    intro.textContent = "Each important value is preserved as an observation with its source layer, representation, normalization, timestamp and hash. The resolver distinguishes consensus, compatible variation, representation drift and real conflicts.";
+    intro.textContent = "Each important value is preserved as an observation with its source layer, representation, normalization, timestamp and hash. The resolver now separates semantic equivalence, wording variation, representation drift, factual disagreement and true logical contradiction.";
     badge.className = "web-badge"; badge.textContent = `Schema ${provenance.schemaVersion || "1.0"}`; hgroup.append(h3, intro); head.append(hgroup, badge); panel.appendChild(head);
     const metrics = document.createElement("div"); metrics.className = "open-web-metrics";
     metrics.append(makeMetric("Observations", text(summary.totalObservations || 0)), makeMetric("Resolved claims", text(summary.totalClaims || 0)), makeMetric("Drift", text(summary.driftClaims || 0), summary.driftClaims ? "status-warn" : "status-good"), makeMetric("Conflicts", text(summary.conflictClaims || 0), summary.conflictClaims ? "status-bad" : "status-good"), makeMetric("Stale metadata signals", text(summary.staleMetadataSuspected || 0), summary.staleMetadataSuspected ? "status-warn" : "status-good"));
     panel.appendChild(metrics);
     const explanation = document.createElement("div"); explanation.className = "web-explanation"; explanation.textContent = `Representations: ${(summary.representations || []).join(", ") || "source only"}. Layers: ${(summary.layers || []).join(", ") || "none"}. Example semantics: “80,000+” and “100,502” can be compatible while still producing freshness/representation drift. Conflict does not mean the agent guesses which website claim is true; resolution explains which observation it selected and why.`; panel.appendChild(explanation);
-    const notable = claims.filter(c => c.status === "conflict" || c.status === "drift" || (c.flags || []).includes("stale_metadata_suspected")).sort((a, b) => Number(b.status === "conflict") - Number(a.status === "conflict") || Number((b.flags || []).includes("stale_metadata_suspected")) - Number((a.flags || []).includes("stale_metadata_suspected")));
+    const notable = claims.filter(c => c.status === "conflict" || c.status === "drift" || c.status === "compatible_variation" || (c.flags || []).includes("stale_metadata_suspected")).sort((a, b) => Number(b.status === "conflict") - Number(a.status === "conflict") || Number((b.flags || []).includes("stale_metadata_suspected")) - Number((a.flags || []).includes("stale_metadata_suspected")));
     if (notable.length) {
       const details = document.createElement("details"); details.className = "web-source-section"; details.open = true;
-      const s = document.createElement("summary"); s.textContent = `Drift, conflict & freshness signals (${notable.length})`;
+      const s = document.createElement("summary"); s.textContent = `Semantic variation, drift, conflict & freshness signals (${notable.length})`;
       const grid = document.createElement("div"); grid.className = "web-source-grid"; notable.slice(0, 30).forEach(claim => grid.appendChild(provenanceClaimCard(claim, observationMap))); details.append(s, grid); panel.appendChild(details);
     }
     const all = document.createElement("details"); all.className = "web-source-section";
@@ -338,7 +340,7 @@
   try {
     if (typeof ACTION_GUIDE !== "undefined") {
       if (ACTION_GUIDE.investigate_url) {
-        ACTION_GUIDE.investigate_url.desc = "Two-stage evidence investigation. It crawls the target, creates field-level provenance observations and resolved claims, detects drift/conflicts/stale metadata, then can cross the domain boundary for public corroboration.";
+        ACTION_GUIDE.investigate_url.desc = "Two-stage evidence investigation. It crawls the target, creates field-level provenance observations and resolved claims, distinguishes semantic equivalence/wording variation from factual or logical conflicts, detects drift/stale metadata, then can cross the domain boundary for public corroboration.";
         ACTION_GUIDE.investigate_url.output = "Complete IntelligenceResult + provenance + webResearch + confidenceAssessment";
         ACTION_GUIDE.investigate_url.best = "Best for due diligence, claim verification, provenance inspection and the broadest public-web picture.";
       }

@@ -12,7 +12,7 @@ Discovery:
 https://vpicciuolo-url-intelligence-agent.hf.space/.well-known/mcp.json
 ```
 
-Current application release: **1.2.0**
+Current application release: **1.3.0**
 
 ## Protocol versions
 

@@ -13,8 +13,8 @@ test("credits are embedded in the provenance release", () => {
   assert.match(creditsLine(), /Vincenzo Picciuolo/);
   assert.match(creditsLine(), /horno\.net/);
   assert.match(creditsLine(), /HORNO Network/);
-  assert.equal(PROJECT.version, "1.2.0");
-  assert.equal(PROJECT.release, "Provenance & Consistency Release");
+  assert.equal(PROJECT.version, "1.3.0");
+  assert.equal(PROJECT.release, "Semantic Conflict Intelligence Release");
   assert.equal(PROJECT.website, "https://horno.net");
 });
 
@@ -157,4 +157,49 @@ test("SSRF guard blocks private, reserved, tunneled and mapped address classes",
 test("DNS guard rejects mixed public/private answers instead of selecting the public one", () => {
   assert.throws(() => assertPublicAddresses([{ address: "93.184.216.34", family: 4 }, { address: "127.0.0.1", family: 4 }]), /Private\/reserved destination blocked/);
   assert.doesNotThrow(() => assertPublicAddresses([{ address: "93.184.216.34", family: 4 }, { address: "2606:4700:4700::1111", family: 6 }]));
+});
+
+
+test("description wording differences are compatible, not contradictions", () => {
+  const url = "https://artist.test/";
+  const html = `<html><head>
+    <meta name="description" content="Official website of DeeJay Pico, electronic music DJ and producer. Explore the full discography, watch videos, and listen to the latest releases.">
+    <meta property="og:description" content="Official website of DJ and music producer DeeJay Pico. Explore the full discography, watch videos, and listen to the latest releases.">
+    <meta name="twitter:description" content="Official website of DeeJay Pico. Explore the full discography, watch videos, and listen to the latest releases.">
+  </head><body><h1>DeeJay Pico</h1></body></html>`;
+  const representation = analyzeRepresentation(html, url, "source_html", { finalUrl: url, observedAt: "2026-09-08T12:00:00.000Z" });
+  const page: PageSignal = { ...parsePage(html, url, 200), representations: [representation], observations: representation.observations };
+  const report = buildProvenanceReport([page]);
+  const description = report.claims.find(x => x.predicate === "description");
+  assert.ok(description);
+  assert.notEqual(description.status, "conflict");
+  assert.ok(description.conflicts.some(x => x.relation === "semantic_equivalent" || x.relation === "wording_variation"));
+});
+
+test("explicit negation over shared content is a logical contradiction", () => {
+  const url = "https://feature.test/";
+  const html = `<html><head>
+    <meta name="description" content="The service supports offline mode for mobile users.">
+    <meta property="og:description" content="The service does not support offline mode for mobile users.">
+  </head><body><h1>Feature</h1></body></html>`;
+  const representation = analyzeRepresentation(html, url, "source_html", { finalUrl: url, observedAt: "2026-09-08T12:00:00.000Z" });
+  const page: PageSignal = { ...parsePage(html, url, 200), representations: [representation], observations: representation.observations };
+  const report = buildProvenanceReport([page]);
+  const description = report.claims.find(x => x.predicate === "description");
+  assert.ok(description);
+  assert.equal(description.status, "conflict");
+  assert.ok(description.conflicts.some(x => x.relation === "logical_contradiction"));
+  assert.ok(description.flags.includes("logical_contradiction"));
+});
+
+test("strict text fields report factual disagreement instead of generic value conflict", () => {
+  const page = provenancePage(
+    `<html><head><meta property="product:availability" content="InStock"></head><body>Product</body></html>`,
+    `<html><head><meta property="product:availability" content="OutOfStock"></head><body>Product</body></html>`
+  );
+  const report = buildProvenanceReport([page]);
+  const availability = report.claims.find(x => x.predicate === "availability");
+  assert.ok(availability);
+  assert.equal(availability.status, "conflict");
+  assert.ok(availability.conflicts.some(x => x.relation === "factual_disagreement"));
 });

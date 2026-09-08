@@ -1,8 +1,8 @@
 # URL Intelligence Agent — Deployment Guide
 
-This guide covers URL Intelligence Agent v1.2.0.
+This guide covers URL Intelligence Agent v1.3.0.
 
-Application version: **1.2.0**  
+Application version: **1.3.0**  
 Provenance schema: **1.0**
 
 ## Deployment modes

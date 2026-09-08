@@ -57,6 +57,18 @@ The repository is continuously measured against the public **URL Intelligence Be
 
 ## 🧬 What's new in v1.2.0 — Claim Provenance & Temporal Consistency
 
+## v1.3.0 — Semantic Conflict Intelligence
+
+Version **1.3.0** makes conflict detection meaning-aware and substantially reduces false positives in free-text metadata. The resolver now distinguishes:
+
+- `semantic_equivalent` — same meaning after deterministic token/anchor analysis;
+- `wording_variation` — compatible copy/detail differences with no contradictory factual anchor;
+- representation/temporal drift — different layers or observation times without an immediate contradiction;
+- `factual_disagreement` — materially different stable facts or identity anchors;
+- `logical_contradiction` — explicit opposite truth/polarity such as negation over substantially shared content.
+
+Numeric, money, date, URL and boolean semantics remain field-aware. The hosted Evidence Inspector surfaces these relation types directly so users can tell copy variation from a real contradiction.
+
 Version **1.2.0** adds a new evidence layer without replacing the original URL intelligence workflow or interfaces.
 
 The agent can now preserve and compare field-level observations across source HTML, rendered DOM, Open Graph, standard metadata, JSON-LD, Microdata, RDFa, HTTP headers and visible content. Instead of returning only one extracted value, it can explain **where each value came from, how it was normalized, whether sources actually conflict, and why a preferred value was selected**.

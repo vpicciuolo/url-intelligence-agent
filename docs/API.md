@@ -48,7 +48,7 @@ The Hugging Face Space adds OAuth based hosted-demo controls around analysis/rep
 curl http://127.0.0.1:8787/health
 ```
 
-The response includes runtime status, action count, Remote MCP metadata and release attribution. A correct v1.2.0 deployment must report version `1.2.0` through the attribution object.
+The response includes runtime status, action count, Remote MCP metadata and release attribution. A correct v1.3.0 deployment must report version `1.3.0` through the attribution object.
 
 ## Action catalog
 

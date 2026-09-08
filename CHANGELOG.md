@@ -2,6 +2,24 @@
 
 All notable changes to URL Intelligence Agent are documented here.
 
+
+## 1.3.0 — Semantic Conflict Intelligence Release
+
+### Conflict intelligence
+- Added deterministic semantic comparison for free-text claims.
+- Added `semantic_equivalent`, `wording_variation`, `factual_disagreement` and `logical_contradiction` relation handling.
+- Free-text descriptions/titles no longer become hard conflicts merely because Meta, Open Graph and Twitter copy use different wording.
+- Added factual-anchor checks for numbers, currencies and URLs inside prose.
+- Added multilingual negation-aware contradiction detection for substantially shared statements.
+- Identity/stable text fields remain strict and now report factual disagreement rather than a generic string conflict.
+
+### Evidence Inspector
+- Compatible semantic relations are now visible in claim cards, not hidden behind the final resolved value.
+- Semantic variation is surfaced alongside drift, freshness and hard conflicts.
+
+### Tests
+- Added regression coverage for Meta/Open Graph/Twitter description variation, explicit logical negation, and strict availability disagreement.
+
 ## [1.2.0] - 2026-09-08
 
 ### Claim provenance & consistency

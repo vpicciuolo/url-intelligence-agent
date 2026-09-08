@@ -46,20 +46,25 @@ tags:
   <img src="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2" alt="URL Intelligence Agent — evidence-first URL and web intelligence" width="100%">
 </p>
 
-# 🧠 URL Intelligence Agent v1.2.0
+# 🧠 URL Intelligence Agent v1.3.0
 
 ### Public URL in. Evidence, provenance, consistency and intelligence out.
 
 Open-source URL and web intelligence agent created by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd** and developed inside the **HORNO Network** ecosystem.
 
-v1.2.0 introduces the **Claim Provenance & Temporal Consistency Engine**. The agent preserves where values came from, normalizes field values, compares metadata/structured/visible representations, separates compatible variation from real contradiction, detects drift and explains why a preferred value was selected.
+v1.3.0 introduces the **Claim Provenance & Temporal Consistency Engine**. The agent preserves where values came from, normalizes field values, compares metadata/structured/visible representations, separates compatible variation from real contradiction, detects drift and explains why a preferred value was selected.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-v1.2.0-00c853?style=for-the-badge" alt="v1.2.0">
+  <img src="https://img.shields.io/badge/release-v1.3.0-00c853?style=for-the-badge" alt="v1.3.0">
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/"><img src="https://img.shields.io/badge/TRY%20LIVE-Evidence%20Inspector-2563EB?style=for-the-badge" alt="Try live"></a>
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/mcp"><img src="https://img.shields.io/badge/REMOTE%20MCP-2026--07--28-7C3AED?style=for-the-badge" alt="Remote MCP"></a>
   <a href="https://github.com/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/GITHUB-Open%20Source-111827?style=for-the-badge&logo=github" alt="GitHub"></a>
 </p>
+
+## Semantic conflict intelligence
+
+The v1.3 resolver distinguishes semantic equivalence and wording variation from factual disagreement and explicit logical contradiction, reducing false-positive conflicts in metadata while preserving provenance and source-level evidence.
+
 
 ## 🔬 Claim provenance instead of one flattened answer
 

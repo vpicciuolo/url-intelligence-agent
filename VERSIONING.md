@@ -2,7 +2,7 @@
 
 URL Intelligence Agent follows Semantic Versioning for the application/package surface and separately versions machine-readable evidence schemas and protocol compatibility.
 
-Current application release: **1.2.0**  
+Current application release: **1.3.0**  
 Current provenance schema: **1.0**
 
 ## Application versions

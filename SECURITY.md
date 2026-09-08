@@ -2,7 +2,7 @@
 
 URL Intelligence Agent is designed for public web intelligence. Security controls focus on preventing the agent itself from becoming a route to private/internal services while keeping collection bounded and observable.
 
-Current release: **1.2.0**
+Current release: **1.3.0**
 
 ## Security scope
 

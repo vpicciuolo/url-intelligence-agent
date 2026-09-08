@@ -1,7 +1,7 @@
 {
   "name": "url-intelligence-agent",
-  "version": "1.2.0",
-  "description": "Evidence-first AI URL intelligence agent with claim-level provenance, representation drift detection, deep crawl, entity resolution, web corroboration, SEO/security/trust audits, monitoring, RAG, MCP, API, batch workers and reports.",
+  "version": "1.3.0",
+  "description": "Evidence-first AI URL intelligence agent with claim-level provenance, semantic conflict classification, representation drift detection, deep crawl, entity resolution, web corroboration, SEO/security/trust audits, monitoring, RAG, MCP, API, batch workers and reports.",
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -11,8 +11,16 @@
       "import": "./dist/src/index.js"
     }
   },
-  "bin": { "url-agent": "dist/src/cli.js" },
-  "files": ["dist", "README.md", "LICENSE", "SECURITY.md", "docs"],
+  "bin": {
+    "url-agent": "dist/src/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "docs"
+  ],
   "scripts": {
     "dev": "tsx src/cli.ts",
     "cli": "node dist/src/cli.js",
@@ -27,13 +35,49 @@
     "mcp": "npm run build && node dist/src/cli.js mcp",
     "serve": "npm run build && node dist/src/cli.js serve"
   },
-  "engines": { "node": ">=18.17" },
-  "keywords": ["ai-agent","url-intelligence","web-intelligence","source-provenance","claim-verification","field-level-provenance","representation-drift","temporal-consistency","entity-resolution","metadata","open-graph","structured-data","seo","mcp","remote-mcp","crawler","deep-crawl","social-discovery","technology-detection","brand-intelligence","rag","monitoring","ssrf","typescript","horno-network"],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "keywords": [
+    "ai-agent",
+    "url-intelligence",
+    "web-intelligence",
+    "source-provenance",
+    "claim-verification",
+    "field-level-provenance",
+    "representation-drift",
+    "temporal-consistency",
+    "entity-resolution",
+    "metadata",
+    "open-graph",
+    "structured-data",
+    "seo",
+    "mcp",
+    "remote-mcp",
+    "crawler",
+    "deep-crawl",
+    "social-discovery",
+    "technology-detection",
+    "brand-intelligence",
+    "rag",
+    "monitoring",
+    "ssrf",
+    "typescript",
+    "horno-network",
+    "semantic-conflict-detection",
+    "semantic-equivalence",
+    "contradiction-detection"
+  ],
   "author": "Vincenzo Picciuolo / HRN Innovation Technologies Ltd",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/vpicciuolo/url-intelligence-agent.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vpicciuolo/url-intelligence-agent.git"
+  },
   "homepage": "https://github.com/vpicciuolo/url-intelligence-agent#readme",
-  "bugs": { "url": "https://github.com/vpicciuolo/url-intelligence-agent/issues" },
+  "bugs": {
+    "url": "https://github.com/vpicciuolo/url-intelligence-agent/issues"
+  },
   "dependencies": {
     "parse5": "^7.3.0",
     "pdfkit": "^0.17.2",
@@ -45,9 +89,15 @@
     "redis": ">=5"
   },
   "peerDependenciesMeta": {
-    "pg": { "optional": true },
-    "playwright": { "optional": true },
-    "redis": { "optional": true }
+    "pg": {
+      "optional": true
+    },
+    "playwright": {
+      "optional": true
+    },
+    "redis": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

@@ -18,7 +18,9 @@ const unique = <T>(items: T[]): T[] => [...new Set(items)];
 const hash = (value: string): string => createHash("sha256").update(value).digest("hex");
 const nowIso = (): string => new Date().toISOString();
 
-const STABLE_PREDICATES = /(?:canonical|title|description|language|robots|currency|availability|published|modified|founding|start_date|end_date|author|name|url)$/i;
+const STABLE_PREDICATES = /(?:canonical|language|robots|currency|availability|published|modified|founding|start_date|end_date|author|name|url)$/i;
+const TEXT_VARIATION_PREDICATES = /(?:description|title|headline|summary|tagline|slogan|site_name)$/i;
+const IDENTITY_PREDICATES = /(?:^name$|author|creator|publisher|brand|site_name)$/i;
 const VOLATILE_PREDICATES = /(?:count|followers?|following|views?|likes?|downloads?|users?|customers?|members?|reviews?|ratings?|inventory|stock|sales|visits?|requests?|records?|pages?|urls?|items?|products?|subscribers?|installs?|reactions?)/i;
 const NUMERIC_PREDICATES = /(?:count|price|rating|employees?|followers?|following|views?|likes?|downloads?|users?|customers?|members?|reviews?|inventory|stock|sales|visits?|requests?|records?|pages?|urls?|items?|products?|subscribers?|installs?|reactions?|number)/i;
 const DATE_PREDICATES = /(?:date|published|modified|created|updated|start_at|end_at|start_date|end_date|founding)/i;
@@ -519,6 +521,94 @@ export function analyzeRepresentation(html: string, pageUrl: string, representat
 
 type Comparison = { relation: ClaimConflict["relation"]; conflict: boolean; severity: ClaimConflict["severity"]; explanation: string };
 
+const TEXT_STOPWORDS = new Set([
+  "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "in", "is", "it", "of", "on", "or", "the", "to", "with",
+  "il", "lo", "la", "i", "gli", "le", "di", "da", "del", "della", "e", "un", "una", "per", "con",
+  "el", "la", "los", "las", "de", "del", "y", "un", "una", "para", "con",
+  "le", "les", "de", "des", "du", "et", "un", "une", "pour", "avec",
+  "der", "die", "das", "den", "dem", "des", "und", "ein", "eine", "für", "mit"
+]);
+const NEGATION_WORDS = new Set(["not", "no", "never", "without", "none", "neither", "nor", "false", "disabled", "unavailable", "non", "senza", "mai", "nunca", "sin", "pas", "sans", "nicht", "kein", "keine", "ohne"]);
+
+function semanticTokens(input: string): string[] {
+  return input
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/[\p{P}\p{S}]+/gu, " ")
+    .split(/\s+/)
+    .map(x => x.trim())
+    .filter(Boolean)
+    .filter(x => x.length > 1)
+    .filter(x => !TEXT_STOPWORDS.has(x));
+}
+
+function setMetrics(a: string[], b: string[]) {
+  const as = new Set(a), bs = new Set(b);
+  const intersection = [...as].filter(x => bs.has(x)).length;
+  const union = new Set([...as, ...bs]).size;
+  const minSize = Math.max(1, Math.min(as.size, bs.size));
+  return {
+    intersection,
+    jaccard: union ? intersection / union : 0,
+    containment: intersection / minSize,
+    sameSet: as.size === bs.size && intersection === as.size
+  };
+}
+
+function factualAnchors(input: string): string[] {
+  const out = new Set<string>();
+  for (const match of input.matchAll(/(?:^|[^\p{L}\p{N}])([-+]?\d[\d\s,.]*)(?:\s*([kmb]))?(?:\b|\+|$)/giu)) {
+    const normalized = numericCore(`${match[1]}${match[2] || ""}`);
+    if (normalized?.kind === "number") out.add(`n:${normalized.value}`);
+  }
+  for (const match of input.matchAll(/https?:\/\/[^\s)\]}>]+/gi)) out.add(`u:${normalizeUrl(match[0]) || match[0]}`);
+  for (const match of input.matchAll(/\b(?:USD|EUR|GBP|AED)\b|[$€£]/gi)) out.add(`c:${match[0].toUpperCase()}`);
+  return [...out].sort();
+}
+
+function sameStringSet(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+}
+
+function hasNegation(tokens: string[]): boolean {
+  return tokens.some(token => NEGATION_WORDS.has(token));
+}
+
+function compareTextValues(a: Extract<NormalizedEvidenceValue, { kind: "string" }>, b: Extract<NormalizedEvidenceValue, { kind: "string" }>, predicate: string): Comparison {
+  if (a.value === b.value) return { relation: "exact_match", conflict: false, severity: "none", explanation: "Strings match exactly." };
+  if (a.folded === b.folded) return { relation: "normalized_match", conflict: false, severity: "none", explanation: "Strings match after Unicode/case/punctuation normalization." };
+
+  const at = semanticTokens(a.folded), bt = semanticTokens(b.folded);
+  const metrics = setMetrics(at, bt);
+  const aAnchors = factualAnchors(a.value), bAnchors = factualAnchors(b.value);
+  const anchorsDiffer = aAnchors.length > 0 && bAnchors.length > 0 && !sameStringSet(aAnchors, bAnchors);
+  const negationDiffers = hasNegation(at) !== hasNegation(bt);
+
+  if (anchorsDiffer) {
+    return { relation: "factual_disagreement", conflict: true, severity: "high", explanation: `Free-text values contain different factual anchors (${aAnchors.join(", ")} vs ${bAnchors.join(", ")}).` };
+  }
+  if (negationDiffers && (metrics.containment >= 0.55 || metrics.jaccard >= 0.4)) {
+    return { relation: "logical_contradiction", conflict: true, severity: "high", explanation: "The statements share the same subject/content but differ in explicit negation or availability polarity." };
+  }
+  if (metrics.sameSet && at.length >= 2) {
+    return { relation: "semantic_equivalent", conflict: false, severity: "none", explanation: "The same meaningful terms are present after normalization; word order or surface phrasing differs." };
+  }
+  if ((metrics.containment >= 0.84 && metrics.jaccard >= 0.58) || metrics.jaccard >= 0.76) {
+    return { relation: "semantic_equivalent", conflict: false, severity: "none", explanation: `High semantic-token overlap (${Math.round(metrics.jaccard * 100)}% Jaccard; ${Math.round(metrics.containment * 100)}% containment) indicates equivalent wording, not a contradiction.` };
+  }
+  if (TEXT_VARIATION_PREDICATES.test(predicate)) {
+    if (metrics.containment >= 0.55 || metrics.jaccard >= 0.35) {
+      return { relation: "wording_variation", conflict: false, severity: "low", explanation: `Free-text ${predicate} values express overlapping content with different wording/detail (${Math.round(metrics.containment * 100)}% containment).` };
+    }
+    return { relation: "wording_variation", conflict: false, severity: "low", explanation: `Free-text ${predicate} wording differs, but no incompatible factual anchor or explicit logical contradiction was detected.` };
+  }
+  if (IDENTITY_PREDICATES.test(predicate)) {
+    return { relation: "factual_disagreement", conflict: true, severity: "high", explanation: "Identity-like text values differ after normalization and semantic token comparison." };
+  }
+  return { relation: "factual_disagreement", conflict: true, severity: STABLE_PREDICATES.test(predicate) ? "high" : "medium", explanation: "Text values differ materially after normalization and semantic comparison." };
+}
+
 function numericRange(value: NormalizedEvidenceValue): { min: number | null; max: number | null; exact: boolean; value: number } | undefined {
   if (value.kind === "number") return { min: value.min ?? (value.exact ? value.value : null), max: value.max ?? (value.exact ? value.value : null), exact: value.exact, value: value.value };
   if (value.kind === "money") return { min: value.min ?? (value.exact ? value.amount : null), max: value.max ?? (value.exact ? value.amount : null), exact: value.exact, value: value.amount };
@@ -560,12 +650,8 @@ function compareValues(a: NormalizedEvidenceValue, b: NormalizedEvidenceValue, p
     return { relation: "date_conflict", conflict: true, severity: "medium", explanation: "Date values differ." };
   }
   if (a.kind === "url" && b.kind === "url") return a.value === b.value ? { relation: "exact_match", conflict: false, severity: "none", explanation: "Canonicalized URLs match." } : { relation: "value_conflict", conflict: true, severity: STABLE_PREDICATES.test(predicate) ? "high" : "medium", explanation: "Canonicalized URLs differ." };
-  if (a.kind === "string" && b.kind === "string") {
-    if (a.value === b.value) return { relation: "exact_match", conflict: false, severity: "none", explanation: "Strings match exactly." };
-    if (a.folded === b.folded) return { relation: "normalized_match", conflict: false, severity: "none", explanation: "Strings match after Unicode/case/punctuation normalization." };
-    return { relation: "value_conflict", conflict: true, severity: STABLE_PREDICATES.test(predicate) ? "high" : "medium", explanation: "String values differ after normalization." };
-  }
-  if (a.kind === "boolean" && b.kind === "boolean") return a.value === b.value ? { relation: "exact_match", conflict: false, severity: "none", explanation: "Boolean values match." } : { relation: "value_conflict", conflict: true, severity: "high", explanation: "Boolean values differ." };
+  if (a.kind === "string" && b.kind === "string") return compareTextValues(a, b, predicate);
+  if (a.kind === "boolean" && b.kind === "boolean") return a.value === b.value ? { relation: "exact_match", conflict: false, severity: "none", explanation: "Boolean values match." } : { relation: "logical_contradiction", conflict: true, severity: "high", explanation: "Boolean values express opposite truth states." };
   return JSON.stringify(a) === JSON.stringify(b) ? { relation: "exact_match", conflict: false, severity: "none", explanation: "Values match." } : { relation: "value_conflict", conflict: true, severity: "medium", explanation: "Structured values differ." };
 }
 
@@ -596,7 +682,7 @@ function resolveGroup(subject: string, predicate: string, observations: Evidence
     for (let j = i + 1; j < observations.length; j++) {
       const a = observations[i], b = observations[j];
       const comparison = compareValues(a.normalizedValue, b.normalizedValue, predicate);
-      if (comparison.relation === "compatible_range") compatible = true;
+      if (["compatible_range", "semantic_equivalent", "wording_variation"].includes(comparison.relation)) compatible = true;
       if (["numeric_drift", "temporal_drift", "precision_difference"].includes(comparison.relation)) drift = true;
       if (comparison.conflict) hardConflict = true;
       if (comparison.relation !== "exact_match" && comparison.relation !== "normalized_match") comparisons.push({ observationIds: [a.id, b.id], relation: comparison.relation, severity: comparison.severity, explanation: comparison.explanation });
@@ -604,6 +690,11 @@ function resolveGroup(subject: string, predicate: string, observations: Evidence
   }
 
   const flags: string[] = [];
+  const relations = new Set(comparisons.map(x => x.relation));
+  if (relations.has("semantic_equivalent")) flags.push("semantic_equivalence");
+  if (relations.has("wording_variation")) flags.push("wording_variation");
+  if (relations.has("factual_disagreement")) flags.push("factual_disagreement");
+  if (relations.has("logical_contradiction")) flags.push("logical_contradiction");
   const representations = new Set(observations.map(x => x.source.representation));
   const layers = new Set(observations.map(x => x.source.layer));
   const normalizedStrings = new Set(observations.map(x => JSON.stringify(x.normalizedValue)));
@@ -632,6 +723,10 @@ function resolveGroup(subject: string, predicate: string, observations: Evidence
   ];
   if (flags.includes("stale_metadata_suspected")) explanation.push("A higher exact rendered value materially exceeds a static metadata value; metadata staleness is suspected, not asserted as fact.");
   if (flags.includes("precision_difference")) explanation.push("Approximate/lower-bound and exact values are treated as compatible when their numeric ranges overlap.");
+  if (flags.includes("semantic_equivalence")) explanation.push("Surface wording differs, but deterministic semantic-token comparison found equivalent meaning without conflicting factual anchors.");
+  if (flags.includes("wording_variation")) explanation.push("Free-text wording/detail varies without evidence of a factual or logical contradiction.");
+  if (flags.includes("logical_contradiction")) explanation.push("A true logical contradiction was detected from explicit polarity/negation over substantially shared content.");
+  if (flags.includes("factual_disagreement")) explanation.push("The compared values contain materially different factual content or identity anchors.");
   const claimHash = hash(JSON.stringify({ subject, predicate, observations: observations.map(x => x.id).sort() }));
   return {
     id: `claim_${claimHash.slice(0, 24)}`,

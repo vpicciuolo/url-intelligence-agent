@@ -1,7 +1,7 @@
 export const PROJECT = {
   name: "URL Intelligence Agent",
-  version: "1.2.0",
-  release: "Provenance & Consistency Release",
+  version: "1.3.0",
+  release: "Semantic Conflict Intelligence Release",
   creator: "Vincenzo Picciuolo",
   company: "HRN Innovation Technologies Ltd",
   ecosystem: "HORNO Network",
