@@ -1,7 +1,7 @@
 {
   "name": "url-intelligence-agent",
-  "version": "1.1.0",
-  "description": "Evidence-first AI URL intelligence agent: deep crawl, entity resolution, social/contact discovery, technology and brand intelligence, SEO/security/trust audits, monitoring, RAG, MCP, API, batch workers and reports.",
+  "version": "1.2.0",
+  "description": "Evidence-first AI URL intelligence agent with claim-level provenance, representation drift detection, deep crawl, entity resolution, web corroboration, SEO/security/trust audits, monitoring, RAG, MCP, API, batch workers and reports.",
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -20,6 +20,7 @@
     "prepare": "npm run build",
     "start": "node dist/src/cli.js",
     "test": "npm run build && node --test dist/tests/*.test.js",
+    "test:provenance-fixtures": "python3 hf-dataset/validate_provenance.py",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "benchmark": "npm run build && node dist/src/cli.js benchmark --raw",
     "benchmark:hf": "npm run build && node scripts/run-hf-benchmark.mjs && python3 hf-dataset/evaluate.py hf-dataset/results/predictions.jsonl --json-out hf-dataset/results/latest.json --markdown-out hf-dataset/results/latest.md",
@@ -27,13 +28,14 @@
     "serve": "npm run build && node dist/src/cli.js serve"
   },
   "engines": { "node": ">=18.17" },
-  "keywords": ["ai-agent","url-intelligence","web-intelligence","entity-resolution","metadata","open-graph","seo","mcp","remote-mcp","crawler","deep-crawl","social-discovery","technology-detection","brand-intelligence","rag","monitoring","ssrf","typescript","horno"],
+  "keywords": ["ai-agent","url-intelligence","web-intelligence","source-provenance","claim-verification","field-level-provenance","representation-drift","temporal-consistency","entity-resolution","metadata","open-graph","structured-data","seo","mcp","remote-mcp","crawler","deep-crawl","social-discovery","technology-detection","brand-intelligence","rag","monitoring","ssrf","typescript","horno-network"],
   "author": "Vincenzo Picciuolo / HRN Innovation Technologies Ltd",
   "license": "MIT",
   "repository": { "type": "git", "url": "git+https://github.com/vpicciuolo/url-intelligence-agent.git" },
   "homepage": "https://github.com/vpicciuolo/url-intelligence-agent#readme",
   "bugs": { "url": "https://github.com/vpicciuolo/url-intelligence-agent/issues" },
   "dependencies": {
+    "parse5": "^7.3.0",
     "pdfkit": "^0.17.2",
     "undici": "^6.28.1"
   },

@@ -52,6 +52,8 @@ export type SafeFetchOptions = {
   method?: "GET" | "HEAD";
   headers?: Record<string, string>;
   maxRedirects?: number;
+  ifNoneMatch?: string;
+  ifModifiedSince?: string;
 };
 
 type FetchHeaders = Awaited<ReturnType<typeof fetch>>["headers"];
@@ -127,10 +129,6 @@ function guardedLookup(hostname: string, options: LookupOptions, callback: Looku
   });
 }
 
-// Undici is used explicitly instead of the process-global fetch dispatcher so
-// only untrusted URL-agent collection is subject to this network policy. Every
-// new socket resolves through guardedLookup; existing validated public sockets
-// may be safely reused by the pool.
 const GUARDED_DISPATCHER = new Agent({
   autoSelectFamily: false,
   connect: { lookup: guardedLookup }
@@ -159,6 +157,48 @@ function headersObject(headers: FetchHeaders): Record<string, string> {
   return out;
 }
 
+function normalizeEncoding(label: string): string {
+  const value = label.trim().toLowerCase().replace(/["']/g, "");
+  if (["utf8", "unicode-1-1-utf-8"].includes(value)) return "utf-8";
+  if (["latin1", "iso-8859-1", "iso8859-1", "cp1252"].includes(value)) return "windows-1252";
+  return value || "utf-8";
+}
+
+function sniffEncoding(bytes: Uint8Array, contentType?: string): string {
+  const header = String(contentType || "").match(/charset\s*=\s*["']?([^;\s"']+)/i)?.[1];
+  if (header) return normalizeEncoding(header);
+  if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return "utf-8";
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) return "utf-16le";
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) return "utf-16be";
+  const head = Buffer.from(bytes.subarray(0, Math.min(bytes.length, 8192))).toString("latin1");
+  const meta = head.match(/<meta[^>]+charset\s*=\s*["']?([^\s"'/>;]+)/i)?.[1]
+    || head.match(/<meta[^>]+content\s*=\s*["'][^"']*charset\s*=\s*([^\s;"']+)/i)?.[1];
+  return normalizeEncoding(meta || "utf-8");
+}
+
+function decodeBytes(bytes: Uint8Array, contentType?: string): { text: string; encoding: string } {
+  const encoding = sniffEncoding(bytes, contentType);
+  try { return { text: new TextDecoder(encoding).decode(bytes), encoding }; }
+  catch { return { text: new TextDecoder("utf-8").decode(bytes), encoding: "utf-8" }; }
+}
+
+function traceFor(args: { requestedUrl: string; current: string; status: number; started: number; bytes: number; headers: FetchHeaders; redirectChain: string[]; encoding?: string }): FetchTrace {
+  const headers = headersObject(args.headers);
+  return {
+    requestedUrl: args.requestedUrl,
+    finalUrl: args.current,
+    status: args.status,
+    elapsedMs: Date.now() - args.started,
+    bytes: args.bytes,
+    contentType: args.headers.get("content-type") || undefined,
+    encoding: args.encoding,
+    etag: args.headers.get("etag") || undefined,
+    lastModified: args.headers.get("last-modified") || undefined,
+    redirectChain: args.redirectChain,
+    headers
+  };
+}
+
 export async function safeFetch(raw: string, opts: SafeFetchOptions = {}): Promise<SafeFetchResult> {
   const requestedUrl = (await assertPublicUrl(raw)).toString();
   let current = requestedUrl;
@@ -170,9 +210,6 @@ export async function safeFetch(raw: string, opts: SafeFetchOptions = {}): Promi
   const started = Date.now();
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    // Preflight validation catches obvious unsafe destinations. The custom
-    // dispatcher then independently validates the DNS answer used by the
-    // socket itself, closing the DNS-rebinding/TOCTOU gap.
     current = (await assertPublicUrl(current)).toString();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -186,6 +223,8 @@ export async function safeFetch(raw: string, opts: SafeFetchOptions = {}): Promi
           "user-agent": userAgent,
           "accept": "text/html,application/xhtml+xml,application/xml,text/plain,application/json;q=0.8,*/*;q=0.5",
           "accept-language": "en,*;q=0.5",
+          ...(opts.ifNoneMatch ? { "if-none-match": opts.ifNoneMatch } : {}),
+          ...(opts.ifModifiedSince ? { "if-modified-since": opts.ifModifiedSince } : {}),
           ...opts.headers
         }
       });
@@ -198,11 +237,11 @@ export async function safeFetch(raw: string, opts: SafeFetchOptions = {}): Promi
         current = next;
         continue;
       }
-      if (opts.method === "HEAD") {
-        return { url: current, status: res.status, headers: res.headers, text: "", trace: { requestedUrl, finalUrl: current, status: res.status, elapsedMs: Date.now() - started, bytes: 0, contentType: res.headers.get("content-type") || undefined, redirectChain, headers: headersObject(res.headers) } };
+      if (opts.method === "HEAD" || res.status === 304) {
+        return { url: current, status: res.status, headers: res.headers, text: "", trace: traceFor({ requestedUrl, current, status: res.status, started, bytes: 0, headers: res.headers, redirectChain }) };
       }
       const reader = res.body?.getReader();
-      if (!reader) return { url: current, status: res.status, headers: res.headers, text: "", trace: { requestedUrl, finalUrl: current, status: res.status, elapsedMs: Date.now() - started, bytes: 0, contentType: res.headers.get("content-type") || undefined, redirectChain, headers: headersObject(res.headers) } };
+      if (!reader) return { url: current, status: res.status, headers: res.headers, text: "", trace: traceFor({ requestedUrl, current, status: res.status, started, bytes: 0, headers: res.headers, redirectChain }) };
       const chunks: Uint8Array[] = [];
       let total = 0;
       while (true) {
@@ -215,8 +254,8 @@ export async function safeFetch(raw: string, opts: SafeFetchOptions = {}): Promi
       const all = new Uint8Array(total);
       let pos = 0;
       for (const chunk of chunks) { all.set(chunk, pos); pos += chunk.length; }
-      const text = new TextDecoder().decode(all);
-      return { url: current, status: res.status, headers: res.headers, text, trace: { requestedUrl, finalUrl: current, status: res.status, elapsedMs: Date.now() - started, bytes: total, contentType: res.headers.get("content-type") || undefined, redirectChain, headers: headersObject(res.headers) } };
+      const decoded = decodeBytes(all, res.headers.get("content-type") || undefined);
+      return { url: current, status: res.status, headers: res.headers, text: decoded.text, trace: traceFor({ requestedUrl, current, status: res.status, started, bytes: total, headers: res.headers, redirectChain, encoding: decoded.encoding }) };
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") throw new Error(`Request timed out after ${timeoutMs}ms`);
       throw error;
@@ -227,10 +266,10 @@ export async function safeFetch(raw: string, opts: SafeFetchOptions = {}): Promi
   throw new Error("Too many redirects");
 }
 
-export async function probeUrl(raw: string): Promise<{ ok: boolean; status?: number; finalUrl?: string; elapsedMs?: number; error?: string }> {
+export async function probeUrl(raw: string): Promise<{ ok: boolean; status?: number; finalUrl?: string; elapsedMs?: number; etag?: string; lastModified?: string; error?: string }> {
   try {
     const result = await safeFetch(raw, { method: "HEAD", maxBytes: 0 });
-    return { ok: result.status >= 200 && result.status < 400, status: result.status, finalUrl: result.url, elapsedMs: result.trace.elapsedMs };
+    return { ok: result.status >= 200 && result.status < 400, status: result.status, finalUrl: result.url, elapsedMs: result.trace.elapsedMs, etag: result.trace.etag, lastModified: result.trace.lastModified };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }

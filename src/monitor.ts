@@ -3,13 +3,23 @@ import { createPersistence } from "./adapters.js";
 import { PROJECT } from "./credits.js";
 import type { IntelligenceResult, JsonValue, Snapshot, SnapshotDiff } from "./types.js";
 
+function claimKey(subject: string, predicate: string): string { return `${subject}::${predicate}`; }
+
 export function createSnapshot(result: IntelligenceResult): Snapshot {
+  const claimValues = Object.fromEntries(result.provenance.claims.map(claim => [claimKey(claim.subject, claim.predicate), claim.displayValue])) as Record<string, JsonValue>;
+  const claimStatuses = Object.fromEntries(result.provenance.claims.map(claim => [claimKey(claim.subject, claim.predicate), claim.status]));
+  const provenanceFingerprint = createHash("sha256").update(JSON.stringify(Object.entries(claimValues).sort(([a], [b]) => a.localeCompare(b)))).digest("hex");
+  const httpValidators = Object.fromEntries(result.pages.map(page => [page.url, { etag: page.trace?.etag, lastModified: page.trace?.lastModified }]).filter(([, value]) => Boolean((value as { etag?: string; lastModified?: string }).etag || (value as { etag?: string; lastModified?: string }).lastModified))) as Record<string, { etag?: string; lastModified?: string }>;
   return {
     meta: result.meta,
     url: result.finalUrl,
     entityName: result.entity.name.value,
     fingerprint: result.fingerprint,
     contentFingerprint: result.contentFingerprint,
+    provenanceFingerprint,
+    claimValues,
+    claimStatuses,
+    httpValidators,
     seoScore: result.seo.score,
     trustScore: result.trust.score,
     technologies: result.technologies.map(x => x.name).sort(),
@@ -20,7 +30,7 @@ export function createSnapshot(result: IntelligenceResult): Snapshot {
   };
 }
 
-function asJson(value: unknown): JsonValue { return JSON.parse(JSON.stringify(value)) as JsonValue; }
+function asJson(value: unknown): JsonValue { return value === undefined ? null : JSON.parse(JSON.stringify(value)) as JsonValue; }
 
 export function diffSnapshots(previous: Snapshot, current: Snapshot): SnapshotDiff {
   const changes: SnapshotDiff["changes"] = [];
@@ -29,6 +39,10 @@ export function diffSnapshots(previous: Snapshot, current: Snapshot): SnapshotDi
   };
   compare("entityName", previous.entityName, current.entityName);
   compare("contentFingerprint", previous.contentFingerprint, current.contentFingerprint);
+  compare("provenanceFingerprint", previous.provenanceFingerprint, current.provenanceFingerprint);
+  compare("claimValues", previous.claimValues, current.claimValues);
+  compare("claimStatuses", previous.claimStatuses, current.claimStatuses);
+  compare("httpValidators", previous.httpValidators, current.httpValidators);
   compare("seoScore", previous.seoScore, current.seoScore);
   compare("trustScore", previous.trustScore, current.trustScore);
   compare("technologies", previous.technologies, current.technologies);
@@ -40,13 +54,22 @@ export function diffSnapshots(previous: Snapshot, current: Snapshot): SnapshotDi
 
 export async function persistSnapshot(snapshot: Snapshot): Promise<string> {
   const id = createHash("sha256").update(snapshot.url).digest("hex").slice(0, 32);
-  await createPersistence().put("snapshots", id, snapshot);
+  const persistence = createPersistence();
+  await persistence.put("snapshots", id, snapshot);
+  const historyId = `${id}-${snapshot.observedAt.replace(/[:.]/g, "-")}`;
+  await persistence.put("snapshot-history", historyId, snapshot);
   return id;
 }
 
 export async function loadSnapshot(urlOrId: string): Promise<Snapshot | undefined> {
   const id = /^https?:\/\//.test(urlOrId) ? createHash("sha256").update(urlOrId).digest("hex").slice(0, 32) : urlOrId;
   return createPersistence().get<Snapshot>("snapshots", id);
+}
+
+export async function loadSnapshotHistory(url: string, limit = 50): Promise<Snapshot[]> {
+  const id = createHash("sha256").update(url).digest("hex").slice(0, 32);
+  const rows = await createPersistence().list<Snapshot>("snapshot-history", Math.max(limit * 4, 100));
+  return rows.filter(snapshot => createHash("sha256").update(snapshot.url).digest("hex").slice(0, 32) === id).sort((a, b) => b.observedAt.localeCompare(a.observedAt)).slice(0, limit);
 }
 
 export async function sendWebhook(payload: unknown, webhook = process.env.URL_AGENT_WEBHOOK_URL): Promise<{ sent: boolean; status?: number; error?: string }> {

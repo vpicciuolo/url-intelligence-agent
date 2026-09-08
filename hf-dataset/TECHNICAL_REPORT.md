@@ -1,204 +1,378 @@
 # URL Intelligence Benchmark — Technical Report
 
-**Version:** v0.1 seed release  
-**Author:** Vincenzo Picciuolo / HRN Innovation Technologies Ltd  
-**Project:** URL Intelligence Agent  
-**Dataset:** https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark  
-**Leaderboard:** https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
+Version: **2026-09 / provenance track 1.0**
+
+Project: URL Intelligence Agent  
+Creator: Vincenzo Picciuolo  
+Company: HRN Innovation Technologies Ltd
 
 ## Abstract
 
-URL-analysis and web-intelligence systems often combine network fetching, URL parsing, metadata extraction, redirect handling and safety controls, but their quality is commonly demonstrated through isolated examples rather than reproducible evaluation. The URL Intelligence Benchmark introduces a public set of versioned test vectors for evaluating core URL-analysis behavior under a shared machine-readable scoring scheme.
+The URL Intelligence Benchmark is a public evaluation asset for URL analysis libraries, web intelligence agents and MCP servers.
 
-The v0.1 seed release contains 55 cases and 120 scored assertions spanning public web pages, structured responses, HTTP status families, redirects, normalization, malformed input, unsupported schemes and SSRF/private-network safety. The benchmark is designed primarily as a reproducible regression and interoperability suite. It is not a training corpus and does not claim to represent the complete distribution of the public web.
+The benchmark intentionally separates two classes of capability:
 
-Independent open-source baselines are executed automatically from pinned upstream package versions. Their raw predictions, scorer outputs and adapter metadata are published with the Dataset so results can be inspected rather than accepted as manually entered leaderboard claims.
+1. **core URL/network behavior**, where deterministic URL safety, redirects, status/content handling and selected full-agent completion can be measured against reproducible cases;
+2. **provenance/consistency semantics**, introduced with URL Intelligence Agent v1.2.0, where claim attribution, normalization and disagreement handling can be evaluated without relying on unstable live websites.
 
-## 1. Evaluation objectives
+The second track addresses a common weakness in web extraction benchmarks: systems are often scored only on whether they return a value, not whether they can explain which page layer produced it or whether another representation disagrees.
 
-The v0.1 core benchmark measures whether a URL-analysis implementation can:
+## Goals
 
-1. classify whether an input should be analyzed, rejected or blocked;
-2. report HTTP status families correctly where applicable;
-3. follow and report redirect chains;
-4. identify broad response/content kinds;
-5. normalize and parse common URL variants safely;
-6. reject malformed or unsupported URL schemes; and
-7. prevent requests to loopback, private, link-local, cloud-metadata and related unsafe targets.
+The benchmark aims to measure observable, reproducible behavior rather than subjective model quality.
 
-The selected reference-agent runner additionally records whether the full URL Intelligence Agent `investigate()` pipeline completes on a small set of eligible HTML cases. That signal is reported separately from the core assertion score because metadata/network libraries do not implement an equivalent full-agent pipeline.
+Core goals:
 
-## 2. Benchmark structure
+- safe handling of untrusted URL input;
+- predictable redirect/status/content behavior;
+- explicit handling of private/local destinations;
+- reproducible result scoring;
+- transparent baseline comparison.
 
-Each test case contains a stable `id`, input `url`, semantic `group`, `difficulty`, expected action, optional status-family expectation, redirect minimum, expected content kind, security class, determinism flag and required capability checks.
+Provenance goals:
 
-The current groups include:
+- preserve multiple observations before resolution;
+- normalize values according to semantic field type;
+- distinguish exact/normalized agreement from compatible ranges;
+- avoid false conflicts;
+- identify true incompatible claims;
+- preserve source representation/layer information;
+- expose drift/freshness signals independently from logical contradiction.
 
-- public web pages, repositories and Spaces;
-- APIs, XML/structured documents, images and robots.txt;
-- redirect and scheme-upgrade cases;
-- explicit 2xx, 3xx, 4xx and 5xx endpoints;
-- normalization, tracking-parameter and Unicode cases;
-- malformed URLs and unsupported schemes; and
-- SSRF/private-network vectors.
+## Dataset configurations
 
-## 3. Deterministic and live-web cases
+### Core
 
-The benchmark distinguishes deterministic cases from live-web cases whose upstream metadata or behavior can legitimately change. This distinction allows regression comparisons to report a deterministic score separately from the full live-web score.
+```text
+config: core
+file: data/benchmark.jsonl
+schema: schema.json
+```
 
-For longer-term comparisons, evaluators should pin the exact Hugging Face dataset revision used during the run.
+This is the existing network/URL benchmark track.
 
-## 4. Safety methodology
+Typical groups include:
 
-Safety test vectors are intended to verify refusal behavior without dereferencing unsafe targets. Inputs include unsupported schemes, local file URLs, loopback addresses, private address ranges, link-local/cloud-metadata targets and alternative address representations.
+- normal public URLs;
+- redirect behavior;
+- HTTP status families;
+- content handling;
+- malformed/unsupported URLs;
+- loopback/private/link-local/cloud-metadata style destinations;
+- selected full `investigate()` completion checks.
 
-A compliant implementation should classify these inputs before unsafe network activity occurs.
+### Provenance consistency
 
-For leaderboard ranking, v0.1 applies a hard safety gate: an entry must achieve **100% reject/block safety action accuracy** to receive an official rank. This prevents a high transport score from compensating for unsafe URL handling.
+```text
+config: provenance
+file: data/provenance.jsonl
+schema: provenance-schema.json
+schema_version: 1.0
+```
 
-The benchmark does not perform penetration testing and is not a vulnerability scanner.
+This track is deterministic and does not need a live external page.
 
-## 5. Metrics
+Each row defines:
 
-The reference scorer reports:
+```text
+predicate
+observations[]
+expected semantics
+```
 
-- overall assertion score;
-- deterministic assertion score;
-- action accuracy;
-- HTTP status-family accuracy;
-- redirect handling;
-- content-kind detection;
-- reject/block safety accuracy;
-- full-agent HTML completion where supplied by the runner;
-- case pass rate; and
-- per-group pass rates.
+Observation fields:
 
-Metrics are intentionally decomposed rather than collapsed into a single opaque quality number.
+```text
+representation
+layer
+raw_value
+```
 
-## 6. Reference implementation result
+Expected semantics may include:
 
-The open-source URL Intelligence Agent is continuously evaluated by GitHub Actions against the published benchmark. The verified v0.1 reference run reports:
+```text
+logical_conflict
+preferred_value
+relation
+required_flags[]
+minimum_observation_count
+```
 
-| Metric | Result |
-|---|---:|
-| Benchmark cases | 55 / 55 |
-| Scored assertions | 120 / 120 |
-| Overall assertion score | 100.00% |
-| Deterministic assertion score | 100.00% |
-| Action accuracy | 100.00% |
-| HTTP status-family accuracy | 100.00% |
-| Redirect handling | 100.00% |
-| Content-kind detection | 100.00% |
-| Reject/block safety accuracy | 100.00% |
-| Selected full-agent HTML completion | 6 / 6 — 100.00% |
+## Provenance evaluation model
 
-These numbers describe performance on the current benchmark revision only. They are not a claim of perfect accuracy across the entire public web.
+### Observations before answers
 
-## 7. Independent open-source baselines
+The underlying design treats a page value as an observation rather than immediately collapsing it into one answer.
 
-Two external open-source libraries are now run automatically from clean installs using pinned public releases. The benchmark adapter does not modify upstream source. It translates documented public API outputs and native error semantics into the common benchmark prediction schema.
+Representations include:
 
-| Tool | Type | Core score | Safety | HTTP status | Redirects | Content kind | Full-agent track |
-|---|---|---:|---:|---:|---:|---:|---:|
-| **URL Intelligence Agent** | Full agent / MCP | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **6/6 — 100%** |
-| **url-metadata 5.12.0** | Metadata/network library | **100.00%** | **100.00%** | **100.00%** | **100.00%** | **100.00%** | N/A |
-| **link-preview-js 5.0.0** | Link-preview library | **71.67%** | **100.00%** | **17.14%** | **75.00%** | **84.62%** | N/A |
+```text
+http
+source_html
+rendered_dom
+external
+```
 
-### Baseline adapter notes
+Layers include:
 
-**url-metadata 5.12.0** is exercised through its network-only probe (`fields: ['network']`) with its built-in request-filtering-agent safety controls. The library reports non-2xx HTTP responses as exceptions carrying the response status. The adapter normalizes such responses to `action=analyze` because an HTTP response was successfully obtained; it does not invent a status or bypass upstream behavior.
+```text
+http_header
+html
+meta
+open_graph
+twitter_card
+json_ld
+microdata
+rdfa
+visible_dom
+sitemap
+feed
+api
+```
 
-**link-preview-js 5.0.0** is exercised through `getLinkPreview()` with its documented `resolveDNSHost` SSRF protection and manual redirect validation. Its public result does not expose HTTP response status, so status-family assertions are not inferred. Unsupported schemes and private-network refusals are mapped to the benchmark's `reject`/`block` taxonomy when the upstream library has already refused the input.
+The benchmark does not require all tools to implement every representation. Applicability should be reported explicitly.
 
-Raw prediction JSONL, machine-readable summaries and human-readable summaries are published under `results/baselines/`.
+### Normalization
 
-### What the independent results reveal
+Comparison should be performed after semantic normalization.
 
-The tie between URL Intelligence Agent and `url-metadata` on the **v0.1 core score is an important benchmark finding, not something to hide**. It demonstrates that the current 55-case suite is effective at measuring transport, URL handling and network-safety fundamentals, but it is not yet sufficient to distinguish a full web-intelligence agent from a strong metadata/network library.
+Examples:
 
-Therefore the v0.1 leaderboard should be interpreted as a **core URL/network interoperability and safety benchmark**. Full-agent capability is currently reported as a separate signal rather than being mixed into the core score.
+```text
+80K       == 80,000
+80,000+   means value >= 80,000
+$29       can normalize to amount 29 with currency when inferable
+URL with UTM/fragment can normalize to canonical form
+same calendar date at different precision can be compatible
+```
 
-This independent result directly motivates the semantic and agent-specific tracks planned for v0.2 and v1.0.
+### Conflict taxonomy
 
-## 8. Ranking policy
+A benchmark submission should avoid treating every string difference as a contradiction.
 
-An entry receives a numerical leaderboard rank only when reject/block safety accuracy is 100%.
+Useful relations include:
 
-Among safety-qualified entries:
+```text
+exact_match
+normalized_match
+compatible_range
+numeric_drift
+value_conflict
+date_conflict
+currency_conflict
+type_conflict
+```
 
-1. entries are ordered by overall core assertion score;
-2. equal overall scores share the same rank; and
-3. full-agent completion is displayed separately and is not imputed for libraries that do not implement an agent pipeline.
+A system may use a richer internal taxonomy as long as the published mapping to benchmark expectations is clear.
 
-This avoids unfairly scoring a metadata library as though it were expected to perform entity resolution, corroboration or agent orchestration that is outside its stated scope.
+## Key regression: lower bound vs exact value
 
-## 9. Reproducibility
+Fixture:
 
-A benchmark submission should publish:
+```text
+predicate: metric:pages_indexed
+source/OpenGraph: 80,000+
+rendered/visible: 100,502
+```
 
-- tool or agent name;
-- exact release/tag/commit;
-- exact benchmark revision;
-- generated JSONL prediction file;
-- scorer output;
-- reproduction command;
-- external services or paid APIs used; and
-- caching behavior.
+Expected:
 
-The public leaderboard submission form is available at:
+```text
+logical_conflict         false
+preferred_value          100502
+representation_drift     true
+precision_difference     true
+freshness_divergence     true
+stale_metadata_suspected true
+```
 
-https://github.com/vpicciuolo/url-intelligence-agent/issues/new?template=benchmark-submission.yml
+Rationale:
 
-The two maintained independent baselines are also reproducible through the repository's GitHub Actions workflow and pinned npm package versions.
+`80,000+` is not an exact assertion of `80,000`; it is a lower bound. `100,502` satisfies the lower bound. The representations still diverge in precision/freshness, so drift is useful without creating a false logical contradiction.
 
-## 10. Threats to validity
+This case was motivated by real world feedback about stale Open Graph descriptions versus live counters.
 
-The v0.1 release is intentionally a seed suite and has several limitations:
+## Exact price conflict fixture
 
-- 55 cases cannot represent the full diversity of the public web;
-- some cases rely on third-party public endpoints;
-- live pages may change independently of the benchmark;
-- current scoring strongly emphasizes deterministic URL/network behavior;
-- semantic correctness of extracted entities, claims and evidence is not yet part of the core score;
-- the initial independent baseline set contains two libraries rather than a broad cross-section of full agents, crawlers and commercial systems; and
-- the benchmark owner also develops the initial reference implementation.
+Fixture:
 
-The `url-metadata` 100% core result provides concrete evidence of this scope limitation: a high-quality metadata/network library can satisfy every current v0.1 core assertion without implementing the deeper intelligence features of the reference agent.
+```text
+JSON-LD price: 49 USD
+visible/structured price: 59 USD
+```
 
-These limitations are stated explicitly to avoid over-interpreting early benchmark scores.
+Expected:
 
-## 11. v0.2 / v1.0 roadmap
+```text
+logical_conflict true
+relation value_conflict
+```
 
-The next benchmark versions should add deterministic tracks that measure capabilities beyond transport fundamentals, including:
+Rationale:
 
-- exact title, description, canonical and Open Graph extraction;
-- structured-data / Schema.org extraction correctness;
-- URL canonicalization outputs rather than only successful handling;
-- entity-name and entity-type resolution;
-- social-profile discovery and direct verification;
-- external-source discovery and source provenance;
-- independent-domain corroboration coverage;
-- contradiction detection and preservation;
-- technology detection;
-- SEO/security/trust observation accuracy;
-- brand and domain intelligence;
-- deterministic local fixtures for malformed HTML, encoding, gzip/brotli, redirect loops and large bodies;
-- additional SSRF and alternate address-representation cases;
-- additional independent full-agent and crawler baselines;
-- community submissions;
-- frozen/versioned evaluation releases; and
-- documented change-control rules for benchmark expectations.
+For a stable current price in the same currency/cadence, two incompatible exact values should be surfaced as a conflict rather than silently choosing one and hiding the other.
 
-A future **Agent Intelligence track** should be scored independently from the core URL/network track so specialized libraries can still be compared fairly within their scope while full agents can be differentiated on deeper capabilities.
+## URL normalization fixture
 
-## 12. Open benchmark policy
+Two URLs that differ only by common tracking parameters/fragments can represent the same canonical target after normalization.
 
-The benchmark is MIT-licensed and intended to be reusable by other URL-analysis tools, agent frameworks and research projects. Contributions should improve coverage without introducing unsafe behavior, benchmark leakage or test cases whose expected behavior cannot be independently justified.
+The fixture checks that normalization occurs before a conflict is declared.
 
-## Resources
+## Date precision fixture
 
-- Dataset: https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark
-- Leaderboard: https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard
-- Live Agent: https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent
-- Collection: https://huggingface.co/collections/vpicciuolo/url-intelligence-open-source-stack-6a9f3a0ff61aeb8e3cf1b4e0
-- GitHub: https://github.com/vpicciuolo/url-intelligence-agent
+A date-only representation and a timestamp on the same calendar date should be treated as compatible/normalized according to the benchmark semantics.
+
+## Duplicate metadata fixture
+
+Repeated metadata keys must not be irreversibly overwritten before provenance analysis.
+
+The fixture requires at least two preserved observations and expects a conflict when the duplicate exact descriptions differ.
+
+## Metrics for the provenance track
+
+As the track expands, recommended metrics include:
+
+### Source attribution accuracy
+
+Did the system correctly identify the evidence layer/representation associated with each observation?
+
+### Observation recall
+
+Did the system preserve all benchmark-relevant candidate values?
+
+### Normalization accuracy
+
+Did raw values map to the correct numeric/date/url/money/string semantics?
+
+### Conflict precision/recall/F1
+
+Did the system flag actual incompatible values while avoiding false conflicts?
+
+### False-conflict rate
+
+Especially important for approximate/range/lower-bound values.
+
+### Preferred-value accuracy
+
+When a preferred value is defined, did the resolver choose it for a documented field-aware reason?
+
+### Drift classification
+
+Did the system distinguish representation/freshness drift from logical contradiction?
+
+### Required flag recall
+
+Did expected evidence quality/drift flags appear?
+
+## Core benchmark scoring
+
+The core evaluator uses `hf-dataset/evaluate.py` and scores deterministic assertions from predictions generated by `scripts/run-hf-benchmark.mjs`.
+
+The benchmark intentionally publishes raw predictions and score artifacts so results can be inspected rather than accepted as opaque marketing numbers.
+
+## Independent baselines
+
+Independent open source libraries can be pinned and run through separate GitHub Actions workflows.
+
+The benchmark does not assume all baseline tools are full agents.
+
+A metadata library can be applicable to network/metadata fundamentals while not implementing:
+
+- entity resolution;
+- external corroboration;
+- claim provenance;
+- MCP;
+- monitoring;
+- RAG/reporting.
+
+The leaderboard should therefore show capability class/applicability instead of treating a core score as a universal measure of intelligence depth.
+
+## Reproducibility
+
+Core track:
+
+```bash
+npm install
+npm run benchmark:hf
+```
+
+Repository regression suite including provenance semantics:
+
+```bash
+npm install
+npm run typecheck
+npm test
+```
+
+CI runs the deterministic TypeScript suite across supported Node.js versions.
+
+## Safety methodology
+
+The core benchmark includes public/private destination cases because a URL intelligence agent can become an SSRF primitive if network safety is ignored.
+
+URL Intelligence Agent v1.2 uses:
+
+- preflight URL/DNS validation;
+- connect-time guarded DNS resolution for the actual Undici socket;
+- rejection of mixed public/private DNS answers;
+- manual redirect validation;
+- bounded response/time/redirect limits.
+
+Optional browser rendering remains a separate trust boundary and is not represented as equivalent to the guarded HTTP collector.
+
+## Limitations
+
+### Benchmark size
+
+The dataset is intentionally small and interpretable. A perfect score means all current assertions passed, not that a tool is universally correct.
+
+### Live web instability
+
+Live pages change. The provenance track therefore prioritizes deterministic fixtures for semantic behavior.
+
+### Geographic and personalization variants
+
+The current provenance track does not yet comprehensively evaluate content that changes by region, language, device or experiment bucket.
+
+### Browser/runtime evidence
+
+The initial provenance fixtures specify representation semantics but do not require a particular browser engine.
+
+### Real-world truth
+
+The benchmark evaluates what an analyzer observes/resolves from evidence. It does not prove that a website's external real-world claim is true.
+
+## Roadmap
+
+Planned benchmark expansion areas:
+
+- source HTML vs rendered DOM fixtures;
+- JSON-LD vs visible content mismatches;
+- Microdata/RDFa agreement/conflict;
+- price currency/cadence semantics;
+- locale variants;
+- temporal repeated-observation drift;
+- source independence/corroboration;
+- dynamic API vs DOM evidence;
+- published/modified date conflicts;
+- entity identity disagreement;
+- provenance locator accuracy;
+- observation/document hash reproducibility.
+
+## Integrity and governance
+
+Benchmark changes should be reviewable in Git history.
+
+New cases should document:
+
+1. the behavior under test;
+2. expected semantics;
+3. why the case is deterministic/reproducible;
+4. whether it applies to all tool classes;
+5. any ambiguity or limitations.
+
+The benchmark should not be changed merely to preserve the score of URL Intelligence Agent.
+
+## License
+
+MIT. The benchmark is intended for public evaluation and reproducible comparison.

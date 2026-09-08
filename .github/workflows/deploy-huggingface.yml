@@ -98,7 +98,12 @@ jobs:
 
           python3 - <<'PY'
           from pathlib import Path
-          import re
+          import json, re
+
+          package = json.loads(Path('package.json').read_text(encoding='utf-8'))
+          if package.get('version') != '1.2.0':
+              raise SystemExit(f"Unexpected package version: {package.get('version')}")
+
           readme = Path('/tmp/hf-payload/README.md').read_text(encoding='utf-8')
           match = re.match(r'^---\n(.*?)\n---\n', readme, re.S)
           if not match:
@@ -114,7 +119,11 @@ jobs:
           expected_thumbnail = 'https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2'
           if value('thumbnail') != expected_thumbnail:
               raise SystemExit('Unexpected thumbnail URL')
-          print('Hugging Face metadata OK')
+          if 'v1.2.0' not in readme or 'Claim Provenance' not in readme:
+              raise SystemExit('Hugging Face README is not synchronized with v1.2 provenance release')
+          if 'Evidence Inspector' not in Path('/tmp/hf-payload/ui-v2.js').read_text(encoding='utf-8'):
+              raise SystemExit('Evidence Inspector UI code missing')
+          print('Hugging Face v1.2 payload metadata OK')
           PY
 
       - name: Sync Docker Space
@@ -132,28 +141,33 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Hugging Face Space changes to deploy."
           else
-            git commit -m "Deploy Docker Space from GitHub ${GITHUB_SHA}"
+            git commit -m "Deploy URL Intelligence Agent v1.2.0 from GitHub ${GITHUB_SHA}"
             git push "https://vpicciuolo:${HF_TOKEN}@huggingface.co/spaces/vpicciuolo/url-intelligence-agent" HEAD:main
           fi
 
-      - name: Verify Hugging Face runtime and brand assets
+      - name: Verify Hugging Face runtime, provenance, MCP and brand assets
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           python3 - <<'PY'
           import json, os, time, urllib.request
+
           api_url = 'https://huggingface.co/api/spaces/vpicciuolo/url-intelligence-agent'
           app_base = 'https://vpicciuolo-url-intelligence-agent.hf.space'
           failures = {'BUILD_ERROR', 'RUNTIME_ERROR', 'CONFIG_ERROR'}
+
           def request(url, auth=False):
-              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.5'}
+              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.2'}
               if auth:
                   headers['Authorization'] = f"Bearer {os.environ['HF_TOKEN']}"
               return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30)
-          for attempt in range(1, 61):
+
+          for attempt in range(1, 81):
               with request(api_url, auth=True) as response:
-                  stage = (json.load(response).get('runtime') or {}).get('stage') or 'UNKNOWN'
-              print(f'Hugging Face runtime stage: {stage} (attempt {attempt}/60)')
+                  info = json.load(response)
+                  runtime = info.get('runtime') or {}
+                  stage = runtime.get('stage') or 'UNKNOWN'
+              print(f'Hugging Face runtime stage: {stage} (attempt {attempt}/80)')
               if stage == 'RUNNING':
                   break
               if stage in failures:
@@ -161,16 +175,57 @@ jobs:
               time.sleep(5)
           else:
               raise SystemExit('Hugging Face Space did not reach RUNNING')
-          time.sleep(3)
+
+          time.sleep(5)
+
+          # Core runtime release verification.
+          with request(app_base + '/health') as response:
+              health = json.load(response)
+          attribution = health.get('attribution') or {}
+          if not health.get('ok'):
+              raise SystemExit(f'Live /health is not OK: {health}')
+          if attribution.get('version') != '1.2.0':
+              raise SystemExit(f"Live version mismatch: {attribution.get('version')}")
+          if int(health.get('actions') or 0) < 36:
+              raise SystemExit(f"Live action count too low: {health.get('actions')}")
+          print('Live /health OK: v1.2.0')
+
+          # Action registry verification.
+          with request(app_base + '/actions') as response:
+              actions_payload = json.load(response)
+          actions = set(actions_payload.get('actions') or [])
+          required_actions = {'investigate_url', 'inspect_provenance', 'verify_claim', 'structured_data'}
+          missing = sorted(required_actions - actions)
+          if missing:
+              raise SystemExit(f'Live /actions missing: {missing}')
+          print('Live /actions includes provenance tools.')
+
+          # MCP discovery verification.
+          with request(app_base + '/.well-known/mcp.json') as response:
+              mcp = json.load(response)
+          protocols = set(mcp.get('protocolVersions') or [])
+          if '2026-07-28' not in protocols:
+              raise SystemExit(f'MCP 2026-07-28 missing from live discovery: {sorted(protocols)}')
+          public_tools = set(mcp.get('publicDemoTools') or [])
+          if not {'inspect_provenance', 'verify_claim'}.issubset(public_tools):
+              raise SystemExit('Provenance tools missing from live public MCP discovery')
+          print('Live MCP discovery OK: 2026-07-28 + provenance tools.')
+
+          # Assets.
           for path, minimum in [('/assets/logo.jpg?v=20260908-2', 5000), ('/assets/og.jpg?v=20260908-2', 15000)]:
               with request(app_base + path) as response:
                   data = response.read()
                   if response.status != 200 or response.headers.get_content_type() != 'image/jpeg' or len(data) < minimum or data[:2] != b'\xff\xd8':
                       raise SystemExit(f'Invalid live asset {path}')
                   print(f'{path} OK ({len(data)} bytes)')
+
+          # Hosted UI has approved images and the embedded v1.2 enhancement code.
           with request(app_base + '/') as response:
               page = response.read()
-              if page.count(b'data:image/jpeg;base64,') < 2:
-                  raise SystemExit('Visible UI does not contain both embedded approved images')
-              print('Visible UI contains approved embedded logo and social artwork.')
+          if page.count(b'data:image/jpeg;base64,') < 2:
+              raise SystemExit('Visible UI does not contain both embedded approved images')
+          for marker in [b'Evidence Inspector', b'Claim Provenance', b'inspect_provenance', b'verify_claim']:
+              if marker not in page:
+                  raise SystemExit(f'Live UI missing v1.2 marker: {marker!r}')
+          print('Visible UI contains v1.2 Evidence Inspector and approved branding.')
           PY

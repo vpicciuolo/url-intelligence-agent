@@ -63,8 +63,11 @@ jobs:
               root / "README.md",
               root / "LICENSE",
               root / "schema.json",
+              root / "provenance-schema.json",
               root / "evaluate.py",
+              root / "validate_provenance.py",
               root / "data" / "benchmark.jsonl",
+              root / "data" / "provenance.jsonl",
           ]
           for path in required:
               if not path.is_file() or path.stat().st_size == 0:
@@ -90,8 +93,9 @@ jobs:
           if not {"analyze", "reject", "block"}.issubset(actions):
               raise SystemExit(f"Benchmark action coverage incomplete: {sorted(actions)}")
 
-          print(f"Validated {len(records)} benchmark cases.")
+          print(f"Validated {len(records)} core benchmark cases.")
           PY
+          python3 hf-dataset/validate_provenance.py
 
       - name: Sync Hugging Face dataset
         env:
@@ -125,7 +129,7 @@ jobs:
           token = os.environ["HF_TOKEN"]
           headers = {
               "Authorization": f"Bearer {token}",
-              "User-Agent": "url-intelligence-benchmark-deploy-check/1.0",
+              "User-Agent": "url-intelligence-benchmark-deploy-check/1.2",
           }
 
           api_url = "https://huggingface.co/api/datasets/vpicciuolo/url-intelligence-benchmark"
@@ -136,6 +140,21 @@ jobs:
           if data.get("id") != "vpicciuolo/url-intelligence-benchmark":
               raise SystemExit(f"Unexpected dataset response: {data.get('id')}")
 
-          print("Hugging Face dataset verified.")
+          for path in [
+              "README.md",
+              "TECHNICAL_REPORT.md",
+              "schema.json",
+              "provenance-schema.json",
+              "data/benchmark.jsonl",
+              "data/provenance.jsonl",
+          ]:
+              url = f"https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark/resolve/main/{path}"
+              with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30) as response:
+                  body = response.read(128)
+                  if response.status != 200 or not body:
+                      raise SystemExit(f"Hugging Face dataset file verification failed: {path}")
+                  print(f"Verified {path}")
+
+          print("Hugging Face dataset verified with provenance track.")
           print("https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark")
           PY

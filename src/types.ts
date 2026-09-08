@@ -1,11 +1,151 @@
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
 export type EvidenceField<T> = {
   value: T;
   confidence: number;
   method: string;
   sources: string[];
+  observationIds?: string[];
 };
 
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type EvidenceRepresentation = "http" | "source_html" | "rendered_dom" | "external";
+export type EvidenceLayer = "http_header" | "html" | "meta" | "open_graph" | "twitter_card" | "json_ld" | "microdata" | "rdfa" | "visible_dom" | "sitemap" | "feed" | "api";
+
+export type NormalizedEvidenceValue =
+  | { kind: "string"; value: string; folded: string }
+  | { kind: "number"; value: number; exact: boolean; approximate?: boolean; min: number | null; max: number | null; comparator: "eq" | "gte" | "lte" | "approx" | "range" }
+  | { kind: "date"; value: string; precision: "date" | "minute" | "second" }
+  | { kind: "url"; value: string }
+  | { kind: "money"; amount: number; currency?: string; cadence?: string; exact: boolean; min: number | null; max: number | null }
+  | { kind: "boolean"; value: boolean }
+  | { kind: "json"; value: JsonValue };
+
+export type EvidenceObservation = {
+  id: string;
+  subject: string;
+  predicate: string;
+  rawValue: JsonValue;
+  normalizedValue: NormalizedEvidenceValue;
+  source: {
+    pageUrl: string;
+    finalUrl: string;
+    representation: EvidenceRepresentation;
+    layer: EvidenceLayer;
+    property?: string;
+    locator?: string;
+    jsonPointer?: string;
+    sourceRange?: {
+      start: number;
+      end: number;
+      startLine?: number;
+      startColumn?: number;
+      endLine?: number;
+      endColumn?: number;
+    };
+    visibility?: "visible" | "metadata_only" | "runtime_data" | "hidden";
+    sourceClass?: "first-party" | "platform" | "third-party";
+    independenceGroup?: string;
+    requestVariant?: {
+      language?: string;
+      userAgentClass?: string;
+      region?: string;
+      device?: string;
+    };
+  };
+  temporal: {
+    observedAt: string;
+    publishedAt?: string;
+    modifiedAt?: string;
+    lastModified?: string;
+    firstSeenAt?: string;
+    lastSeenAt?: string;
+  };
+  integrity: {
+    documentHash?: string;
+    observationHash: string;
+  };
+  quality: {
+    extractionConfidence: number;
+    sourceAuthority: number;
+    freshnessConfidence: number;
+  };
+};
+
+export type ClaimConflict = {
+  observationIds: string[];
+  relation:
+    | "exact_match"
+    | "normalized_match"
+    | "semantic_equivalent"
+    | "compatible_range"
+    | "precision_difference"
+    | "numeric_drift"
+    | "temporal_drift"
+    | "value_conflict"
+    | "type_conflict"
+    | "identity_conflict"
+    | "date_conflict"
+    | "currency_conflict"
+    | "canonical_conflict"
+    | "source_conflict"
+    | "external_contradiction";
+  severity: "none" | "low" | "medium" | "high";
+  explanation: string;
+};
+
+export type ResolvedClaim = {
+  id: string;
+  subject: string;
+  predicate: string;
+  value: NormalizedEvidenceValue;
+  displayValue: JsonValue;
+  status: "consensus" | "compatible_variation" | "drift" | "conflict" | "insufficient_evidence";
+  observationIds: string[];
+  flags: string[];
+  resolution: {
+    preferredObservationId?: string;
+    confidence: number;
+    policy: string;
+    explanation: string[];
+  };
+  conflicts: ClaimConflict[];
+};
+
+export type ProvenanceReport = {
+  schemaVersion: string;
+  generatedAt: string;
+  observations: EvidenceObservation[];
+  claims: ResolvedClaim[];
+  summary: {
+    totalObservations: number;
+    totalClaims: number;
+    consensusClaims: number;
+    compatibleClaims: number;
+    driftClaims: number;
+    conflictClaims: number;
+    staleMetadataSuspected: number;
+    layers: EvidenceLayer[];
+    representations: EvidenceRepresentation[];
+  };
+  warnings: string[];
+};
+
+export type PageRepresentation = {
+  kind: "source_html" | "rendered_dom";
+  url: string;
+  observedAt: string;
+  documentHash: string;
+  byteLength: number;
+  textSample: string;
+  html?: string;
+  requestVariant?: {
+    language?: string;
+    userAgentClass?: string;
+    region?: string;
+    device?: string;
+  };
+  observations: EvidenceObservation[];
+};
 
 export type FetchTrace = {
   requestedUrl: string;
@@ -14,6 +154,9 @@ export type FetchTrace = {
   elapsedMs: number;
   bytes: number;
   contentType?: string;
+  encoding?: string;
+  etag?: string;
+  lastModified?: string;
   redirectChain: string[];
   headers: Record<string, string>;
 };
@@ -45,6 +188,8 @@ export type PageSignal = {
   headers: Record<string, string>;
   trace?: FetchTrace;
   rendered?: boolean;
+  representations?: PageRepresentation[];
+  observations?: EvidenceObservation[];
 };
 
 export type CrawlPolicy = {
@@ -55,7 +200,7 @@ export type CrawlPolicy = {
   obeyRobots: boolean;
   allowPatterns: string[];
   denyPatterns: string[];
-  renderMode: "off" | "auto" | "always";
+  renderMode: "off" | "auto" | "always" | "playwright";
 };
 
 export type CrawlResult = {
@@ -195,6 +340,10 @@ export type Snapshot = {
   entityName: string;
   fingerprint: string;
   contentFingerprint: string;
+  provenanceFingerprint?: string;
+  claimValues?: Record<string, JsonValue>;
+  claimStatuses?: Record<string, string>;
+  httpValidators?: Record<string, { etag?: string; lastModified?: string }>;
   seoScore: number;
   trustScore: number;
   technologies: string[];
@@ -223,6 +372,7 @@ export type IntelligenceResult = {
   };
   confidenceAssessment: ConfidenceAssessment;
   webResearch: WebResearchReport;
+  provenance: ProvenanceReport;
   seo: AuditResult;
   security: AuditResult;
   quality: AuditResult;
