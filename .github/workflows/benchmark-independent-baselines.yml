@@ -2,13 +2,14 @@ name: Benchmark Independent Baselines
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["URL Intelligence Benchmark"]
+    types: [completed]
   push:
     branches: [main]
     paths:
       - 'scripts/run-independent-baselines.mjs'
       - 'scripts/build-leaderboard-results.mjs'
-      - 'hf-dataset/evaluate.py'
-      - 'hf-dataset/data/**'
       - '.github/workflows/benchmark-independent-baselines.yml'
 
 permissions:
@@ -20,13 +21,24 @@ concurrency:
 
 jobs:
   benchmark:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout repository
+      - name: Checkout latest main
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
+
+      - name: Verify Hugging Face token
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN is missing. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -37,6 +49,24 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm install --no-save --no-audit --no-fund url-metadata@5.12.0 link-preview-js@5.0.0
+
+      - name: Validate official benchmark result before baselines
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          latest_path = Path('hf-dataset/results/latest.json')
+          if not latest_path.is_file():
+              raise SystemExit('Official benchmark result is missing: hf-dataset/results/latest.json')
+          latest = json.loads(latest_path.read_text(encoding='utf-8'))
+          if int(latest.get('benchmark_cases') or 0) < 1:
+              raise SystemExit('Official benchmark result has no benchmark cases')
+          if not latest.get('git_sha'):
+              raise SystemExit('Official benchmark result has no git_sha')
+          print(f"Official benchmark ready: {latest['git_sha']} · {latest.get('overall_score')}%")
+          PY
 
       - name: Run independent baselines
         run: node scripts/run-independent-baselines.mjs
@@ -55,8 +85,28 @@ jobs:
             --json-out hf-dataset/results/baselines/link-preview-js-5.0.0/summary.json \
             --markdown-out hf-dataset/results/baselines/link-preview-js-5.0.0/summary.md
 
-      - name: Build leaderboard manifest
+      - name: Build leaderboard manifest from current official result
         run: node scripts/build-leaderboard-results.mjs
+
+      - name: Verify leaderboard uses current official benchmark
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          latest = json.loads(Path('hf-dataset/results/latest.json').read_text(encoding='utf-8'))
+          leaderboard = json.loads(Path('hf-dataset/results/leaderboard.json').read_text(encoding='utf-8'))
+          official = next((entry for entry in leaderboard.get('entries', []) if entry.get('id') == 'url-intelligence-agent'), None)
+          if not official:
+              raise SystemExit('Leaderboard is missing URL Intelligence Agent entry')
+          summary = official.get('summary') or {}
+          if summary.get('git_sha') != latest.get('git_sha'):
+              raise SystemExit(f"Stale leaderboard official git_sha: {summary.get('git_sha')} != {latest.get('git_sha')}")
+          if summary.get('generated_at') != latest.get('generated_at'):
+              raise SystemExit('Leaderboard official summary does not match current latest.json generation time')
+          print(f"Leaderboard official entry is current: {summary['git_sha']}")
+          PY
 
       - name: Publish baseline results to repository
         run: |
@@ -72,3 +122,61 @@ jobs:
             git rebase origin/main
             git push origin HEAD:main
           fi
+
+      - name: Sync current benchmark and leaderboard to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/hf-dataset
+          git clone "https://vpicciuolo:${HF_TOKEN}@huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark" /tmp/hf-dataset
+          rsync -av --delete --exclude='.git' hf-dataset/ /tmp/hf-dataset/
+          cd /tmp/hf-dataset
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Hugging Face benchmark dataset is already current."
+          else
+            git commit -m "Sync official and independent benchmark results from GitHub ${GITHUB_SHA}"
+            git push origin HEAD:main
+          fi
+
+      - name: Verify remote leaderboard consistency
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.request
+          from pathlib import Path
+
+          latest = json.loads(Path('hf-dataset/results/latest.json').read_text(encoding='utf-8'))
+          local_board = json.loads(Path('hf-dataset/results/leaderboard.json').read_text(encoding='utf-8'))
+          local_official = next(entry for entry in local_board['entries'] if entry.get('id') == 'url-intelligence-agent')
+          local_summary = local_official.get('summary') or {}
+
+          if local_summary.get('git_sha') != latest.get('git_sha'):
+              raise SystemExit('Local leaderboard became stale before remote verification')
+
+          headers = {
+              'Authorization': f"Bearer {os.environ['HF_TOKEN']}",
+              'User-Agent': 'url-intelligence-baseline-sync-check/1.2',
+          }
+          url = 'https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark/resolve/main/results/leaderboard.json'
+          request = urllib.request.Request(url, headers=headers)
+          with urllib.request.urlopen(request, timeout=30) as response:
+              remote_board = json.load(response)
+
+          remote_official = next((entry for entry in remote_board.get('entries', []) if entry.get('id') == 'url-intelligence-agent'), None)
+          if not remote_official:
+              raise SystemExit('Remote Hugging Face leaderboard is missing URL Intelligence Agent')
+          remote_summary = remote_official.get('summary') or {}
+          if remote_summary.get('git_sha') != latest.get('git_sha'):
+              raise SystemExit(f"Remote leaderboard is stale: {remote_summary.get('git_sha')} != {latest.get('git_sha')}")
+          if remote_summary.get('generated_at') != latest.get('generated_at'):
+              raise SystemExit('Remote leaderboard generation timestamp does not match official latest.json')
+          print(f"Remote leaderboard verified current: {remote_summary['git_sha']}")
+          PY
