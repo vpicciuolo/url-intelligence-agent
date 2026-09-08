@@ -1,0 +1,71 @@
+from pathlib import Path
+
+path = Path("README.md")
+text = path.read_text(encoding="utf-8")
+
+text = text.replace(
+    'https://img.shields.io/badge/release-v1.2.0-00c853?style=for-the-badge" alt="v1.2.0"',
+    'https://img.shields.io/badge/release-v1.3.0-00c853?style=for-the-badge" alt="v1.3.0"',
+)
+
+start_marker = "## 🧬 What's new in v1.2.0 — Claim Provenance & Temporal Consistency"
+end_marker = "\n---\n\n## 🤗 Try URL Intelligence Agent live on Hugging Face"
+start = text.index(start_marker)
+end = text.index(end_marker, start)
+
+replacement = """## 🧬 What's new in v1.3.0 — Semantic Conflict Intelligence
+
+Version **1.3.0** makes conflict detection meaning-aware and substantially reduces false positives in free-text metadata.
+
+The resolver now distinguishes:
+
+- `semantic_equivalent` — same meaning after deterministic token/anchor analysis;
+- `wording_variation` — compatible copy/detail differences with no contradictory factual anchor;
+- representation/temporal drift — different layers or observation times without an immediate contradiction;
+- `factual_disagreement` — materially different stable facts or identity anchors;
+- `logical_contradiction` — explicit opposite truth/polarity such as negation over substantially shared content.
+
+Numeric, money, date, URL and boolean semantics remain field-aware. The hosted **Evidence Inspector** surfaces these relation types directly so users can tell harmless copy variation from a real contradiction.
+
+### Evidence Inspector improvements
+
+- Meaning-aware conflict classification is shown directly in the hosted UI.
+- Meta, Open Graph and Twitter descriptions with compatible wording are no longer promoted to hard conflicts just because their strings differ.
+- Competing values remain visible with source layer, property, normalization, confidence, timestamps and resolver reasoning.
+- Repeated disagreements across crawled pages are grouped into conflict patterns instead of repeated generic `value_conflict` entries.
+- The analysis workflow now shows a live thinking/status overlay and automatically takes the user to the finished result.
+
+### Previous release: v1.2.0 — Claim Provenance & Temporal Consistency
+
+Version **1.2.0** introduced the provenance and temporal-consistency foundation that v1.3.0 builds on.
+
+The agent preserves and compares field-level observations across source HTML, rendered DOM, Open Graph, standard metadata, JSON-LD, Microdata, RDFa, HTTP headers and visible content. Instead of returning only one extracted value, it can explain **where each value came from, how it was normalized, whether sources actually conflict, and why a preferred value was selected**.
+
+Key v1.2.0 additions:
+
+- **Field-level provenance** with representation, layer, property/locator, raw value, normalized value, timestamps and evidence hashes.
+- **Claim resolution** with `consensus`, `compatible_variation`, `drift`, `conflict` and `insufficient_evidence` states.
+- **Semantic numeric comparison** for exact values, ranges, approximations and lower/upper bounds.
+- **Representation drift and stale-metadata detection** across source, structured and visible layers.
+- **Temporal consistency** through provenance-aware snapshots, ETag/Last-Modified capture and claim history.
+- **Evidence integrity** with SHA-256 hashes and W3C PROV-shaped export.
+- New machine actions: **`inspect_provenance`** and **`verify_claim`**.
+- MCP support for **2026-07-28** while retaining compatibility with earlier supported protocol revisions.
+- A dedicated **provenance consistency benchmark track** in the Hugging Face dataset.
+
+Example:
+
+```text
+Open Graph:      80,000+
+Rendered value:  100,502
+```
+
+`80,000+` is a lower bound, so `100,502` is not automatically a logical contradiction. The provenance engine can distinguish **compatible values** from **representation drift**, **precision differences**, **freshness divergence** and **suspected stale metadata**.
+
+👉 **[Read the provenance and consistency guide](docs/PROVENANCE.md)**  
+👉 **[See the full changelog](CHANGELOG.md)**  
+👉 **[Versioning policy](VERSIONING.md)**
+"""
+
+path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
+print("README release hierarchy normalized to v1.3.0")
