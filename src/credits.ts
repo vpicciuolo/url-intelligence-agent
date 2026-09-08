@@ -1,6 +1,6 @@
 export const PROJECT = {
   name: "URL Intelligence Agent",
-  version: "1.0.0",
+  version: "1.1.0",
   release: "Unified Intelligence Release",
   creator: "Vincenzo Picciuolo",
   company: "HRN Innovation Technologies Ltd",
