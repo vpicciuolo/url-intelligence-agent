@@ -2,9 +2,13 @@ import fs from "node:fs";
 
 const file = "/app/index.html";
 let html = fs.readFileSync(file, "utf8");
+const pkg = JSON.parse(fs.readFileSync("/app/package.json", "utf8"));
 
 const logo = fs.readFileSync('/app/assets/logo.jpg').toString('base64');
 const og = fs.readFileSync('/app/assets/og.jpg').toString('base64');
+
+// Keep structured metadata aligned with the release deployed from GitHub.
+html = html.replace(/"softwareVersion"\s*:\s*"[^"]+"/g, `"softwareVersion":"${pkg.version}"`);
 
 // Embed the approved production images directly in the visible UI so they do
 // not depend on Hugging Face proxy/base-path routing. Metadata continues to
@@ -33,4 +37,4 @@ if (!html.includes("url-agent-ui-enhancement-v3")) {
 }
 
 fs.writeFileSync(file, html);
-console.log("Approved branding embedded into visible Hugging Face UI");
+console.log(`Approved branding embedded into visible Hugging Face UI; softwareVersion=${pkg.version}`);
