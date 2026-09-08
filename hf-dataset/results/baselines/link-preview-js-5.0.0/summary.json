@@ -3,8 +3,8 @@
   "benchmark_cases": 55,
   "predictions": 55,
   "missing": [],
-  "generated_at": "2026-09-08T09:16:27Z",
-  "git_sha": "9cc99252e80234ac38448cf0a6a2d3aebb42c420",
+  "generated_at": "2026-09-08T09:22:39Z",
+  "git_sha": "ad11fbcda23052871a00f40738f2149edb8e534a",
   "overall_score": 71.67,
   "deterministic_score": 72.9,
   "metrics": {
