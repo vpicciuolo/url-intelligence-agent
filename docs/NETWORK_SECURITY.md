@@ -1,194 +1,248 @@
 # Network Security Architecture
 
-URL Intelligence Agent v1.1.0 treats every user-supplied URL as untrusted network input. The core HTTP collector is designed to access public HTTP/HTTPS resources while preventing the application from being used as a pivot into localhost, private networks, link-local services or cloud metadata endpoints.
+URL Intelligence Agent accepts untrusted public URLs, so outbound network collection is a primary security boundary.
 
-This document describes the core `safeFetch()` boundary in `src/net.ts`.
+Current release: **1.2.0**
 
-## Threat model
+## Two separate collection boundaries
 
-The agent accepts arbitrary URLs through the CLI, HTTP API, MCP tools and hosted demo. A malicious URL can attempt to abuse server-side fetching through techniques such as:
-
-- direct loopback or RFC1918/private addresses;
-- link-local or cloud metadata addresses;
-- IPv6 local/private address forms;
-- IPv4-mapped or transition/tunnel representations;
-- a public URL that redirects to an internal destination;
-- a hostname returning both public and private DNS answers;
-- DNS rebinding, where validation receives a public address and the later connection receives a private address;
-- oversized responses, redirect loops or slow responses intended to exhaust resources.
-
-The network layer therefore performs both policy validation and resource bounding.
-
-## Request flow
+v1.2 intentionally distinguishes:
 
 ```text
-Untrusted URL
-    |
-    v
-Parse URL + allow HTTP/HTTPS only
-    |
-    v
-Reject credentials and local-only hostnames
-    |
-    v
-Preflight DNS lookup: resolve all A/AAAA answers
-    |
-    v
-Reject if ANY answer is private / local / reserved
-    |
-    v
-Undici guarded dispatcher
-    |
-    v
-Socket-time DNS lookup: resolve and validate again
-    |
-    v
-Connect only to validated public address
-    |
-    v
-Bounded response: timeout + maximum bytes
-    |
-    +---- redirect? ----> validate target and repeat
-    |
-    v
-Return response
+A. guarded HTTP collector
+B. optional browser renderer
 ```
 
-## Why validation happens twice
+They are not security equivalent.
 
-A DNS check performed before `fetch()` is useful but is not by itself a complete DNS-rebinding defense. Without connection-time control, this sequence is possible:
+## A. Guarded HTTP collector
+
+The core collector in `src/net.ts` uses a dedicated Undici dispatcher.
+
+### Request flow
 
 ```text
-validation lookup: attacker.example -> public IP
-connection lookup: attacker.example -> private IP
+untrusted URL
+   │
+   ▼
+parse URL
+   │
+   ├─ require http/https
+   ├─ reject embedded credentials
+   └─ reject local/private host labels
+   │
+   ▼
+preflight DNS lookup
+   │
+   ├─ resolve all answers
+   ├─ reject blocked address classes
+   └─ reject mixed public/private answers
+   │
+   ▼
+manual request
+   │
+   ▼
+Undici socket DNS lookup
+   │
+   ├─ resolve again
+   ├─ validate every answer again
+   └─ only then allow connection
+   │
+   ▼
+response
+   │
+   ├─ bounded bytes
+   ├─ bounded time
+   ├─ charset aware decode
+   └─ capture validators
+   │
+   ├─ redirect? → validate next target and repeat
+   │
+   ▼
+caller
 ```
 
-The second lookup can occur after the first check, creating a check-to-use / TOCTOU gap.
+## Why two DNS checks
 
-Version 1.1.0 closes that gap by using an explicit Undici `Agent` whose connection `lookup` callback is guarded by the same public-address policy. The DNS answer used by a new outbound socket must therefore pass the policy at connection time.
+A preflight DNS lookup does not guarantee the same address will be returned when the actual network socket connects.
 
-## Connection-scoped protection, not long-lived pinning
+The socket therefore uses a custom guarded DNS resolver. This closes the normal DNS rebinding / time of check to time of use gap for traffic that passes through `safeFetch()`.
 
-The implementation intentionally does **not** replace a hostname with an IP address in the request URL and does not permanently pin a domain to one address.
+The design avoids long lived DNS pinning while still validating the address selected for each new connection.
 
-That preserves normal web behavior including:
+## Blocked IPv4 classes
 
-- TLS certificate validation;
-- SNI;
-- HTTP `Host` semantics;
-- virtual hosting;
-- CDN and load-balancer address rotation;
-- IPv4/IPv6 operation for public destinations.
+The implementation blocks public unsafe/non routable ranges including categories such as:
 
-The security invariant is simpler: **the address a new socket is about to use must be public and permitted at the time of connection**.
-
-## Address policy
-
-The classifier uses CIDR-aware `net.BlockList` policies instead of string-prefix tests. The blocked classes include, among others:
-
-### IPv4
-
-- unspecified/current network;
+- `0.0.0.0/8`;
 - RFC1918 private ranges;
+- carrier/shared private space;
 - loopback;
-- link-local, including the `169.254.0.0/16` metadata/link-local range;
-- carrier-grade NAT shared space;
-- benchmarking and documentation ranges;
+- link local;
+- documentation and benchmarking ranges;
 - multicast;
-- reserved/future-use space.
+- reserved/future use.
 
-### IPv6
+The authoritative list is the `BLOCKED_V4` policy in `src/net.ts`.
+
+## Blocked IPv6 classes
+
+The policy covers categories including:
 
 - unspecified and loopback;
-- IPv4-mapped IPv6;
-- NAT64 translation prefixes used to embed IPv4 destinations;
-- ULA;
-- link-local and deprecated site-local;
-- multicast;
+- IPv4 mapped ranges;
+- NAT64 translation ranges;
+- discard/reserved ranges;
 - documentation ranges;
-- transition/tunnel ranges that can encode or route toward non-public destinations.
+- transition/tunnel ranges selected by policy;
+- unique local;
+- link local;
+- site local/reserved;
+- multicast.
 
-The policy is deliberately conservative for a public-web intelligence agent. A destination that must be reachable only through a private network is outside this collector's intended trust boundary.
+The authoritative list is `BLOCKED_V6` in `src/net.ts`.
 
 ## Mixed DNS answers
 
-If a hostname returns several DNS answers and **any** address is blocked, the destination is rejected.
+If a hostname resolves to both a public and a blocked address, URL Intelligence Agent rejects the destination.
 
-Example:
-
-```text
-example.invalid -> 93.184.216.34
-example.invalid -> 127.0.0.1
-```
-
-The agent does not simply select the public answer. Rejecting the entire mixed result avoids address-selection ambiguity and prevents a resolver or connection strategy from later choosing the unsafe address.
+It does not select only the public answer because an attacker could otherwise use DNS answer ordering or rebinding behavior to create inconsistent network decisions.
 
 ## Redirects
 
-Redirects are handled manually. Every `301`, `302`, `303`, `307` and `308` target is converted to an absolute URL and passed through the same public-URL validation before another request is made.
+Redirect mode is manual. Each `Location` value is resolved against the current URL and passed through the same public destination validation before the next request.
 
-The redirect response body is cancelled before following the next hop, and the total number of redirects remains bounded.
+Redirect count is bounded.
 
-## Resource limits
+## Request limits
 
-The network safety boundary also enforces:
+Configurable limits include:
 
-- request timeout;
-- maximum response bytes;
-- maximum redirect count;
-- explicit supported schemes;
-- bounded crawler page/depth/concurrency policies at higher layers.
+```env
+URL_AGENT_TIMEOUT_MS=10000
+URL_AGENT_MAX_BYTES=3000000
+URL_AGENT_MAX_REDIRECTS=6
+```
 
-These are availability controls as well as safety controls.
+Crawl concurrency/page/depth are controlled separately.
 
-## Scope of the guarded transport
+## Charset aware decoding
 
-The project does not replace Node's process-global dispatcher. The guarded Undici dispatcher is used by `safeFetch()` for untrusted public URL collection. This keeps the trust boundary explicit and avoids accidentally applying arbitrary-URL rules to trusted infrastructure integrations such as OAuth provider calls.
+v1.2 decodes response bytes using available hints from:
 
-Code paths that fetch user-controlled or discovered public URLs should go through `safeFetch()` rather than an unguarded `fetch()`.
+1. HTTP `Content-Type` charset;
+2. BOM;
+3. HTML charset declarations;
+4. UTF 8 fallback.
 
-## Browser rendering
+This improves evidence accuracy on non UTF 8 websites.
 
-Playwright is optional and is a separate network boundary. Chromium performs its own document, redirect, script, image, frame, XHR/fetch and other subresource requests. The `safeFetch()` socket-time resolver does not automatically control those browser-originated connections.
+## HTTP validators
 
-For production browser rendering:
+The collector records:
 
-1. keep rendering disabled unless required;
-2. run the browser in an isolated container/process;
-3. deny private, link-local and metadata destinations at the network/egress layer;
-4. treat remote renderers as separate trusted services with equivalent controls;
-5. do not expose renderer credentials or internal networks to untrusted pages.
+```text
+ETag
+Last-Modified
+```
 
-The public Hugging Face Space keeps the optional Playwright renderer disabled by default.
+and can send:
 
-## Defense in depth
+```text
+If-None-Match
+If-Modified-Since
+```
 
-For high-value deployments, application-level validation should be combined with infrastructure egress controls. Recommended controls include:
+when supplied by the caller. This supports lower cost temporal monitoring.
 
-- firewall/VPC/container rules denying private and link-local address space;
-- explicit blocking of cloud metadata endpoints;
-- least-privilege network routes;
-- separate networks for databases, caches and management services;
-- authentication and rate limits on the public URL-agent API/MCP service.
+## B. Browser rendering boundary
+
+Optional Playwright rendering executes a real browser engine and must be treated as a separate network boundary.
+
+v1.2 browser defense in depth includes:
+
+- public validation of the initial URL;
+- request interception;
+- destination public address checks;
+- maximum subresource request count;
+- download blocking;
+- service worker blocking;
+- optional font/media blocking;
+- timeout bounds;
+- optional bounded same origin XHR/fetch JSON capture.
+
+These controls reduce risk but do not make browser networking identical to the guarded Undici transport.
+
+## Recommended browser isolation
+
+For production deployments that enable browser rendering, especially multi tenant or internet facing systems:
+
+```text
+API container
+   │
+   ├─ guarded HTTP egress
+   │
+   └─ renderer service
+        │
+        ├─ separate container/VM
+        ├─ no private network routes
+        ├─ cloud metadata blocked
+        ├─ internal DNS/services blocked
+        └─ public internet egress only
+```
+
+Use cloud firewall/security group/Kubernetes NetworkPolicy/eBPF/proxy controls as appropriate.
+
+Application interception should be considered defense in depth.
+
+## Remote renderer
+
+A remote rendering service can be configured. Treat it as a trusted infrastructure component and apply the same network policy there.
+
+Do not expose a renderer endpoint publicly without authentication and request limits.
+
+## Same origin runtime JSON evidence
+
+v1.2 can observe bounded public JSON responses generated by XHR/fetch during a rendered page load.
+
+Constraints are intended to keep this feature focused on public page evidence:
+
+- same origin by default;
+- bounded response size/count;
+- no intentional authentication bypass;
+- no private destination access;
+- no credential harvesting.
+
+## Other outbound boundaries
+
+Separate outbound systems can include:
+
+- external search providers;
+- optional AI provider;
+- webhook destinations;
+- domain/DNS/TLS probes;
+- configured remote renderer.
+
+Operators should apply allowlists, authentication, quotas and network isolation according to their deployment model.
 
 ## Tests
 
-The test suite includes deterministic checks for private/reserved IPv4, IPv6 local/reserved classes, mapped/transition forms, public-address acceptance and rejection of mixed public/private DNS answers. The Hugging Face benchmark also includes malformed URL and SSRF-oriented safety cases.
+The deterministic unit suite includes regression cases for:
 
-Any future network change should preserve these invariants:
+- IPv4 private/local/reserved destinations;
+- IPv6 private/local/reserved destinations;
+- IPv4 mapped/translation/transition cases;
+- mixed public/private DNS answers.
 
-- unsupported schemes never reach the network;
-- unsafe literal IPs are rejected;
-- unsafe DNS answers are rejected during preflight;
-- unsafe DNS answers are rejected at socket connection time;
-- redirect targets receive the full validation path;
-- bounds remain enforced.
+Run:
 
-## Related documentation
+```bash
+npm run typecheck
+npm test
+```
 
-- [SECURITY.md](../SECURITY.md)
-- [Architecture](ARCHITECTURE.md)
-- [Deployment](DEPLOYMENT.md)
-- [Web research](WEB_RESEARCH.md)
+before release.
 
-Repository: https://github.com/vpicciuolo/url-intelligence-agent
+## Security statement
+
+The HTTP collector is specifically engineered to reduce SSRF and DNS rebinding risk for public URL analysis. No application layer control should be described as absolute network isolation. Operators remain responsible for deployment topology, secrets, firewall policy and optional browser/provider configuration.
