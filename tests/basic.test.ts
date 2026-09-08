@@ -5,12 +5,13 @@ import { parsePage, classifyImportant, pagePriority } from "../src/extract.js";
 import { detectTechnologies, extractBrand } from "../src/analyzers.js";
 import { discoverApiSurfaces, extractCommerceSignals, structuredDataInventory } from "../src/extensions.js";
 import { diffSnapshots } from "../src/monitor.js";
+import { assertPublicAddresses, isBlockedIp } from "../src/net.js";
 import type { Snapshot } from "../src/types.js";
 
 test("credits are embedded in the unified release", () => {
   assert.match(creditsLine(), /Vincenzo Picciuolo/);
   assert.match(creditsLine(), /horno\.net/);
-  assert.equal(PROJECT.version, "1.0.0");
+  assert.equal(PROJECT.version, "1.1.0");
   assert.equal(PROJECT.website, "https://horno.net");
 });
 
@@ -55,4 +56,47 @@ test("snapshot diff is explicit and field based", () => {
   assert.equal(diff.changed, true);
   assert.ok(diff.changes.some(x => x.field === "contentFingerprint"));
   assert.ok(diff.changes.some(x => x.field === "technologies"));
+});
+
+test("SSRF guard blocks private, reserved, tunneled and mapped address classes", () => {
+  const blocked = [
+    "0.0.0.0",
+    "10.1.2.3",
+    "100.64.0.1",
+    "127.0.0.1",
+    "169.254.169.254",
+    "172.31.255.255",
+    "192.168.1.1",
+    "198.18.0.1",
+    "::",
+    "::1",
+    "::ffff:127.0.0.1",
+    "64:ff9b::7f00:1",
+    "fc00::1",
+    "fe90::1",
+    "febf::1",
+    "fec0::1",
+    "ff02::1",
+    "2001:db8::1",
+    "2002::1"
+  ];
+  for (const ip of blocked) assert.equal(isBlockedIp(ip), true, `expected ${ip} to be blocked`);
+
+  const publicAddresses = ["8.8.8.8", "1.1.1.1", "2606:4700:4700::1111", "2001:4860:4860::8888"];
+  for (const ip of publicAddresses) assert.equal(isBlockedIp(ip), false, `expected ${ip} to be public`);
+});
+
+test("DNS guard rejects mixed public/private answers instead of selecting the public one", () => {
+  assert.throws(
+    () => assertPublicAddresses([
+      { address: "93.184.216.34", family: 4 },
+      { address: "127.0.0.1", family: 4 }
+    ]),
+    /Private\/reserved destination blocked/
+  );
+
+  assert.doesNotThrow(() => assertPublicAddresses([
+    { address: "93.184.216.34", family: 4 },
+    { address: "2606:4700:4700::1111", family: 6 }
+  ]));
 });

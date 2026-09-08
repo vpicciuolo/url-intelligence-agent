@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { createPersistence } from "./adapters.js";
+import { PROJECT } from "./credits.js";
 import type { IntelligenceResult, JsonValue, Snapshot, SnapshotDiff } from "./types.js";
 
 export function createSnapshot(result: IntelligenceResult): Snapshot {
@@ -51,7 +52,7 @@ export async function loadSnapshot(urlOrId: string): Promise<Snapshot | undefine
 export async function sendWebhook(payload: unknown, webhook = process.env.URL_AGENT_WEBHOOK_URL): Promise<{ sent: boolean; status?: number; error?: string }> {
   if (!webhook) return { sent: false, error: "URL_AGENT_WEBHOOK_URL not configured" };
   try {
-    const headers: Record<string, string> = { "content-type": "application/json", "user-agent": "url-intelligence-agent/1.0.0" };
+    const headers: Record<string, string> = { "content-type": "application/json", "user-agent": `url-intelligence-agent/${PROJECT.version}` };
     if (process.env.URL_AGENT_WEBHOOK_SECRET) headers["x-url-agent-signature"] = createHash("sha256").update(process.env.URL_AGENT_WEBHOOK_SECRET + JSON.stringify(payload)).digest("hex");
     const response = await fetch(webhook, { method: "POST", headers, body: JSON.stringify(payload) });
     return { sent: response.ok, status: response.status, error: response.ok ? undefined : `Webhook returned ${response.status}` };

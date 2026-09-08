@@ -50,6 +50,7 @@ tags:
 Open-source URL and web-intelligence agent by **Vincenzo Picciuolo / HRN Innovation Technologies Ltd**. It crawls public web sources, resolves entities, verifies evidence, audits SEO/security/trust, discovers social and technology signals, exports branded reports, and exposes the same engine through **Remote MCP**.
 
 <p align="center">
+  <img src="https://img.shields.io/badge/release-v1.1.0-00c853?style=for-the-badge" alt="v1.1.0">
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/"><img src="https://img.shields.io/badge/TRY%20LIVE-Open%20Web%20Demo-2563EB?style=for-the-badge" alt="Try live"></a>
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/mcp"><img src="https://img.shields.io/badge/REMOTE%20MCP-Connect-7C3AED?style=for-the-badge" alt="Remote MCP"></a>
   <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard"><img src="https://img.shields.io/badge/LEADERBOARD-3%20Verified%20Tools-059669?style=for-the-badge" alt="Independent benchmark leaderboard"></a>
@@ -61,7 +62,9 @@ Open-source URL and web-intelligence agent by **Vincenzo Picciuolo / HRN Innovat
 ```text
 Public URL
    ↓
-Safe fetch + SSRF protection
+Preflight URL + DNS safety validation
+   ↓
+Connect-time DNS guard + SSRF protection
    ↓
 Deep crawl + metadata + structured data
    ↓
@@ -141,9 +144,24 @@ The project deliberately separates two evidence layers:
 
 **Extraction confidence** and **external corroboration** remain separate. Repetition across one domain is not treated as independent confirmation.
 
-## 🛡️ Safety model
+## 🛡️ Safety model — v1.1.0
 
-Outbound requests pass through URL validation and SSRF protections before fetching. The benchmark includes malformed URLs, unsupported schemes, loopback, private-network, link-local, cloud-metadata and obfuscated-address cases.
+The core HTTP collector uses a two-stage SSRF boundary:
+
+- validates HTTP/HTTPS URLs, credentials, hostnames and all DNS answers before collection;
+- blocks loopback, private, link-local, cloud-metadata, mapped/translation, selected tunnel/transition and reserved address classes;
+- rejects mixed DNS answers if even one returned address is non-public;
+- uses a dedicated guarded Undici resolver to validate the DNS result used by the **actual outbound socket**, closing the DNS-rebinding / TOCTOU gap between preflight validation and connection;
+- manually re-validates every redirect target;
+- bounds request time, response bytes and redirect count.
+
+This is connection-scoped validation rather than long-lived DNS pinning, so normal TLS/SNI, virtual hosting and CDN behavior remains intact.
+
+The benchmark includes malformed URLs, unsupported schemes, loopback, private-network, link-local, cloud-metadata and obfuscated-address cases. Additional v1.1.0 unit tests cover address classification and mixed public/private DNS answers.
+
+Optional Playwright rendering remains a separate browser-network boundary and is **disabled by default in this public Space**. Self-hosters who enable browser rendering should isolate it with infrastructure-level egress controls.
+
+Technical details: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/NETWORK_SECURITY.md
 
 This is public-web intelligence software. Security output is observational auditing, not penetration testing; trust/compliance output is not a legal or financial determination.
 
@@ -204,6 +222,8 @@ Related:
 ## 📚 Documentation
 
 - GitHub: https://github.com/vpicciuolo/url-intelligence-agent
+- Network security: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/NETWORK_SECURITY.md
+- Security policy: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/SECURITY.md
 - Actions: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/ACTIONS.md
 - Web research architecture: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/WEB_RESEARCH.md
 - MCP: https://github.com/vpicciuolo/url-intelligence-agent/blob/main/docs/MCP.md

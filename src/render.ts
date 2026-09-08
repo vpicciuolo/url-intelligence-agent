@@ -1,3 +1,4 @@
+import { PROJECT } from "./credits.js";
 import { assertPublicUrl } from "./net.js";
 
 export type RenderResult = { html: string; url: string; renderer: "remote" | "playwright"; screenshotBase64?: string };
@@ -20,7 +21,7 @@ async function playwrightRender(url: string, options: RenderOptions): Promise<Re
   try {
     const importer = new Function("m", "return import(m)") as (module: string) => Promise<any>; const pw = await importer("playwright"); const browser = await pw.chromium.launch({ headless: true });
     try {
-      const page = await browser.newPage({ userAgent: process.env.URL_AGENT_USER_AGENT || "url-intelligence-agent/1.0.0" });
+      const page = await browser.newPage({ userAgent: process.env.URL_AGENT_USER_AGENT || `url-intelligence-agent/${PROJECT.version}` });
       await page.goto(url, { waitUntil: options.waitUntil || "networkidle", timeout: options.timeoutMs || Number(process.env.URL_AGENT_RENDER_TIMEOUT_MS || 30000) });
       const finalUrl = page.url(); await assertPublicUrl(finalUrl);
       const screenshotBase64 = options.screenshot ? (await page.screenshot({ fullPage: true, type: "png" })).toString("base64") : undefined;

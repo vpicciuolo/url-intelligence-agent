@@ -1,12 +1,49 @@
-import { lookup } from "node:dns/promises";
+import { lookup as dnsLookup, type LookupAddress, type LookupOptions } from "node:dns";
+import { lookup as dnsLookupAsync } from "node:dns/promises";
 import net from "node:net";
+import { Agent, fetch } from "undici";
+import { PROJECT } from "./credits.js";
 import type { FetchTrace } from "./types.js";
 
-const PRIVATE_V4 = [
-  /^10\./, /^127\./, /^169\.254\./, /^192\.168\./,
-  /^172\.(1[6-9]|2\d|3[0-1])\./, /^0\./, /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,
-  /^192\.0\.0\./, /^192\.0\.2\./, /^198\.18\./, /^198\.19\./, /^198\.51\.100\./, /^203\.0\.113\./, /^224\./, /^2(2[5-9]|3\d)\./, /^24\d\./, /^25[0-5]\./
-];
+const BLOCKED_V4 = new net.BlockList();
+for (const [address, prefix] of [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.88.99.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4]
+] as const) BLOCKED_V4.addSubnet(address, prefix, "ipv4");
+
+const BLOCKED_V6 = new net.BlockList();
+for (const [address, prefix] of [
+  ["::", 128],
+  ["::1", 128],
+  ["::ffff:0:0", 96],
+  ["64:ff9b::", 96],
+  ["64:ff9b:1::", 48],
+  ["100::", 64],
+  ["2001::", 32],
+  ["2001:2::", 48],
+  ["2001:10::", 28],
+  ["2001:20::", 28],
+  ["2001:db8::", 32],
+  ["2002::", 16],
+  ["3fff::", 20],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["fec0::", 10],
+  ["ff00::", 8]
+] as const) BLOCKED_V6.addSubnet(address, prefix, "ipv6");
 
 export type SafeFetchOptions = {
   timeoutMs?: number;
@@ -17,22 +54,87 @@ export type SafeFetchOptions = {
   maxRedirects?: number;
 };
 
+type FetchHeaders = Awaited<ReturnType<typeof fetch>>["headers"];
+
 export type SafeFetchResult = {
   url: string;
   status: number;
-  headers: Headers;
+  headers: FetchHeaders;
   text: string;
   trace: FetchTrace;
 };
 
-function isPrivateIp(ip: string): boolean {
-  if (net.isIPv4(ip)) return PRIVATE_V4.some(r => r.test(ip));
-  if (net.isIPv6(ip)) {
-    const x = ip.toLowerCase();
-    return x === "::" || x === "::1" || x.startsWith("fc") || x.startsWith("fd") || x.startsWith("fe80:") || x.startsWith("ff") || x.startsWith("2001:db8:");
-  }
+export function isBlockedIp(ip: string): boolean {
+  if (net.isIPv4(ip)) return BLOCKED_V4.check(ip, "ipv4");
+  if (net.isIPv6(ip)) return BLOCKED_V6.check(ip, "ipv6");
   return true;
 }
+
+export function assertPublicAddresses(addresses: readonly { address: string; family: number }[]): void {
+  if (!addresses.length) throw new Error("DNS resolution returned no addresses");
+  if (addresses.some(a => (a.family !== 4 && a.family !== 6) || isBlockedIp(a.address))) {
+    throw new Error("Private/reserved destination blocked");
+  }
+}
+
+function blockedHost(host: string): boolean {
+  return !host
+    || host === "localhost"
+    || host.endsWith(".localhost")
+    || host.endsWith(".local")
+    || host.endsWith(".internal")
+    || host === "home.arpa"
+    || host.endsWith(".home.arpa");
+}
+
+function requestedFamily(options: LookupOptions): 0 | 4 | 6 {
+  if (options.family === 4 || options.family === "IPv4") return 4;
+  if (options.family === 6 || options.family === "IPv6") return 6;
+  return 0;
+}
+
+type LookupCallback = (
+  err: NodeJS.ErrnoException | null,
+  address: string | LookupAddress[],
+  family?: number
+) => void;
+
+function ssrfLookupError(error: unknown): NodeJS.ErrnoException {
+  if (error && typeof error === "object" && "code" in error) return error as NodeJS.ErrnoException;
+  const out = (error instanceof Error ? error : new Error(String(error))) as NodeJS.ErrnoException;
+  out.code = "ERR_SSRF_BLOCKED";
+  return out;
+}
+
+/**
+ * DNS resolver used by the actual outbound socket. This is deliberately
+ * separate from assertPublicUrl() so a hostname that changes between the
+ * preflight lookup and connection lookup cannot rebind to a private address.
+ */
+function guardedLookup(hostname: string, options: LookupOptions, callback: LookupCallback): void {
+  dnsLookup(hostname, { all: true, verbatim: true }, (error, addresses) => {
+    if (error) { callback(error, ""); return; }
+    try {
+      assertPublicAddresses(addresses);
+      const family = requestedFamily(options);
+      const eligible = family ? addresses.filter(a => a.family === family) : addresses;
+      if (!eligible.length) throw new Error("DNS resolution returned no address for requested family");
+      if (options.all) callback(null, eligible);
+      else callback(null, eligible[0].address, eligible[0].family);
+    } catch (error) {
+      callback(ssrfLookupError(error), "");
+    }
+  });
+}
+
+// Undici is used explicitly instead of the process-global fetch dispatcher so
+// only untrusted URL-agent collection is subject to this network policy. Every
+// new socket resolves through guardedLookup; existing validated public sockets
+// may be safely reused by the pool.
+const GUARDED_DISPATCHER = new Agent({
+  autoSelectFamily: false,
+  connect: { lookup: guardedLookup }
+});
 
 export async function assertPublicUrl(raw: string): Promise<URL> {
   let url: URL;
@@ -41,17 +143,17 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
   if (url.username || url.password) throw new Error("Credentials in URLs are not allowed");
   const rawHost = url.hostname.toLowerCase();
   const host = rawHost.startsWith("[") && rawHost.endsWith("]") ? rawHost.slice(1, -1) : rawHost;
-  if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) throw new Error("Local/private host is blocked");
+  if (blockedHost(host)) throw new Error("Local/private host is blocked");
   if (net.isIP(host)) {
-    if (isPrivateIp(host)) throw new Error("Private/reserved IP blocked");
+    if (isBlockedIp(host)) throw new Error("Private/reserved IP blocked");
   } else {
-    const addresses = await lookup(host, { all: true, verbatim: true });
-    if (!addresses.length || addresses.some(a => isPrivateIp(a.address))) throw new Error("Private/reserved destination blocked");
+    const addresses = await dnsLookupAsync(host, { all: true, verbatim: true });
+    assertPublicAddresses(addresses);
   }
   return url;
 }
 
-function headersObject(headers: Headers): Record<string, string> {
+function headersObject(headers: FetchHeaders): Record<string, string> {
   const out: Record<string, string> = {};
   headers.forEach((v, k) => { out[k.toLowerCase()] = v; });
   return out;
@@ -64,17 +166,21 @@ export async function safeFetch(raw: string, opts: SafeFetchOptions = {}): Promi
   const timeoutMs = opts.timeoutMs ?? Number(process.env.URL_AGENT_TIMEOUT_MS || 10000);
   const maxBytes = opts.maxBytes ?? Number(process.env.URL_AGENT_MAX_BYTES || 3_000_000);
   const maxRedirects = Math.max(0, Math.min(12, opts.maxRedirects ?? Number(process.env.URL_AGENT_MAX_REDIRECTS || 6)));
-  const userAgent = opts.userAgent ?? process.env.URL_AGENT_USER_AGENT ?? "url-intelligence-agent/1.0.0 (+https://github.com/vpicciuolo/url-intelligence-agent; https://horno.net)";
+  const userAgent = opts.userAgent ?? process.env.URL_AGENT_USER_AGENT ?? `url-intelligence-agent/${PROJECT.version} (+https://github.com/vpicciuolo/url-intelligence-agent; https://horno.net)`;
   const started = Date.now();
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    await assertPublicUrl(current);
+    // Preflight validation catches obvious unsafe destinations. The custom
+    // dispatcher then independently validates the DNS answer used by the
+    // socket itself, closing the DNS-rebinding/TOCTOU gap.
+    current = (await assertPublicUrl(current)).toString();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const res = await fetch(current, {
         method: opts.method || "GET",
         redirect: "manual",
+        dispatcher: GUARDED_DISPATCHER,
         signal: controller.signal,
         headers: {
           "user-agent": userAgent,
@@ -86,8 +192,8 @@ export async function safeFetch(raw: string, opts: SafeFetchOptions = {}): Promi
       if ([301, 302, 303, 307, 308].includes(res.status)) {
         const loc = res.headers.get("location");
         if (!loc) throw new Error("Redirect without location");
-        const next = new URL(loc, current).toString();
-        await assertPublicUrl(next);
+        await res.body?.cancel();
+        const next = (await assertPublicUrl(new URL(loc, current).toString())).toString();
         redirectChain.push(next);
         current = next;
         continue;

@@ -3,7 +3,7 @@
 This guide covers local deployment, Docker, Docker Compose, a persistent Linux service and a reverse-proxied HTTP API.
 
 Repository: https://github.com/vpicciuolo/url-intelligence-agent  
-HORNO: https://horno.net
+HORNO Network: https://horno.net
 
 ---
 
@@ -11,7 +11,7 @@ HORNO: https://horno.net
 
 Requirements:
 
-- Node.js 18+
+- Node.js 18.17+
 - npm
 
 ```bash
@@ -72,10 +72,16 @@ Recommended production controls:
 - `URL_AGENT_API_TOKEN`
 - conservative rate limits
 - firewall rules
+- outbound/egress rules denying private, loopback and link-local destinations as defense in depth
+- explicit infrastructure blocking of cloud metadata endpoints/control planes
 - process/container restart policy
 - bounded page/depth/concurrency settings
 - monitored disk usage for `.url-agent`
 - never expose Redis/PostgreSQL directly to the public Internet
+
+Version 1.1.0 adds connection-time DNS validation to the application-layer SSRF boundary. Infrastructure egress controls are still strongly recommended because network isolation is independent of application correctness.
+
+Detailed network model: [NETWORK_SECURITY.md](NETWORK_SECURITY.md).
 
 ---
 
@@ -84,14 +90,14 @@ Recommended production controls:
 Build:
 
 ```bash
-docker build -t url-intelligence-agent:1.0.0 .
+docker build -t url-intelligence-agent:1.1.0 .
 ```
 
 Run an investigation:
 
 ```bash
 docker run --rm \
-  url-intelligence-agent:1.0.0 \
+  url-intelligence-agent:1.1.0 \
   investigate https://example.com
 ```
 
@@ -100,7 +106,7 @@ Pass environment variables:
 ```bash
 docker run --rm \
   --env-file .env \
-  url-intelligence-agent:1.0.0 \
+  url-intelligence-agent:1.1.0 \
   investigate https://example.com
 ```
 
@@ -112,7 +118,7 @@ docker volume create url_agent_data
 docker run --rm \
   --env-file .env \
   -v url_agent_data:/app/.url-agent \
-  url-intelligence-agent:1.0.0 \
+  url-intelligence-agent:1.1.0 \
   snapshot https://example.com
 ```
 
@@ -127,7 +133,7 @@ docker run -d \
   --env-file .env \
   -p 8787:8787 \
   -v url_agent_data:/app/.url-agent \
-  url-intelligence-agent:1.0.0 \
+  url-intelligence-agent:1.1.0 \
   serve --host 0.0.0.0 --port 8787
 ```
 
@@ -303,7 +309,7 @@ Keep application authentication enabled even when the reverse proxy is protected
 Recommended baseline:
 
 ```env
-URL_AGENT_USER_AGENT="url-intelligence-agent/1.0.0 (+https://github.com/vpicciuolo/url-intelligence-agent; https://horno.net)"
+URL_AGENT_USER_AGENT="url-intelligence-agent/1.1.0 (+https://github.com/vpicciuolo/url-intelligence-agent; https://horno.net)"
 URL_AGENT_TIMEOUT_MS=10000
 URL_AGENT_MAX_BYTES=3000000
 URL_AGENT_MAX_REDIRECTS=6
@@ -327,6 +333,8 @@ URL_AGENT_AI_AUTO=false
 
 Do not blindly maximize crawl limits in production. Larger crawls increase latency, outbound traffic and memory usage.
 
+The connect-time DNS guard is enabled by the code path and does not require a feature flag. Do not disable or bypass `safeFetch()` for code paths that consume user-controlled/discovered public URLs.
+
 ---
 
 # 9. Rendering in production
@@ -347,7 +355,9 @@ URL_AGENT_RENDER_MODE=auto
 URL_AGENT_RENDER_TIMEOUT_MS=30000
 ```
 
-Browser automation adds significant runtime weight. If you do not need JavaScript rendering, keep rendering off.
+Browser automation adds significant runtime weight and is also a **separate network security boundary**. Chromium performs its own DNS lookups and can request scripts, images, frames, XHR/fetch endpoints and other subresources. The Undici `safeFetch()` connect-time DNS protection does not automatically intercept those browser-originated connections.
+
+If browser rendering is enabled in production, run it in an isolated container/process and use firewall/VPC/container egress rules to deny private, loopback, link-local and cloud metadata destinations. If you do not need JavaScript rendering, keep rendering off.
 
 ## Remote rendering service
 
@@ -357,6 +367,8 @@ URL_AGENT_RENDER_ENDPOINT=https://renderer.example.com/render
 URL_AGENT_RENDER_API_KEY=your-key
 URL_AGENT_RENDER_TIMEOUT_MS=30000
 ```
+
+Treat the remote renderer as a separate trusted service. It should apply equivalent URL/egress protections and should not have unrestricted reachability to sensitive internal systems.
 
 ---
 
@@ -378,7 +390,7 @@ VALKEY_URL=
 DATABASE_URL=postgres://urlagent:strong-password@postgres:5432/urlagent
 ```
 
-Use private Docker networks/VPC networking and strong credentials. Do not publish database/cache ports unless you have a specific secured reason.
+Use private Docker networks/VPC networking and strong credentials. Do not publish database/cache ports unless you have a specific secured reason. The URL-agent public-facing runtime should not be able to reach unnecessary management interfaces even if an application-layer SSRF control were to regress.
 
 ---
 
@@ -425,6 +437,15 @@ curl \
   "http://127.0.0.1:8787/investigate?url=https://example.com"
 ```
 
+Verify the SSRF boundary locally:
+
+```bash
+node dist/src/cli.js probe http://127.0.0.1
+node dist/src/cli.js probe http://169.254.169.254
+```
+
+Both probes should be rejected without making a request to those destinations.
+
 Verify:
 
 - health endpoint succeeds
@@ -432,9 +453,11 @@ Verify:
 - rate limiting works for your expected traffic
 - logs do not expose secrets
 - `.url-agent` storage persists if required
-- outbound DNS/HTTPS works
-- renderer works only if intentionally enabled
-- firewall exposes only intended ports
+- public outbound DNS/HTTPS works
+- loopback/private/link-local destinations are rejected
+- renderer works only if intentionally enabled and isolated
+- firewall exposes only intended inbound ports
+- egress policy denies unnecessary internal/control-plane destinations
 - TLS is enabled at the edge
 
 ---
@@ -456,6 +479,8 @@ git pull
 docker compose up -d --build
 ```
 
+When upgrading from v1.0.0 to v1.1.0, `npm install` installs the new required Undici runtime dependency. Node.js must be 18.17 or newer.
+
 ---
 
 ## Support the open-source project
@@ -468,4 +493,4 @@ https://hrn.ae/githubsupport
 
 Created by **Vincenzo Picciuolo**  
 **HRN Innovation Technologies Ltd**  
-HORNO ecosystem: https://horno.net
+HORNO Network ecosystem: https://horno.net

@@ -1,8 +1,8 @@
 # Action Reference
 
-URL Intelligence Agent v1.0.0 exposes the same intelligence surface through the CLI, HTTP API, MCP tools and the `runAction()` library function.
+URL Intelligence Agent v1.1.0 exposes the same intelligence surface through the CLI, HTTP API, MCP tools and the `runAction()` library function.
 
-All machine-readable outputs retain project attribution to HRN Innovation Technologies Ltd, Vincenzo Picciuolo and the HORNO ecosystem at https://horno.net.
+All machine-readable outputs retain project attribution to HRN Innovation Technologies Ltd, Vincenzo Picciuolo and the HORNO Network ecosystem at https://horno.net.
 
 ## How to interpret results
 
@@ -28,7 +28,8 @@ Important: an empty `contradictions` list means no explicit contradiction was re
 
 The hosted web interface surfaces these fields in a human-readable evidence summary, keeps public sources openable, marks disputed results and preserves the complete raw JSON.
 
-External research architecture and provider configuration: [WEB_RESEARCH.md](WEB_RESEARCH.md)
+External research architecture and provider configuration: [WEB_RESEARCH.md](WEB_RESEARCH.md)  
+Network/SSRF architecture: [NETWORK_SECURITY.md](NETWORK_SECURITY.md)
 
 Live demo: https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent  
 Remote MCP: https://vpicciuolo-url-intelligence-agent.hf.space/mcp
@@ -124,4 +125,8 @@ https://vpicciuolo-url-intelligence-agent.hf.space/mcp
 
 ## Public-data boundary
 
-These actions are intended for public URLs and public signals. They do not bypass authentication, CAPTCHAs or access controls. Scores and compliance/security/trust signals are explainable observations, not legal, security or financial determinations.
+These actions are intended for public URLs and public signals. User-controlled/discovered public URLs collected through the core HTTP path use the v1.1.0 guarded `safeFetch()` transport: preflight DNS validation, connect-time DNS validation, rejection of private/reserved/mixed DNS answers and redirect re-validation.
+
+Optional Playwright browser rendering is a separate network boundary and should be isolated with infrastructure-level egress controls when enabled.
+
+The project does not bypass authentication, CAPTCHAs or access controls. Scores and compliance/security/trust signals are explainable observations, not legal, security or financial determinations.
