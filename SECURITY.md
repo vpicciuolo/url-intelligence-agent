@@ -1,44 +1,269 @@
 # Security
 
-URL Intelligence Agent processes untrusted public URLs. Treat outbound network access as a security boundary.
+URL Intelligence Agent is designed for public web intelligence. Security controls focus on preventing the agent itself from becoming a route to private/internal services while keeping collection bounded and observable.
 
-## Network safety in v1.1.0
+Current release: **1.2.0**
 
-Version 1.1.0 uses a two-stage SSRF defense for the core HTTP collection path.
+## Security scope
 
-1. **Preflight URL and DNS validation** parses the URL, permits only HTTP/HTTPS, rejects embedded credentials and local-only hostnames, resolves all returned addresses, and rejects the destination if any answer is private, loopback, link-local, reserved or otherwise non-public.
-2. **Connect-time DNS validation** uses a dedicated guarded Undici dispatcher. The resolver used by the actual outbound socket validates the DNS answers again immediately before connection. This closes the preflight-to-connect DNS-rebinding / TOCTOU gap where a hostname could resolve publicly during validation and then resolve to an internal address when the socket connects.
+The project intentionally analyzes public HTTP/HTTPS resources. It does not intentionally bypass:
 
-The core network layer also:
+- authentication;
+- CAPTCHAs;
+- access controls;
+- private networks;
+- cloud metadata endpoints;
+- paywalls or protected application state.
 
-- blocks common private, loopback, link-local, documentation, benchmarking, multicast and reserved IPv4 ranges;
-- blocks IPv6 loopback, ULA, link-local, site-local, multicast, documentation, transition/tunnel and mapped-address classes that should not be reached by the public-web collector;
-- blocks cloud/link-local metadata destinations such as `169.254.169.254` through the whole `169.254.0.0/16` range;
-- rejects mixed DNS answers when even one returned address is non-public instead of silently choosing a different answer;
-- re-validates every redirect target and uses manual redirect handling;
-- limits redirect count, response bytes and request time;
-- rejects URL credentials and unsupported schemes;
-- does not alter the process-global HTTP dispatcher: the guarded transport is scoped to untrusted URL-agent collection.
+Security audit output describes observable response/header posture. It is not penetration testing.
 
-The protection is connection-scoped rather than long-lived DNS pinning. Hostnames remain hostnames so TLS SNI, certificates, virtual hosting and normal CDN/load-balancer behavior continue to work, while every new outbound socket must resolve to an allowed public address.
+## Core HTTP trust boundary
 
-See [docs/NETWORK_SECURITY.md](docs/NETWORK_SECURITY.md) for the detailed threat model and request flow.
+All untrusted URL collection through `safeFetch()` uses a dedicated guarded Undici transport.
 
-## Browser rendering is a separate boundary
+### Preflight validation
 
-`safeFetch()` and the normal crawler use the guarded HTTP transport described above. Optional Playwright rendering launches a browser and therefore has its own network stack, including subresource requests, frames and browser-originated fetches. Do not assume the core `safeFetch()` connect-time guarantee automatically applies to Chromium traffic.
+Before a request is made, the URL is checked for:
 
-Keep `URL_AGENT_RENDER_MODE=off` unless rendering is required. For production browser rendering, isolate the browser/container and enforce outbound network policy at the infrastructure layer. A remote renderer should be treated as a separate trusted service with equivalent egress controls.
+- valid `http:` or `https:` scheme;
+- embedded credentials;
+- blocked local/private hostnames;
+- literal private/reserved IPs;
+- DNS answers that include non public address classes.
 
-## Defense in depth
+If DNS returns a mix of public and blocked addresses, the request is rejected rather than selecting only the public answer.
 
-Application-layer SSRF controls should not be the only protection for sensitive deployments. Where possible, also use firewall, container, VPC or platform egress rules that prevent the runtime from reaching private address space, link-local services, cloud metadata endpoints and other internal control planes.
+### Connect time DNS validation
 
-Do not use this project to bypass authentication, CAPTCHAs, robots restrictions, access controls or private systems. Public-data collection must comply with applicable law, site terms and your organizational policies.
+Preflight validation alone is not sufficient because a hostname can resolve differently when the actual socket is opened.
 
-## Reporting a vulnerability
+The dedicated Undici dispatcher therefore uses a guarded DNS lookup for the real outbound connection. Every DNS answer used by the socket is validated again before connection.
 
-Please report security vulnerabilities privately to the repository owner rather than publishing a working exploit in a public issue. Include the affected version, reproduction conditions and the smallest safe proof needed to demonstrate the issue.
+This closes the normal DNS rebinding / TOCTOU gap between preflight resolution and connect time resolution for the core HTTP transport.
 
-Project: https://github.com/vpicciuolo/url-intelligence-agent  
-HORNO Network: https://horno.net
+### Blocked address classes
+
+The policy covers IPv4/IPv6 classes including:
+
+- loopback;
+- RFC1918/private networks;
+- link local;
+- cloud metadata style destinations;
+- shared carrier grade/private ranges;
+- documentation/benchmark/reserved ranges;
+- multicast;
+- mapped IPv4 in IPv6;
+- NAT64/translation ranges;
+- selected transition/tunnel ranges;
+- unique local IPv6;
+- site local/reserved IPv6.
+
+See `src/net.ts` and `docs/NETWORK_SECURITY.md` for the concrete policy.
+
+### Redirects
+
+Redirect following is manual. Every redirect target is parsed and validated before the next outbound request.
+
+### Resource bounds
+
+The core transport enforces configurable:
+
+```text
+request timeout
+maximum response bytes
+maximum redirects
+```
+
+The crawler separately enforces page/depth/concurrency bounds.
+
+## Character decoding
+
+v1.2 adds charset aware decoding using response charset, BOM and HTML charset hints with UTF 8 fallback.
+
+This reduces evidence corruption on non UTF 8 pages. It is a correctness control rather than a substitute for sanitization when downstream applications render extracted text.
+
+## Browser rendering trust boundary
+
+Browser rendering is **not** the same network boundary as the guarded Undici transport.
+
+v1.2 adds browser defense in depth:
+
+- initial URL validation;
+- request interception;
+- public destination checks;
+- bounded subresource request count;
+- service worker blocking;
+- download blocking;
+- optional media/font blocking;
+- bounded same origin runtime JSON capture.
+
+However, browser automation has additional protocol and networking behavior. Security sensitive operators should place Playwright or any remote renderer inside a separate container/VM/network segment with infrastructure egress rules that deny private/internal destinations independently of application code.
+
+Application level browser filtering must not be described as equivalent to network isolation.
+
+## Runtime API evidence
+
+When enabled, v1.2 can collect bounded same origin JSON responses produced by public page XHR/fetch activity.
+
+This feature is intended for public page evidence only. It must not be used to:
+
+- capture authenticated/private API responses without authorization;
+- reuse user session cookies to collect protected data;
+- probe internal services;
+- bypass access controls.
+
+The public Hugging Face deployment does not enable unrestricted Playwright browser collection by default.
+
+## Provenance integrity
+
+The provenance engine stores SHA 256 hashes for document representations and observations.
+
+These hashes allow a consumer to identify the exact representation/observation processed by the agent. They do **not** prove that a website claim is factually true.
+
+The distinction is important:
+
+```text
+integrity of observed evidence ≠ truth of external claim
+```
+
+## External research
+
+External search/index providers are a separate trust and cost boundary.
+
+Recommendations:
+
+- store provider keys only as secrets/environment variables;
+- set quotas;
+- do not log keys;
+- restrict configured search endpoints;
+- fetch/verify candidate sources before treating them as corroboration;
+- keep first party extraction confidence separate from external corroboration.
+
+## Optional AI provider
+
+AI reasoning is optional.
+
+Do not send secrets, OAuth tokens or private application data to model providers unless the operator explicitly intends and is authorized to do so.
+
+AI output is not evidence. It is a reasoning layer over the collected evidence.
+
+## API authentication
+
+Self hosted HTTP deployments can require:
+
+```env
+URL_AGENT_API_TOKEN=strong-secret
+```
+
+Use TLS in front of internet exposed deployments.
+
+Do not commit tokens or API keys.
+
+## Hosted Hugging Face OAuth
+
+The official Space uses Hugging Face OAuth for web analysis/report access.
+
+Hosted demo rules are anti abuse controls, not an authorization model for target websites.
+
+The project owner account is intentionally exempt from the public web demo quota.
+
+## MCP security
+
+Remote MCP gives clients the ability to request public network analysis through the agent.
+
+Controls include:
+
+- allowlisted hosted tools;
+- URL validation before hosted tool execution;
+- Origin checks on the hosted endpoint;
+- protocol/routing validation;
+- account/IP based demo quotas;
+- bounded tool schemas;
+- bounded crawl/network settings.
+
+The public hosted MCP policy should not be interpreted as a replacement for authentication on a private enterprise deployment.
+
+## MCP Tasks
+
+Task records can contain analysis output. In production:
+
+- use an appropriate persistence backend;
+- define TTL/retention;
+- protect persistence storage;
+- avoid logging task payloads with secrets;
+- ensure task retrieval is scoped correctly if adding multi tenant authentication.
+
+The open source default is a building block, not a complete enterprise multi tenant authorization layer.
+
+## Reports
+
+Hosted reports are short lived and scoped to the signed in user that created them.
+
+Report routes are marked `noindex`/`nofollow`/`noarchive`.
+
+Operators with stronger confidentiality requirements should move report storage to durable access controlled storage and add explicit expiration/deletion policies.
+
+## Logging
+
+Avoid logging:
+
+- OAuth access tokens;
+- API tokens;
+- search provider keys;
+- AI provider keys;
+- full Authorization/Cookie headers;
+- protected page content;
+- unbounded raw third party HTML.
+
+Prefer hashes, bounded excerpts and structured diagnostics.
+
+## Dependency security
+
+Production operators should:
+
+```bash
+npm audit
+npm outdated
+npm test
+```
+
+before releases and after meaningful dependency upgrades.
+
+Optional dependencies such as Playwright, PostgreSQL and Redis should also be patched independently.
+
+## Reporting vulnerabilities
+
+Do not disclose an exploitable security issue publicly before maintainers have had a reasonable opportunity to investigate and patch it.
+
+Use GitHub's private vulnerability reporting/security advisory path when available for the repository.
+
+Include:
+
+1. affected version/commit;
+2. reproduction steps;
+3. expected vs actual behavior;
+4. security impact;
+5. environment details;
+6. suggested mitigation if known.
+
+## Release security checklist
+
+Before releasing:
+
+```text
+npm run typecheck
+npm test
+```
+
+and verify:
+
+- SSRF regression tests pass;
+- mixed DNS answer rejection passes;
+- redirect revalidation remains active;
+- no secrets are committed;
+- hosted demo allowlist/quota is correct;
+- browser rendering defaults match the documented trust model;
+- Hugging Face build reaches RUNNING;
+- `/health` reports the expected version.
+
+See `VERSIONING.md` for the release policy.
