@@ -1,7 +1,8 @@
 import { safeFetch } from "./net.js";
 import { parsePage, pagePriority, classifyImportant } from "./extract.js";
+import { analyzeRepresentation } from "./provenance.js";
 import { renderUrl, shouldRender } from "./render.js";
-import type { CrawlPolicy, CrawlResult, PageSignal } from "./types.js";
+import type { CrawlPolicy, CrawlResult, PageRepresentation, PageSignal } from "./types.js";
 
 function envInt(name: string, fallback: number, min: number, max: number): number {
   const n = Number(process.env[name] || fallback);
@@ -71,27 +72,53 @@ async function fetchSitemapUrls(url: string, seen = new Set<string>(), depth = 0
   } catch { return []; }
 }
 
-async function fetchPage(url: string): Promise<PageSignal> {
-  const fetched = await safeFetch(url);
-  let page = parsePage(fetched.text, fetched.url, fetched.status, fetched);
-  if (shouldRender(fetched.text, page.textSample.length)) {
-    const rendered = await renderUrl(fetched.url);
-    if (rendered) {
-      page = parsePage(rendered.html, rendered.url, fetched.status, fetched);
-      page.rendered = true;
-    }
+function requestVariant(): PageRepresentation["requestVariant"] {
+  return {
+    language: (process.env.URL_AGENT_ACCEPT_LANGUAGE || "en,*;q=0.5").split(",")[0],
+    userAgentClass: "url-intelligence-agent",
+    region: process.env.URL_AGENT_REQUEST_REGION || undefined,
+    device: "server"
+  };
+}
+
+async function collectPage(url: string, renderMode: CrawlPolicy["renderMode"]): Promise<PageSignal> {
+  const fetched = await safeFetch(url, { headers: { "accept-language": process.env.URL_AGENT_ACCEPT_LANGUAGE || "en,*;q=0.5" } });
+  const sourceParsed = parsePage(fetched.text, fetched.url, fetched.status, fetched);
+  const render = shouldRender(fetched.text, sourceParsed.textSample.length, renderMode) ? await renderUrl(fetched.url, { captureNetwork: true }) : undefined;
+  const finalUrl = render?.url || fetched.url;
+  const includeHtml = process.env.URL_AGENT_INCLUDE_RAW_REPRESENTATIONS === "true";
+  const sourceRepresentation = analyzeRepresentation(fetched.text, fetched.url, "source_html", {
+    finalUrl,
+    observedAt: new Date().toISOString(),
+    headers: fetched.trace.headers,
+    requestVariant: requestVariant(),
+    includeHtml
+  });
+  let page = sourceParsed;
+  const representations: PageRepresentation[] = [sourceRepresentation];
+  if (render) {
+    page = parsePage(render.html, render.url, fetched.status, fetched);
+    page.rendered = true;
+    representations.push(analyzeRepresentation(render.html, render.url, "rendered_dom", {
+      finalUrl: render.url,
+      observedAt: new Date().toISOString(),
+      requestVariant: { ...requestVariant(), device: "chromium" },
+      networkEvidence: render.networkEvidence,
+      includeHtml
+    }));
   }
+  page.representations = representations;
+  page.observations = [...new Map(representations.flatMap(rep => rep.observations).map(observation => [observation.id, observation])).values()];
   return page;
+}
+
+async function fetchPage(url: string, renderMode: CrawlPolicy["renderMode"]): Promise<PageSignal> {
+  return collectPage(url, renderMode);
 }
 
 export async function crawlSite(rawUrl: string, overrides: Partial<CrawlPolicy> = {}): Promise<CrawlResult> {
   const policy = defaultCrawlPolicy(overrides);
-  const rootFetched = await safeFetch(rawUrl);
-  let root = parsePage(rootFetched.text, rootFetched.url, rootFetched.status, rootFetched);
-  if (shouldRender(rootFetched.text, root.textSample.length)) {
-    const rendered = await renderUrl(rootFetched.url);
-    if (rendered) { root = parsePage(rendered.html, rendered.url, rootFetched.status, rootFetched); root.rendered = true; }
-  }
+  const root = await collectPage(rawUrl, policy.renderMode);
   const origin = new URL(root.url).origin;
   const robotsUrl = new URL("/robots.txt", origin).toString();
   let robotsText = "";
@@ -123,7 +150,7 @@ export async function crawlSite(rawUrl: string, overrides: Partial<CrawlPolicy> 
       if (item.depth > policy.maxDepth || visited.has(item.url)) return;
       visited.add(item.url);
       try {
-        const page = await fetchPage(item.url);
+        const page = await fetchPage(item.url, policy.renderMode);
         pages.push(page);
         const kind = classifyImportant(page.url);
         if (kind && !importantPages[kind]) importantPages[kind] = page.url;
