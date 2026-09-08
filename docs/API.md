@@ -1,409 +1,290 @@
 # URL Intelligence Agent — HTTP API Guide
 
-URL Intelligence Agent includes a lightweight HTTP JSON API for calling the same action registry used by the CLI and MCP server.
+URL Intelligence Agent v1.2.0 exposes the same intelligence engine used by the CLI and MCP server through a lightweight HTTP service.
 
-Repository: https://github.com/vpicciuolo/url-intelligence-agent  
-HORNO: https://horno.net
-
----
-
-# Start the API
-
-From a built repository:
+## Start the API
 
 ```bash
+npm install
 npm run build
-node dist/src/cli.js serve --host 127.0.0.1 --port 8787
-```
-
-Or:
-
-```bash
 npm run serve
 ```
 
-For container deployment:
-
-```bash
-docker compose up -d --build
-```
-
----
-
-# Base URL
-
-Local default:
+Default local endpoint:
 
 ```text
 http://127.0.0.1:8787
 ```
 
-The server supports:
-
-- `GET /health`
-- `GET /actions`
-- `GET /investigate?url=...`
-- `POST /investigate`
-- `GET /action/:name?...`
-- `POST /action/:name`
-
-Responses are JSON and include URL Intelligence Agent / HORNO project attribution.
-
----
-
-# Authentication
-
-By default, `URL_AGENT_API_TOKEN` can be empty for local development.
-
-For production, set:
+Environment overrides:
 
 ```env
-URL_AGENT_API_TOKEN=replace-with-a-long-random-token
+HOST=0.0.0.0
+PORT=8787
 ```
 
-Then send:
+## Main endpoints
 
-```http
-Authorization: Bearer replace-with-a-long-random-token
+```text
+GET  /health
+GET  /actions
+GET  /search-providers
+GET  /me
+POST /investigate
+POST /action/:name
+POST /mcp
+GET  /.well-known/mcp.json
+GET  /llms.txt
+GET  /robots.txt
+GET  /sitemap.xml
+GET  /report/:id?format=pdf|json|md|html
 ```
 
-Example:
+The Hugging Face Space adds OAuth based hosted-demo controls around analysis/report endpoints.
 
-```bash
-curl \
-  -H "Authorization: Bearer replace-with-a-long-random-token" \
-  http://127.0.0.1:8787/health
-```
-
-Do not expose a tokenless service to an untrusted network.
-
----
-
-# Rate limiting
-
-Configure requests per client IP per minute:
-
-```env
-URL_AGENT_API_RATE_LIMIT=60
-```
-
-When exceeded, the API returns HTTP `429`.
-
----
-
-# CORS
-
-Optional:
-
-```env
-URL_AGENT_CORS_ORIGIN=https://your-frontend.example
-```
-
-When configured, the server responds with CORS headers for the supplied origin and supports `GET`, `POST` and `OPTIONS`.
-
----
-
-# Health
+## Health
 
 ```bash
 curl http://127.0.0.1:8787/health
 ```
 
-Example shape:
+The response includes runtime status, action count, Remote MCP metadata and release attribution. A correct v1.2.0 deployment must report version `1.2.0` through the attribution object.
 
-```json
-{
-  "ok": true,
-  "uptimeSeconds": 123,
-  "actions": 30,
-  "attribution": {
-    "project": "URL Intelligence Agent"
-  }
-}
-```
-
-The action count is dynamic and may change as plugins/actions are registered.
-
----
-
-# List actions
+## Action catalog
 
 ```bash
 curl http://127.0.0.1:8787/actions
 ```
 
-Authenticated:
+The open source runtime exposes 36 actions. The hosted demo exposes a smaller allowlisted subset.
+
+## Full investigation
 
 ```bash
-curl \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+curl -X POST http://127.0.0.1:8787/investigate \
+  -H 'content-type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "externalResearch": false
+  }'
+```
+
+Important v1.2 fields in the returned result:
+
+```text
+result.provenance.schemaVersion
+result.provenance.representations
+result.provenance.observations
+result.provenance.claims
+result.provenance.summary
+```
+
+Existing flattened fields such as `entity`, `seo`, `security`, `trust`, `pages`, `technologies`, `brand`, `rag`, `contradictions` and `warnings` remain available for v1.x compatibility.
+
+## Inspect provenance
+
+```bash
+curl -X POST http://127.0.0.1:8787/action/inspect_provenance \
+  -H 'content-type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "predicate": "pages_indexed",
+    "limit": 100,
+    "format": "json"
+  }'
+```
+
+Set `format` to `prov` to include the interoperable W3C PROV shaped export.
+
+Typical claim state:
+
+```json
+{
+  "status": "drift",
+  "flags": [
+    "representation_drift",
+    "precision_difference",
+    "freshness_divergence",
+    "stale_metadata_suspected"
+  ]
+}
+```
+
+## Verify a claim
+
+```bash
+curl -X POST http://127.0.0.1:8787/action/verify_claim \
+  -H 'content-type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "predicate": "pages_indexed",
+    "value": 100502
+  }'
+```
+
+Verification status can be:
+
+```text
+supported
+compatible
+contradicted
+not_found
+```
+
+`compatible` is important when values are different representations of a logically compatible statement such as `80,000+` and `100,502`.
+
+## Crawl controls
+
+Actions that accept crawl settings can receive:
+
+```json
+{
+  "url": "https://example.com",
+  "crawl": {
+    "maxPages": 30,
+    "maxDepth": 3,
+    "concurrency": 4,
+    "sameOrigin": true,
+    "obeyRobots": true,
+    "allowPatterns": [],
+    "denyPatterns": [],
+    "renderMode": "auto"
+  }
+}
+```
+
+`renderMode`:
+
+```text
+off
+auto
+always
+playwright
+```
+
+Browser rendering requires a configured remote renderer or Playwright installation and should be deployed with an appropriate network isolation model.
+
+## Search providers
+
+```bash
+curl http://127.0.0.1:8787/search-providers
+```
+
+External corroboration can use configured providers including Google CSE, SearXNG, Brave Search, Serper, Tavily or the built in fallback when available.
+
+External corroboration remains separate from first party extraction/provenance confidence.
+
+## API token
+
+For self hosted deployments:
+
+```env
+URL_AGENT_API_TOKEN=replace-with-a-strong-secret
+```
+
+Then call:
+
+```bash
+curl -H 'authorization: Bearer replace-with-a-strong-secret' \
   http://127.0.0.1:8787/actions
 ```
 
-This is the best way to inspect the live action registry of a running instance.
+Do not commit production tokens.
 
----
+## CORS
 
-# Investigate a URL — GET
+Optional:
 
-```bash
-curl \
-  -G http://127.0.0.1:8787/investigate \
-  --data-urlencode "url=https://example.com"
+```env
+URL_AGENT_CORS_ORIGIN=https://your-app.example
 ```
 
-With auth:
+If not needed, leave CORS disabled.
 
-```bash
-curl \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -G http://127.0.0.1:8787/investigate \
-  --data-urlencode "url=https://example.com"
+## Core rate limit
+
+The HTTP server has a basic request bucket controlled by:
+
+```env
+URL_AGENT_API_RATE_LIMIT=120
 ```
 
----
+The Hugging Face hosted demo additionally applies account/IP based anti abuse policies that are intentionally separate from the self hosted API.
 
-# Investigate a URL — POST
+## Hosted Hugging Face authentication
 
-```bash
-curl \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  http://127.0.0.1:8787/investigate \
-  -d '{
-    "url": "https://example.com",
-    "profile": "full-intelligence"
-  }'
-```
+The official Space uses Hugging Face OAuth for web analysis/report access.
 
----
-
-# Call any action
-
-Endpoint:
+Hosted web policy:
 
 ```text
-/action/:name
+1 analysis request per signed in account / 24h
+owner account exempt
 ```
 
-## SEO audit
+The Remote MCP demo uses its own bounded policy.
 
-```bash
-curl \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  http://127.0.0.1:8787/action/audit_seo \
-  -d '{"url":"https://example.com"}'
-```
+Self hosted deployments are not subject to the Hugging Face demo allowance unless you reproduce it intentionally.
 
-## Technology detection
+## Reports
 
-```bash
-curl \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  http://127.0.0.1:8787/action/detect_technologies \
-  -d '{"url":"https://example.com"}'
-```
-
-## Domain intelligence
-
-```bash
-curl \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  http://127.0.0.1:8787/action/domain_intelligence \
-  -d '{"url":"https://example.com"}'
-```
-
-## Generate a listing
-
-```bash
-curl \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  http://127.0.0.1:8787/action/generate_listing \
-  -d '{"url":"https://example.com"}'
-```
-
-## Compare two URLs
-
-```bash
-curl \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  http://127.0.0.1:8787/action/compare_urls \
-  -d '{
-    "url":"https://example.com",
-    "url2":"https://example.org"
-  }'
-```
-
-## Batch investigation
-
-```bash
-curl \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  http://127.0.0.1:8787/action/batch_investigate \
-  -d '{
-    "urls":[
-      "https://example.com",
-      "https://example.org"
-    ],
-    "concurrency":2
-  }'
-```
-
----
-
-# Common action names
-
-The runtime action registry includes actions such as:
+Hosted signed in analyses create a short lived report record with export links for:
 
 ```text
-investigate_url
-probe_url
-domain_intelligence
-map_site
-deep_crawl
-render_page
-resolve_entity
-find_social_profiles
-find_contacts
-detect_technologies
-brand_intelligence
-audit_seo
-audit_security
-audit_quality
-audit_trust
-entity_graph
-competitor_intelligence
-structured_data
-api_discovery
-compliance_signals
-people_team
-commerce_intelligence
-content_freshness
-link_intelligence
-check_links
-generate_listing
-rag_export
-knowledge_export
-compare_urls
-batch_investigate
-create_snapshot
-diff_snapshot
-ai_reason
-list_plugins
+PDF
+JSON
+Markdown
+HTML
 ```
 
-Always use `/actions` to inspect the exact registry on your running build.
+The JSON export preserves the complete result including provenance.
 
----
+Reports include URL Intelligence Agent, repository, Hugging Face, creator and HRN Innovation Technologies Ltd attribution.
 
-# Request body size
+## Remote MCP
 
-The built-in server bounds JSON request bodies to approximately 1 MB by default. Large batch jobs should be split into reasonable chunks rather than sending extremely large payloads.
+The same HTTP process serves Remote MCP at:
 
----
-
-# Error behavior
-
-Common statuses:
-
-| Status | Meaning |
-| --- | --- |
-| `200` | Successful action |
-| `204` | CORS preflight success |
-| `400` | Invalid input/action execution error |
-| `401` | Missing/incorrect API bearer token |
-| `404` | Unknown endpoint |
-| `429` | Rate limit exceeded |
-
-Errors still include project attribution metadata.
-
----
-
-# JavaScript example
-
-```js
-const response = await fetch("http://127.0.0.1:8787/action/audit_seo", {
-  method: "POST",
-  headers: {
-    "content-type": "application/json",
-    "authorization": `Bearer ${process.env.URL_AGENT_API_TOKEN}`
-  },
-  body: JSON.stringify({
-    url: "https://example.com"
-  })
-});
-
-if (!response.ok) {
-  throw new Error(`URL Intelligence Agent returned ${response.status}`);
-}
-
-const data = await response.json();
-console.log(data.result);
+```text
+/mcp
 ```
 
----
+Discovery:
 
-# Python example
-
-```python
-import os
-import requests
-
-response = requests.post(
-    "http://127.0.0.1:8787/action/investigate_url",
-    headers={
-        "Authorization": f"Bearer {os.environ['URL_AGENT_API_TOKEN']}"
-    },
-    json={"url": "https://example.com"},
-    timeout=120,
-)
-
-response.raise_for_status()
-print(response.json()["result"])
+```text
+/.well-known/mcp.json
 ```
 
----
+v1.2.0 supports MCP protocol revisions:
 
-# Production checklist
+```text
+2026-07-28
+2025-11-25
+2025-06-18
+2025-03-26
+```
 
-Before exposing the API:
+See `docs/MCP.md` and `docs/REMOTE_MCP.md`.
 
-- set `URL_AGENT_API_TOKEN`
-- set an appropriate `URL_AGENT_API_RATE_LIMIT`
-- bind behind a reverse proxy or load balancer
-- terminate HTTPS/TLS at the edge
-- restrict inbound firewall rules
-- keep crawl/page/depth/concurrency limits bounded
-- monitor CPU/memory/outbound traffic
-- keep optional AI/render/database secrets outside source control
-- persist `.url-agent` only if required
-- use a private network for Redis/PostgreSQL
+## Error behavior
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for a full deployment guide.
+Typical status codes:
 
----
+```text
+200 successful request or JSON-RPC response
+400 invalid input / unsupported option
+401 authentication required
+403 action not available on hosted demo / invalid MCP origin
+404 route, report or MCP session/task not found
+429 hosted or API rate limit reached
+```
 
-## Support the open-source project
+Some MCP protocol errors are represented inside JSON-RPC responses with HTTP 200 as required by the protocol path.
 
-Support continued development through the Stripe-enabled support page:
+## Security
 
-https://hrn.ae/githubsupport
+All public URL collection through the core transport passes the guarded network boundary documented in `docs/NETWORK_SECURITY.md`.
 
----
+The API does not intentionally bypass authentication, CAPTCHAs or access controls on target sites.
 
-Created by **Vincenzo Picciuolo**  
-**HRN Innovation Technologies Ltd**  
-HORNO ecosystem: https://horno.net
+Browser rendering is a separate trust boundary. Do not equate application level browser request filtering with infrastructure egress isolation.
