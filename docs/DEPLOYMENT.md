@@ -1,351 +1,166 @@
 # URL Intelligence Agent — Deployment Guide
 
-This guide covers local deployment, Docker, Docker Compose, a persistent Linux service and a reverse-proxied HTTP API.
+This guide covers URL Intelligence Agent v1.2.0.
 
-Repository: https://github.com/vpicciuolo/url-intelligence-agent  
-HORNO Network: https://horno.net
+Application version: **1.2.0**  
+Provenance schema: **1.0**
 
----
+## Deployment modes
 
-# 1. Local Node deployment
+URL Intelligence Agent can run as:
 
-Requirements:
+1. local CLI/library;
+2. stdio MCP server;
+3. HTTP API + Remote MCP server;
+4. Docker service;
+5. Hugging Face Docker Space;
+6. distributed service with Redis/PostgreSQL adapters;
+7. optional browser rendering worker/remote renderer.
 
-- Node.js 18.17+
-- npm
+## Minimum runtime
+
+```text
+Node.js >= 18.17
+```
+
+Production containers in the repository use Node.js 22.
+
+## Local service
 
 ```bash
 git clone https://github.com/vpicciuolo/url-intelligence-agent.git
 cd url-intelligence-agent
 npm install
-cp .env.example .env
 npm run build
+npm test
+npm run serve
 ```
 
-Test:
-
-```bash
-node dist/src/cli.js investigate https://example.com
-```
-
-Start the API locally:
-
-```bash
-node dist/src/cli.js serve --host 127.0.0.1 --port 8787
-```
-
-Health check:
-
-```bash
-curl http://127.0.0.1:8787/health
-```
-
----
-
-# 2. Production API configuration
-
-For any API exposed outside localhost, configure a bearer token:
-
-```env
-URL_AGENT_API_TOKEN=replace-with-a-long-random-token
-URL_AGENT_API_RATE_LIMIT=60
-URL_AGENT_CORS_ORIGIN=https://your-frontend.example
-```
-
-Start on all interfaces only when you have a firewall/reverse proxy strategy:
-
-```bash
-node dist/src/cli.js serve --host 0.0.0.0 --port 8787
-```
-
-Authenticated request:
-
-```bash
-curl \
-  -H "Authorization: Bearer replace-with-a-long-random-token" \
-  "http://127.0.0.1:8787/investigate?url=https://example.com"
-```
-
-Recommended production controls:
-
-- TLS termination at a trusted reverse proxy/load balancer
-- `URL_AGENT_API_TOKEN`
-- conservative rate limits
-- firewall rules
-- outbound/egress rules denying private, loopback and link-local destinations as defense in depth
-- explicit infrastructure blocking of cloud metadata endpoints/control planes
-- process/container restart policy
-- bounded page/depth/concurrency settings
-- monitored disk usage for `.url-agent`
-- never expose Redis/PostgreSQL directly to the public Internet
-
-Version 1.1.0 adds connection-time DNS validation to the application-layer SSRF boundary. Infrastructure egress controls are still strongly recommended because network isolation is independent of application correctness.
-
-Detailed network model: [NETWORK_SECURITY.md](NETWORK_SECURITY.md).
-
----
-
-# 3. Docker — CLI
-
-Build:
-
-```bash
-docker build -t url-intelligence-agent:1.1.0 .
-```
-
-Run an investigation:
-
-```bash
-docker run --rm \
-  url-intelligence-agent:1.1.0 \
-  investigate https://example.com
-```
-
-Pass environment variables:
-
-```bash
-docker run --rm \
-  --env-file .env \
-  url-intelligence-agent:1.1.0 \
-  investigate https://example.com
-```
-
-Persist `.url-agent` data:
-
-```bash
-docker volume create url_agent_data
-
-docker run --rm \
-  --env-file .env \
-  -v url_agent_data:/app/.url-agent \
-  url-intelligence-agent:1.1.0 \
-  snapshot https://example.com
-```
-
----
-
-# 4. Docker — HTTP API
-
-```bash
-docker run -d \
-  --name url-intelligence-agent \
-  --restart unless-stopped \
-  --env-file .env \
-  -p 8787:8787 \
-  -v url_agent_data:/app/.url-agent \
-  url-intelligence-agent:1.1.0 \
-  serve --host 0.0.0.0 --port 8787
-```
-
-Check logs:
-
-```bash
-docker logs -f url-intelligence-agent
-```
-
-Health:
-
-```bash
-curl http://127.0.0.1:8787/health
-```
-
----
-
-# 5. Docker Compose
-
-The repository ships with `docker-compose.yml`.
-
-Create `.env` first:
-
-```bash
-cp .env.example .env
-```
-
-At minimum, set an API token if the API will be reachable by other machines:
-
-```env
-URL_AGENT_API_TOKEN=replace-with-a-long-random-token
-```
-
-Start the core API:
-
-```bash
-docker compose up -d --build
-```
-
-Inspect:
-
-```bash
-docker compose ps
-docker compose logs -f url-agent
-```
-
-Stop:
-
-```bash
-docker compose down
-```
-
-The included stack also defines optional Redis and PostgreSQL services using Compose profiles.
-
-Redis profile:
-
-```bash
-docker compose --profile redis up -d --build
-```
-
-PostgreSQL profile:
-
-```bash
-docker compose --profile postgres up -d --build
-```
-
-Both:
-
-```bash
-docker compose --profile redis --profile postgres up -d --build
-```
-
-When enabling adapters, configure the corresponding URLs and ensure the required optional Node peer packages are available in your runtime image/environment.
-
----
-
-# 6. Systemd service on Linux
-
-Example deployment path:
+Default:
 
 ```text
-/opt/url-intelligence-agent
+http://127.0.0.1:8787
 ```
 
-Clone/build:
+## Docker
 
 ```bash
-sudo mkdir -p /opt/url-intelligence-agent
-sudo chown "$USER":"$USER" /opt/url-intelligence-agent
-git clone https://github.com/vpicciuolo/url-intelligence-agent.git /opt/url-intelligence-agent
-cd /opt/url-intelligence-agent
-npm install
-cp .env.example .env
-npm run build
+docker build -t url-intelligence-agent .
+docker run --rm -p 8787:8787 \
+  -e HOST=0.0.0.0 \
+  -e PORT=8787 \
+  url-intelligence-agent
 ```
 
-Example `/etc/systemd/system/url-intelligence-agent.service`:
-
-```ini
-[Unit]
-Description=URL Intelligence Agent API
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-WorkingDirectory=/opt/url-intelligence-agent
-EnvironmentFile=/opt/url-intelligence-agent/.env
-ExecStart=/usr/bin/node /opt/url-intelligence-agent/dist/src/cli.js serve --host 127.0.0.1 --port 8787
-Restart=always
-RestartSec=5
-User=urlagent
-Group=urlagent
-NoNewPrivileges=true
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Create a dedicated service account in production and ensure it owns only the directories it requires.
-
-Activate:
+Use an API token for an internet exposed self hosted service:
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now url-intelligence-agent
-sudo systemctl status url-intelligence-agent
+docker run --rm -p 8787:8787 \
+  -e HOST=0.0.0.0 \
+  -e PORT=8787 \
+  -e URL_AGENT_API_TOKEN='replace-with-a-strong-secret' \
+  url-intelligence-agent
 ```
 
-Logs:
+## Core collection configuration
 
-```bash
-sudo journalctl -u url-intelligence-agent -f
-```
-
----
-
-# 7. Nginx reverse proxy
-
-Keep the Node service on `127.0.0.1:8787` and expose it through HTTPS.
-
-Example server block:
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name intelligence.example.com;
-
-    # Configure your normal TLS certificate directives here.
-
-    location / {
-        proxy_pass http://127.0.0.1:8787;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_connect_timeout 15s;
-        proxy_read_timeout 120s;
-        proxy_send_timeout 120s;
-    }
-}
-```
-
-Keep application authentication enabled even when the reverse proxy is protected.
-
----
-
-# 8. Environment configuration
-
-Recommended baseline:
+Recommended starting values:
 
 ```env
-URL_AGENT_USER_AGENT="url-intelligence-agent/1.1.0 (+https://github.com/vpicciuolo/url-intelligence-agent; https://horno.net)"
 URL_AGENT_TIMEOUT_MS=10000
 URL_AGENT_MAX_BYTES=3000000
 URL_AGENT_MAX_REDIRECTS=6
 URL_AGENT_MAX_PAGES=30
 URL_AGENT_MAX_DEPTH=3
 URL_AGENT_CONCURRENCY=4
-URL_AGENT_PROFILE=full-intelligence
 URL_AGENT_SAME_ORIGIN=true
 URL_AGENT_OBEY_ROBOTS=true
-URL_AGENT_DENY_PATTERNS=logout,signout,delete,unsubscribe,cart,checkout
 URL_AGENT_CACHE=memory
 URL_AGENT_CACHE_TTL_MS=300000
-URL_AGENT_CACHE_DIR=.url-agent/cache
-URL_AGENT_DATA_DIR=.url-agent/data
-URL_AGENT_WORKER_CONCURRENCY=4
 URL_AGENT_RENDER_MODE=off
-URL_AGENT_API_TOKEN=replace-with-a-long-random-token
-URL_AGENT_API_RATE_LIMIT=60
 URL_AGENT_AI_AUTO=false
 ```
 
-Do not blindly maximize crawl limits in production. Larger crawls increase latency, outbound traffic and memory usage.
+Keep crawl and response bounds conservative on public services.
 
-The connect-time DNS guard is enabled by the code path and does not require a feature flag. Do not disable or bypass `safeFetch()` for code paths that consume user-controlled/discovered public URLs.
+## v1.2 provenance behavior
 
----
+No additional service is required for claim provenance.
 
-# 9. Rendering in production
+The deterministic provenance engine uses the collected HTML/headers to generate:
 
-## Playwright on a server
+```text
+PageRepresentation
+EvidenceObservation
+ResolvedClaim
+ProvenanceReport
+```
 
-Install:
+`parse5` is a normal runtime dependency and is installed automatically.
+
+Source HTML and rendered DOM are kept as separate evidence representations when rendering is enabled.
+
+## Persistence
+
+By default the project uses local file persistence for persisted records and memory for the default cache.
+
+Relevant use cases in v1.2:
+
+- monitoring snapshots;
+- timestamped snapshot history;
+- MCP Tasks records;
+- optional durable hosted/demo state where configured.
+
+### File persistence
+
+```env
+URL_AGENT_DATA_DIR=/data/url-agent
+```
+
+Mount a durable volume if history/tasks must survive container replacement.
+
+### PostgreSQL
+
+```env
+DATABASE_URL=postgresql://user:pass@db:5432/url_agent
+```
+
+PostgreSQL is an optional peer dependency.
+
+### Redis / Valkey cache
+
+```env
+REDIS_URL=redis://redis:6379
+```
+
+or:
+
+```env
+VALKEY_URL=redis://valkey:6379
+```
+
+Redis is optional.
+
+## Browser rendering
+
+Rendering is **optional**.
+
+Modes:
+
+```text
+off
+auto
+always
+playwright
+```
+
+### Playwright
+
+Install when needed:
 
 ```bash
 npm install playwright
-npx playwright install --with-deps chromium
+npx playwright install chromium
 ```
 
 Then:
@@ -355,142 +170,229 @@ URL_AGENT_RENDER_MODE=auto
 URL_AGENT_RENDER_TIMEOUT_MS=30000
 ```
 
-Browser automation adds significant runtime weight and is also a **separate network security boundary**. Chromium performs its own DNS lookups and can request scripts, images, frames, XHR/fetch endpoints and other subresources. The Undici `safeFetch()` connect-time DNS protection does not automatically intercept those browser-originated connections.
+v1.2 adds application level browser defenses including destination checks, bounded requests, service worker/download blocking and bounded same origin runtime JSON capture.
 
-If browser rendering is enabled in production, run it in an isolated container/process and use firewall/VPC/container egress rules to deny private, loopback, link-local and cloud metadata destinations. If you do not need JavaScript rendering, keep rendering off.
+### Important browser security boundary
 
-## Remote rendering service
+Playwright/browser networking does not use the same connection path as the guarded Undici collector. Application level request interception is defense in depth, not a substitute for infrastructure egress isolation.
+
+For security sensitive deployments use a separate renderer container/VM with network policy that blocks private, link local, metadata and internal service ranges at the infrastructure layer.
+
+A recommended topology:
+
+```text
+Internet client
+    │
+    ▼
+URL Intelligence API
+    │
+    ├─ guarded HTTP collector → public internet
+    │
+    └─ renderer service
+          │
+          └─ restricted egress network → public internet only
+```
+
+### Remote renderer
+
+A renderer can be configured instead of local Playwright:
 
 ```env
-URL_AGENT_RENDER_MODE=auto
 URL_AGENT_RENDER_ENDPOINT=https://renderer.example.com/render
-URL_AGENT_RENDER_API_KEY=your-key
-URL_AGENT_RENDER_TIMEOUT_MS=30000
+URL_AGENT_RENDER_API_KEY=replace-me
 ```
 
-Treat the remote renderer as a separate trusted service. It should apply equivalent URL/egress protections and should not have unrestricted reachability to sensitive internal systems.
+Protect the renderer endpoint and apply equivalent network restrictions.
 
----
+## Runtime JSON evidence
 
-# 10. Redis/Valkey and PostgreSQL
+When browser runtime evidence is enabled, URL Intelligence Agent can collect bounded same origin JSON responses from XHR/fetch activity.
 
-These integrations are optional.
+This is designed for public page data only. It must not be configured to bypass authentication, steal session state or reach private services.
 
-Install adapters when your deployment needs them:
+## External research
 
-```bash
-npm install redis pg
-```
+Full investigation can perform public external corroboration.
 
-Example environment:
+Possible providers:
 
 ```env
-REDIS_URL=redis://redis:6379
-VALKEY_URL=
-DATABASE_URL=postgres://urlagent:strong-password@postgres:5432/urlagent
+URL_AGENT_SEARCH_ENDPOINT=https://your-searxng.example/search
+BRAVE_SEARCH_API_KEY=...
+SERPER_API_KEY=...
+TAVILY_API_KEY=...
+GOOGLE_CSE_API_KEY=...
+GOOGLE_CSE_CX=...
 ```
 
-Use private Docker networks/VPC networking and strong credentials. Do not publish database/cache ports unless you have a specific secured reason. The URL-agent public-facing runtime should not be able to reach unnecessary management interfaces even if an application-layer SSRF control were to regress.
+External research should be considered a separate network/cost boundary and should have its own quotas.
 
----
+## Optional AI reasoning
 
-# 11. Monitoring deployment
+AI is not required for provenance or the main deterministic intelligence path.
 
-The watch command is a long-running process:
-
-```bash
-url-agent watch https://example.com --interval 300000
-```
-
-Configure webhook delivery:
+Example OpenAI compatible configuration:
 
 ```env
-URL_AGENT_WEBHOOK_URL=https://your-app.example/hooks/url-intelligence
-URL_AGENT_WEBHOOK_SECRET=replace-with-a-secret
+AI_BASE_URL=https://api.openai.com/v1
+AI_API_KEY=...
+AI_MODEL=gpt-5-mini
+AI_MAX_TOKENS=3000
+AI_TEMPERATURE=0.1
 ```
 
-For reliable production monitoring, run each watcher under a supervisor, container orchestrator, scheduler or queue system appropriate to your infrastructure.
+Do not expose AI provider keys to clients.
 
----
+## Remote MCP
 
-# 12. Deployment verification checklist
+The HTTP server exposes:
 
-After deployment:
-
-```bash
-curl http://127.0.0.1:8787/health
+```text
+/mcp
+/.well-known/mcp.json
 ```
 
-Then verify actions:
+v1.2 supports:
 
-```bash
-curl \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  http://127.0.0.1:8787/actions
+```text
+2026-07-28
+2025-11-25
+2025-06-18
+2025-03-26
 ```
 
-Run a controlled public test URL:
+The current protocol path is stateless at the core while legacy session compatibility remains available.
 
-```bash
-curl \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  "http://127.0.0.1:8787/investigate?url=https://example.com"
+For multi instance deployments, use shared persistence when MCP Tasks must be retrievable after a request lands on another instance.
+
+## MCP Tasks persistence
+
+Modern clients can use the `io.modelcontextprotocol/tasks` extension for selected long running tools.
+
+TTL:
+
+```env
+URL_AGENT_MCP_TASK_TTL_MS=86400000
 ```
 
-Verify the SSRF boundary locally:
+A production multi instance deployment should use PostgreSQL or another shared persistence adapter rather than node local files for task records.
 
-```bash
-node dist/src/cli.js probe http://127.0.0.1
-node dist/src/cli.js probe http://169.254.169.254
+## Hugging Face Space
+
+The official Space is deployed from GitHub by `.github/workflows/deploy-huggingface.yml`.
+
+The workflow:
+
+1. checks out GitHub `main`;
+2. validates the Hugging Face token secret;
+3. prepares the Docker Space payload;
+4. reconstructs/validates approved brand assets;
+5. syncs the payload to `vpicciuolo/url-intelligence-agent` on Hugging Face;
+6. waits for the runtime to reach `RUNNING`;
+7. verifies live brand assets and UI content.
+
+The Space uses a Docker runtime on port 7860.
+
+### Required GitHub secret
+
+```text
+HF_TOKEN
 ```
 
-Both probes should be rejected without making a request to those destinations.
+The token used by the deployment workflow must have permission to push to the target Space. The connected read only OAuth session used by ChatGPT is not sufficient for direct repository writes to Hugging Face; the GitHub Actions deployment secret performs the publish step.
 
-Verify:
+### Hosted OAuth
 
-- health endpoint succeeds
-- authentication rejects incorrect tokens
-- rate limiting works for your expected traffic
-- logs do not expose secrets
-- `.url-agent` storage persists if required
-- public outbound DNS/HTTPS works
-- loopback/private/link-local destinations are rejected
-- renderer works only if intentionally enabled and isolated
-- firewall exposes only intended inbound ports
-- egress policy denies unnecessary internal/control-plane destinations
-- TLS is enabled at the edge
+The Space is configured for Hugging Face OAuth. Hosted web analysis/report access requires a signed in account.
 
----
+Hosted web policy:
 
-# Updating an existing deployment
-
-```bash
-cd /opt/url-intelligence-agent
-git pull
-npm install
-npm run build
-sudo systemctl restart url-intelligence-agent
+```text
+1 analysis request per signed in account every 24h
+owner account vpicciuolo exempt
 ```
 
-For Docker Compose:
+Remote MCP has a separate bounded anti abuse policy.
 
-```bash
-git pull
-docker compose up -d --build
+## Hugging Face Dataset deployment
+
+The benchmark dataset is deployed by `.github/workflows/deploy-huggingface-dataset.yml` when `hf-dataset/**` changes on `main`.
+
+v1.2 includes the provenance consistency fixture track and corresponding documentation/schema files.
+
+## Observability
+
+Useful endpoints:
+
+```text
+/health
+/actions
+/.well-known/mcp.json
+/search-providers
 ```
 
-When upgrading from v1.0.0 to v1.1.0, `npm install` installs the new required Undici runtime dependency. Node.js must be 18.17 or newer.
+For production, collect:
 
----
+- request duration and failures;
+- crawl page count;
+- external research provider failures;
+- render timeouts;
+- blocked URL/SSRF events;
+- provenance claim/observation counts;
+- conflict/drift counts;
+- task queue/TTL outcomes;
+- cache/persistence errors.
 
-## Support the open-source project
+Do not log secrets, OAuth tokens or raw private headers.
 
-Support continued development through the Stripe-enabled support page:
+## Release verification checklist
 
-https://hrn.ae/githubsupport
+A v1.2.0 deployment is not considered complete until:
 
----
+```text
+VERSION                 = 1.2.0
+package.json            = 1.2.0
+PROJECT.version         = 1.2.0
+npm run typecheck       passes
+npm test                passes on supported CI Node versions
+Hugging Face build      RUNNING
+/health                 reports v1.2.0
+/actions                contains inspect_provenance + verify_claim
+/.well-known/mcp.json   contains 2026-07-28
+hosted UI               renders Evidence Inspector
+benchmark dataset       contains provenance fixtures/docs
+```
 
-Created by **Vincenzo Picciuolo**  
-**HRN Innovation Technologies Ltd**  
-HORNO Network ecosystem: https://horno.net
+See `VERSIONING.md` for the formal release policy.
+
+## Reverse proxy
+
+If deploying behind Nginx/Caddy/Cloudflare, preserve normal request headers and configure the application carefully before trusting forwarded client IP headers for security/rate limiting.
+
+Only trust `X-Forwarded-For`/`X-Real-IP` from a proxy you control. Otherwise a client may spoof identity/rate-limit keys.
+
+## Security headers
+
+Add standard service response hardening at the reverse proxy or application layer where appropriate:
+
+```text
+HSTS
+Content-Security-Policy
+X-Content-Type-Options
+Referrer-Policy
+Permissions-Policy
+frame-ancestors / X-Frame-Options
+```
+
+Do not add a restrictive CSP without testing the hosted UI/OAuth flows.
+
+## Backups
+
+If snapshot history and MCP Tasks are business critical:
+
+- use durable/shared storage;
+- back up PostgreSQL or the configured persistence volume;
+- define a retention policy;
+- avoid retaining complete third party HTML longer than necessary.
+
+Provenance hashes and bounded evidence snippets are generally preferable to indefinite raw third party page archives unless the operator has a specific lawful retention requirement.
