@@ -30,7 +30,7 @@ export function createSnapshot(result: IntelligenceResult): Snapshot {
   };
 }
 
-function asJson(value: unknown): JsonValue { return JSON.parse(JSON.stringify(value)) as JsonValue; }
+function asJson(value: unknown): JsonValue { return value === undefined ? null : JSON.parse(JSON.stringify(value)) as JsonValue; }
 
 export function diffSnapshots(previous: Snapshot, current: Snapshot): SnapshotDiff {
   const changes: SnapshotDiff["changes"] = [];
