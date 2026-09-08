@@ -379,7 +379,7 @@
     const loading = document.getElementById("loading"); if (loading) loading.textContent = "Collecting source layers, resolving claim provenance, checking drift/conflicts and searching independent public evidence… this can take a little time.";
     const run = document.getElementById("runBtn"); if (run) run.textContent = "Run Analysis";
     const input = document.getElementById("urlInput"); if (input) input.placeholder = "https://example.com — paste any public URL";
-    const lead = document.querySelector(".hero .lead"); if (lead) lead.textContent = "Evidence-first URL and web intelligence for AI agents, developers and research workflows. v1.2 resolves field-level claim provenance across metadata, structured data and visible content, detects drift/conflicts, and separates target-side extraction from independent public corroboration.";
+    const lead = document.querySelector(".hero .lead"); if (lead) lead.textContent = "Evidence-first URL and web intelligence for AI agents, developers and research workflows. v1.3 adds Semantic Conflict Intelligence on top of claim-level provenance, distinguishing harmless wording variation from factual disagreement and logical contradiction while separating target-side extraction from independent public corroboration.";
     const faq = document.querySelector("#faq .faq");
     if (faq && !document.getElementById("faq-provenance")) {
       const provenance = document.createElement("details"); provenance.className = "faq-item"; provenance.id = "faq-provenance";
