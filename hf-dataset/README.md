@@ -331,3 +331,25 @@ TECHNICAL_REPORT.md
 ## License
 
 MIT. See `LICENSE`.
+
+<!-- BENCHMARK_RESULTS_START -->
+## Latest official URL Intelligence Agent results
+
+These results are generated automatically from the current open-source repository using the benchmark's machine-readable expectations.
+
+| Metric | Latest score |
+|---|---:|
+| Overall assertion score | **100.00%** |
+| Deterministic assertion score | **100.00%** |
+| Action accuracy | **100.00%** |
+| HTTP status-family accuracy | **100.00%** |
+| Redirect handling | **100.00%** |
+| Content-kind detection | **100.00%** |
+| Reject/block safety accuracy | **100.00%** |
+| Full-agent HTML completion | **100.00%** |
+
+Generated: `2026-09-08T09:16:11Z`  
+Git commit: `9cc99252e80234ac38448cf0a6a2d3aebb42c420`
+
+See `results/latest.md` for the group breakdown and failed-case list, and `results/latest.json` for machine-readable metrics.
+<!-- BENCHMARK_RESULTS_END -->
