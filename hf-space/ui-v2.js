@@ -3,6 +3,26 @@
   const pct = value => Number.isFinite(Number(value)) ? `${Math.round(Number(value) * 100)}%` : "—";
   const text = value => value === undefined || value === null || value === "" ? "—" : String(value);
   const isBacklink = source => Array.isArray(source?.discoveredBy) && source.discoveredBy.includes("backlink-to-target");
+  const titleCaseLocal = value => String(value || "").replace(/[_:-]+/g, " ").replace(/\b\w/g, x => x.toUpperCase());
+
+  function compactValue(value, max = 520) {
+    if (value === undefined || value === null) return "—";
+    let out;
+    if (typeof value === "string") out = value;
+    else {
+      try { out = JSON.stringify(value); } catch { out = String(value); }
+    }
+    out = String(out).replace(/\s+/g, " ").trim();
+    return out.length > max ? `${out.slice(0, max - 1)}…` : out;
+  }
+
+  function sourceLabel(observation) {
+    const source = observation?.source || {};
+    const layer = titleCaseLocal(source.layer || "unknown layer");
+    const representation = titleCaseLocal(source.representation || "unknown representation");
+    const property = source.property ? ` · ${source.property}` : "";
+    return `${layer} / ${representation}${property}`;
+  }
 
   function makeMetric(label, value, className = "") {
     const box = document.createElement("div"); box.className = "web-metric";
@@ -61,6 +81,94 @@
     return String(value);
   }
 
+  function observationEvidenceNode(observation, preferredId) {
+    const item = document.createElement("article");
+    item.className = `conflict-observation${observation?.id === preferredId ? " preferred" : ""}`;
+
+    const top = document.createElement("div"); top.className = "conflict-observation-top";
+    const layer = document.createElement("span"); layer.className = "web-source-pill"; layer.textContent = sourceLabel(observation); top.appendChild(layer);
+    if (observation?.id === preferredId) { const preferred = document.createElement("span"); preferred.className = "web-source-pill verified"; preferred.textContent = "Selected by resolver"; top.appendChild(preferred); }
+    const confidence = observation?.quality?.extractionConfidence;
+    if (Number.isFinite(Number(confidence))) { const p = document.createElement("span"); p.className = "web-source-pill"; p.textContent = `${Math.round(Number(confidence) * 100)}% extraction`; top.appendChild(p); }
+
+    const value = document.createElement("div"); value.className = "conflict-observation-value"; value.textContent = compactValue(observation?.rawValue);
+    item.append(top, value);
+
+    const source = observation?.source || {};
+    const details = [source.locator ? `Locator: ${source.locator}` : "", source.visibility ? `Visibility: ${titleCaseLocal(source.visibility)}` : "", observation?.temporal?.observedAt ? `Observed: ${observation.temporal.observedAt}` : ""].filter(Boolean);
+    if (details.length) { const meta = document.createElement("div"); meta.className = "web-source-meta"; meta.textContent = details.join(" · "); item.appendChild(meta); }
+
+    const normalized = observation?.normalizedValue;
+    if (normalized) { const normalizedBox = document.createElement("details"); normalizedBox.className = "conflict-normalized"; const summary = document.createElement("summary"); summary.textContent = "Normalized value"; const body = document.createElement("div"); body.textContent = compactValue(normalized, 420); normalizedBox.append(summary, body); item.appendChild(normalizedBox); }
+
+    const href = source.finalUrl || source.pageUrl;
+    if (href) { const link = document.createElement("a"); link.className = "web-source-url"; link.href = href; link.target = "_blank"; link.rel = "noreferrer"; link.textContent = `Open evidence page ↗  ${href}`; item.appendChild(link); }
+    return item;
+  }
+
+  function conflictExplorerCard(claim, observationMap, index) {
+    const card = document.createElement("article"); card.className = "conflict-card";
+    const obs = (claim.observationIds || []).map(id => observationMap.get(id)).filter(Boolean);
+    const severities = (claim.conflicts || []).map(c => c.severity).filter(Boolean);
+    const severity = severities.includes("high") ? "high" : severities.includes("medium") ? "medium" : severities.includes("low") ? "low" : "unknown";
+
+    const head = document.createElement("div"); head.className = "conflict-card-head";
+    const left = document.createElement("div");
+    const eyebrow = document.createElement("div"); eyebrow.className = "conflict-eyebrow"; eyebrow.textContent = `Conflict ${index + 1} · ${titleCaseLocal(claim.predicate)}`;
+    const title = document.createElement("div"); title.className = "conflict-title"; title.textContent = claim.subject || "Observed field disagreement";
+    left.append(eyebrow, title);
+    const badge = document.createElement("span"); badge.className = `conflict-severity ${severity}`; badge.textContent = `${severity} severity`;
+    head.append(left, badge); card.appendChild(head);
+
+    const summary = document.createElement("div"); summary.className = "conflict-summary";
+    summary.textContent = `${obs.length} evidence values were compared. The resolver selected one value, but the alternatives are preserved below so you can see the exact disagreement instead of only a generic “value_conflict” label.`;
+    card.appendChild(summary);
+
+    const grid = document.createElement("div"); grid.className = "conflict-observation-grid";
+    obs.forEach(observation => grid.appendChild(observationEvidenceNode(observation, claim.resolution?.preferredObservationId)));
+    card.appendChild(grid);
+
+    if (Array.isArray(claim.conflicts) && claim.conflicts.length) {
+      const reasons = document.createElement("div"); reasons.className = "conflict-reasons";
+      const heading = document.createElement("strong"); heading.textContent = "Why it was flagged"; reasons.appendChild(heading);
+      const list = document.createElement("ul");
+      const seen = new Set();
+      claim.conflicts.forEach(conflict => {
+        const message = `${titleCaseLocal(conflict.relation)} · ${conflict.explanation || "Values differ."}`;
+        if (seen.has(message)) return; seen.add(message);
+        const li = document.createElement("li"); li.textContent = message; list.appendChild(li);
+      });
+      reasons.appendChild(list); card.appendChild(reasons);
+    }
+
+    if (claim.resolution?.explanation?.length) {
+      const resolution = document.createElement("div"); resolution.className = "conflict-resolution";
+      resolution.textContent = `Resolver: ${claim.resolution.explanation.join(" ")}`;
+      card.appendChild(resolution);
+    }
+    return card;
+  }
+
+  function enhanceLegacyConflictSection(result, target) {
+    const provenance = result?.provenance;
+    if (!provenance || !Array.isArray(provenance.claims) || !Array.isArray(provenance.observations)) return;
+    const conflicts = provenance.claims.filter(claim => claim.status === "conflict");
+    if (!conflicts.length) return;
+    const observationMap = new Map(provenance.observations.map(obs => [obs.id, obs]));
+    const legacy = [...target.querySelectorAll("details.result-section")].find(node => node.querySelector("summary")?.textContent?.includes("Disputed / contradictory evidence"));
+    if (!legacy) return;
+    const summary = legacy.querySelector("summary");
+    if (summary) summary.textContent = `⚠ Conflict explorer · ${conflicts.length} conflicting field${conflicts.length === 1 ? "" : "s"}`;
+    let inside = legacy.querySelector(".inside");
+    if (!inside) { inside = document.createElement("div"); inside.className = "inside"; legacy.appendChild(inside); }
+    inside.replaceChildren();
+    const explainer = document.createElement("div"); explainer.className = "conflict-intro";
+    explainer.textContent = "This section now shows the actual competing values, where each value came from, which one the resolver selected, and why the field was flagged.";
+    inside.appendChild(explainer);
+    conflicts.slice(0, 30).forEach((claim, index) => inside.appendChild(conflictExplorerCard(claim, observationMap, index)));
+    if (conflicts.length > 30) { const note = document.createElement("div"); note.className = "web-explanation"; note.textContent = `Showing 30 of ${conflicts.length} conflicts. The complete provenance data remains available in the structured/raw result.`; inside.appendChild(note); }
+  }
+
   function provenanceClaimCard(claim, observations) {
     const card = document.createElement("article"); card.className = "web-source-card provenance-claim";
     const top = document.createElement("div"); top.className = "web-source-top";
@@ -71,6 +179,16 @@
     const layers = [...new Set(obs.map(x => `${x.source?.representation || "?"}/${x.source?.layer || "?"}`))];
     const meta = document.createElement("div"); meta.className = "web-source-meta"; meta.textContent = `${claim.observationIds?.length || 0} observation(s) · ${layers.join(" · ")} · resolution ${pct(claim.resolution?.confidence)}`;
     card.append(top, title, meta);
+    if (claim.status === "conflict" && obs.length) {
+      const preview = document.createElement("div"); preview.className = "claim-conflict-preview";
+      obs.slice(0, 3).forEach(observation => {
+        const row = document.createElement("div"); row.className = "claim-conflict-row";
+        const label = document.createElement("span"); label.textContent = sourceLabel(observation);
+        const value = document.createElement("strong"); value.textContent = compactValue(observation.rawValue, 180);
+        row.append(label, value); preview.appendChild(row);
+      });
+      card.appendChild(preview);
+    }
     if (claim.resolution?.explanation?.length) { const note = document.createElement("div"); note.className = "web-explanation"; note.textContent = claim.resolution.explanation.join(" "); card.appendChild(note); }
     return card;
   }
@@ -102,6 +220,124 @@
     return panel;
   }
 
+  const ANALYSIS_STAGES = {
+    investigate_url: [
+      "Preparing investigation",
+      "Crawling first-party pages and metadata",
+      "Building claim-level provenance",
+      "Checking drift and contradictory evidence",
+      "Researching independent public sources",
+      "Assembling the evidence report"
+    ],
+    default: [
+      "Preparing request",
+      "Collecting URL evidence",
+      "Resolving structured intelligence",
+      "Checking consistency and confidence",
+      "Preparing the result"
+    ]
+  };
+
+  let overlayTimer = null;
+  let overlayStageTimer = null;
+  let overlayStartedAt = 0;
+  let overlayStage = 0;
+
+  function ensureAnalysisOverlay() {
+    let overlay = document.getElementById("analysisThinkingOverlay");
+    if (overlay) return overlay;
+    overlay = document.createElement("div"); overlay.id = "analysisThinkingOverlay"; overlay.className = "analysis-thinking-overlay"; overlay.setAttribute("role", "status"); overlay.setAttribute("aria-live", "polite"); overlay.setAttribute("aria-hidden", "true");
+    const dialog = document.createElement("div"); dialog.className = "analysis-thinking-dialog";
+    const orb = document.createElement("div"); orb.className = "analysis-thinking-orb"; orb.innerHTML = '<span></span><span></span><span></span>';
+    const badge = document.createElement("div"); badge.className = "analysis-thinking-badge"; badge.textContent = "URL Intelligence Agent";
+    const h2 = document.createElement("h2"); h2.textContent = "Analyzing the evidence";
+    const p = document.createElement("p"); p.id = "analysisThinkingText"; p.textContent = "The investigation is running. Keep this window open and you will be taken directly to the result when it is ready.";
+    const current = document.createElement("div"); current.id = "analysisThinkingCurrent"; current.className = "analysis-thinking-current";
+    const stages = document.createElement("div"); stages.id = "analysisThinkingStages"; stages.className = "analysis-thinking-stages";
+    const footer = document.createElement("div"); footer.className = "analysis-thinking-footer";
+    const elapsed = document.createElement("span"); elapsed.id = "analysisThinkingElapsed"; elapsed.textContent = "0s elapsed";
+    const note = document.createElement("span"); note.textContent = "Live analysis · no fake percentage";
+    footer.append(elapsed, note);
+    dialog.append(orb, badge, h2, p, current, stages, footer); overlay.appendChild(dialog); document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function getActionNameForOverlay() {
+    try { return typeof currentActionName === "function" ? currentActionName() : "default"; } catch { return "default"; }
+  }
+
+  function renderOverlayStages(stages) {
+    const holder = document.getElementById("analysisThinkingStages"); if (!holder) return;
+    holder.replaceChildren();
+    stages.forEach((stage, index) => {
+      const row = document.createElement("div"); row.className = `analysis-thinking-stage${index < overlayStage ? " done" : index === overlayStage ? " active" : ""}`;
+      const dot = document.createElement("span"); dot.className = "analysis-thinking-stage-dot";
+      const label = document.createElement("span"); label.textContent = stage;
+      row.append(dot, label); holder.appendChild(row);
+    });
+    const current = document.getElementById("analysisThinkingCurrent"); if (current) current.textContent = stages[Math.min(overlayStage, stages.length - 1)] || "Working…";
+  }
+
+  function showAnalysisOverlay() {
+    const overlay = ensureAnalysisOverlay();
+    const action = getActionNameForOverlay();
+    const stages = ANALYSIS_STAGES[action] || ANALYSIS_STAGES.default;
+    overlayStage = 0; overlayStartedAt = Date.now();
+    renderOverlayStages(stages);
+    overlay.classList.add("visible"); overlay.setAttribute("aria-hidden", "false");
+    document.documentElement.classList.add("analysis-modal-open");
+    clearInterval(overlayTimer); clearInterval(overlayStageTimer);
+    overlayTimer = setInterval(() => {
+      const elapsed = document.getElementById("analysisThinkingElapsed");
+      if (elapsed) elapsed.textContent = `${Math.max(0, Math.floor((Date.now() - overlayStartedAt) / 1000))}s elapsed`;
+    }, 500);
+    overlayStageTimer = setInterval(() => {
+      if (overlayStage < stages.length - 1) { overlayStage += 1; renderOverlayStages(stages); }
+      else {
+        const current = document.getElementById("analysisThinkingCurrent");
+        if (current) current.textContent = "Still working — deeper investigations can take a little longer";
+      }
+    }, action === "investigate_url" ? 2600 : 1800);
+  }
+
+  function hideAnalysisOverlay(takeToResult = true) {
+    const overlay = document.getElementById("analysisThinkingOverlay");
+    if (!overlay || !overlay.classList.contains("visible")) return;
+    clearInterval(overlayTimer); clearInterval(overlayStageTimer); overlayTimer = null; overlayStageTimer = null;
+    const current = document.getElementById("analysisThinkingCurrent"); if (current) current.textContent = "Result ready";
+    overlay.classList.add("ready");
+    setTimeout(() => {
+      overlay.classList.remove("visible", "ready"); overlay.setAttribute("aria-hidden", "true"); document.documentElement.classList.remove("analysis-modal-open");
+      if (takeToResult) {
+        const result = document.getElementById("resultShell");
+        if (result && result.style.display !== "none") { result.scrollIntoView({ behavior: "smooth", block: "start" }); result.classList.add("result-arrived"); setTimeout(() => result.classList.remove("result-arrived"), 1600); }
+      }
+    }, 280);
+  }
+
+  function validRunnableUrl() {
+    const input = document.getElementById("urlInput");
+    if (!input) return false;
+    try { const url = new URL(input.value.trim()); return ["http:", "https:"].includes(url.protocol); } catch { return false; }
+  }
+
+  function installAnalysisUX() {
+    const run = document.getElementById("runBtn"), input = document.getElementById("urlInput"), loading = document.getElementById("loading"), result = document.getElementById("resultShell");
+    if (!run || !loading || !result) return;
+
+    run.addEventListener("click", () => { if (validRunnableUrl()) showAnalysisOverlay(); }, true);
+    if (input) input.addEventListener("keydown", event => { if (event.key === "Enter" && validRunnableUrl()) showAnalysisOverlay(); }, true);
+
+    const observer = new MutationObserver(() => {
+      const loadingVisible = loading.style.display !== "none" && getComputedStyle(loading).display !== "none";
+      const resultVisible = result.style.display !== "none" && getComputedStyle(result).display !== "none";
+      const overlay = document.getElementById("analysisThinkingOverlay");
+      if (overlay?.classList.contains("visible") && !loadingVisible && resultVisible) hideAnalysisOverlay(true);
+    });
+    observer.observe(loading, { attributes: true, attributeFilter: ["style", "class"] });
+    observer.observe(result, { attributes: true, attributeFilter: ["style", "class"] });
+  }
+
   try {
     if (typeof ACTION_GUIDE !== "undefined") {
       if (ACTION_GUIDE.investigate_url) {
@@ -131,6 +367,7 @@
       renderEvidenceSummary = function enhancedEvidenceSummary(result) {
         originalRenderEvidenceSummary(result);
         const target = document.getElementById("evidenceSummary"); if (!target) return;
+        enhanceLegacyConflictSection(result, target);
         const prov = provenancePanel(result), web = openWebPanel(result);
         if (web) target.insertBefore(web, target.firstChild);
         if (prov) target.insertBefore(prov, target.firstChild);
@@ -141,6 +378,8 @@
   window.addEventListener("DOMContentLoaded", () => {
     try { if (typeof renderActionGuide === "function") renderActionGuide(); } catch { /* noop */ }
     const loading = document.getElementById("loading"); if (loading) loading.textContent = "Collecting source layers, resolving claim provenance, checking drift/conflicts and searching independent public evidence… this can take a little time.";
+    const run = document.getElementById("runBtn"); if (run) run.textContent = "Run Analysis";
+    const input = document.getElementById("urlInput"); if (input) input.placeholder = "https://example.com — paste any public URL";
     const lead = document.querySelector(".hero .lead"); if (lead) lead.textContent = "Evidence-first URL and web intelligence for AI agents, developers and research workflows. v1.2 resolves field-level claim provenance across metadata, structured data and visible content, detects drift/conflicts, and separates target-side extraction from independent public corroboration.";
     const faq = document.querySelector("#faq .faq");
     if (faq && !document.getElementById("faq-provenance")) {
@@ -152,5 +391,6 @@
       const p1 = document.createElement("p"); p1.textContent = "Yes. It first builds first-party provenance, then can search and fetch public third-party references, entity mentions and backlinks so external corroboration remains separate from target-side extraction confidence."; beyond.append(s1, p1);
       faq.insertBefore(beyond, faq.firstChild); faq.insertBefore(provenance, faq.firstChild);
     }
+    installAnalysisUX();
   });
 })();
