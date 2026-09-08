@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-v1.2.0-00c853?style=for-the-badge" alt="v1.2.0">
+  <img src="https://img.shields.io/badge/release-v1.3.0-00c853?style=for-the-badge" alt="v1.3.0">
   <img src="https://img.shields.io/badge/provenance_schema-1.0-0ea5e9?style=for-the-badge" alt="Provenance schema 1.0">
   <img src="https://img.shields.io/badge/TypeScript-first-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Node-18.17%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18.17+">
@@ -55,11 +55,11 @@ The repository is continuously measured against the public **URL Intelligence Be
 **Detailed results:** [hf-dataset/results/latest.md](hf-dataset/results/latest.md)
 <!-- HF_BENCHMARK_END -->
 
-## 🧬 What's new in v1.2.0 — Claim Provenance & Temporal Consistency
+## 🧬 What's new in v1.3.0 — Semantic Conflict Intelligence
 
-## v1.3.0 — Semantic Conflict Intelligence
+Version **1.3.0** makes conflict detection meaning-aware and substantially reduces false positives in free-text metadata.
 
-Version **1.3.0** makes conflict detection meaning-aware and substantially reduces false positives in free-text metadata. The resolver now distinguishes:
+The resolver now distinguishes:
 
 - `semantic_equivalent` — same meaning after deterministic token/anchor analysis;
 - `wording_variation` — compatible copy/detail differences with no contradictory factual anchor;
@@ -67,11 +67,21 @@ Version **1.3.0** makes conflict detection meaning-aware and substantially reduc
 - `factual_disagreement` — materially different stable facts or identity anchors;
 - `logical_contradiction` — explicit opposite truth/polarity such as negation over substantially shared content.
 
-Numeric, money, date, URL and boolean semantics remain field-aware. The hosted Evidence Inspector surfaces these relation types directly so users can tell copy variation from a real contradiction.
+Numeric, money, date, URL and boolean semantics remain field-aware. The hosted **Evidence Inspector** surfaces these relation types directly so users can tell harmless copy variation from a real contradiction.
 
-Version **1.2.0** adds a new evidence layer without replacing the original URL intelligence workflow or interfaces.
+### Evidence Inspector improvements
 
-The agent can now preserve and compare field-level observations across source HTML, rendered DOM, Open Graph, standard metadata, JSON-LD, Microdata, RDFa, HTTP headers and visible content. Instead of returning only one extracted value, it can explain **where each value came from, how it was normalized, whether sources actually conflict, and why a preferred value was selected**.
+- Meaning-aware conflict classification is shown directly in the hosted UI.
+- Meta, Open Graph and Twitter descriptions with compatible wording are no longer promoted to hard conflicts just because their strings differ.
+- Competing values remain visible with source layer, property, normalization, confidence, timestamps and resolver reasoning.
+- Repeated disagreements across crawled pages are grouped into conflict patterns instead of repeated generic `value_conflict` entries.
+- The analysis workflow now shows a live thinking/status overlay and automatically takes the user to the finished result.
+
+### Previous release: v1.2.0 — Claim Provenance & Temporal Consistency
+
+Version **1.2.0** introduced the provenance and temporal-consistency foundation that v1.3.0 builds on.
+
+The agent preserves and compares field-level observations across source HTML, rendered DOM, Open Graph, standard metadata, JSON-LD, Microdata, RDFa, HTTP headers and visible content. Instead of returning only one extracted value, it can explain **where each value came from, how it was normalized, whether sources actually conflict, and why a preferred value was selected**.
 
 Key v1.2.0 additions:
 
@@ -83,7 +93,6 @@ Key v1.2.0 additions:
 - **Evidence integrity** with SHA-256 hashes and W3C PROV-shaped export.
 - New machine actions: **`inspect_provenance`** and **`verify_claim`**.
 - MCP support for **2026-07-28** while retaining compatibility with earlier supported protocol revisions.
-- A new **Evidence Inspector** in the hosted Hugging Face Space.
 - A dedicated **provenance consistency benchmark track** in the Hugging Face dataset.
 
 Example:
@@ -93,10 +102,10 @@ Open Graph:      80,000+
 Rendered value:  100,502
 ```
 
-`80,000+` is a lower bound, so `100,502` is not automatically a logical contradiction. v1.2 can distinguish **compatible values** from **representation drift**, **precision differences**, **freshness divergence** and **suspected stale metadata**.
+`80,000+` is a lower bound, so `100,502` is not automatically a logical contradiction. The provenance engine can distinguish **compatible values** from **representation drift**, **precision differences**, **freshness divergence** and **suspected stale metadata**.
 
 👉 **[Read the provenance and consistency guide](docs/PROVENANCE.md)**  
-👉 **[See the v1.2.0 changelog](CHANGELOG.md)**  
+👉 **[See the full changelog](CHANGELOG.md)**  
 👉 **[Versioning policy](VERSIONING.md)**
 
 ---
