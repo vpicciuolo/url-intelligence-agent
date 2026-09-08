@@ -9,10 +9,12 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-v1.1.0-00c853?style=for-the-badge" alt="v1.1.0">
+  <img src="https://img.shields.io/badge/release-v1.2.0-00c853?style=for-the-badge" alt="v1.2.0">
+  <img src="https://img.shields.io/badge/provenance_schema-1.0-0ea5e9?style=for-the-badge" alt="Provenance schema 1.0">
   <img src="https://img.shields.io/badge/TypeScript-first-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Node-18.17%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18.17+">
   <img src="https://img.shields.io/badge/MCP-native-111827?style=for-the-badge" alt="MCP native">
+  <img src="https://img.shields.io/badge/MCP-2026--07--28-7c3aed?style=for-the-badge" alt="MCP 2026-07-28">
   <img src="https://img.shields.io/badge/AI-optional-7c3aed?style=for-the-badge" alt="AI optional">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT">
 </p>
@@ -30,6 +32,7 @@
   <a href="docs/MCP.md"><img src="https://img.shields.io/badge/CONNECT-MCP-7c3aed?style=for-the-badge" alt="MCP Guide"></a>
   <a href="docs/DEPLOYMENT.md"><img src="https://img.shields.io/badge/DEPLOY-Docker%20%26%20Server-2563eb?style=for-the-badge" alt="Deployment Guide"></a>
   <a href="docs/API.md"><img src="https://img.shields.io/badge/USE-HTTP%20API-059669?style=for-the-badge" alt="HTTP API Guide"></a>
+  <a href="docs/PROVENANCE.md"><img src="https://img.shields.io/badge/READ-Provenance-0ea5e9?style=for-the-badge" alt="Provenance Guide"></a>
   <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/Hugging%20Face-Live%20Space%20%26%20Remote%20MCP-FFD21E?style=for-the-badge" alt="Try URL Intelligence Agent on Hugging Face"></a>
   <a href="https://hrn.ae/githubsupport"><img src="https://img.shields.io/badge/SUPPORT-Donate%20via%20Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white" alt="Support via Stripe"></a>
 </p>
@@ -52,6 +55,40 @@ The repository is continuously measured against the public **URL Intelligence Be
 **Detailed results:** [hf-dataset/results/latest.md](hf-dataset/results/latest.md)
 <!-- HF_BENCHMARK_END -->
 
+## 🧬 What's new in v1.2.0 — Claim Provenance & Temporal Consistency
+
+Version **1.2.0** adds a new evidence layer without replacing the original URL intelligence workflow or interfaces.
+
+The agent can now preserve and compare field-level observations across source HTML, rendered DOM, Open Graph, standard metadata, JSON-LD, Microdata, RDFa, HTTP headers and visible content. Instead of returning only one extracted value, it can explain **where each value came from, how it was normalized, whether sources actually conflict, and why a preferred value was selected**.
+
+Key v1.2.0 additions:
+
+- **Field-level provenance** with representation, layer, property/locator, raw value, normalized value, timestamps and evidence hashes.
+- **Claim resolution** with `consensus`, `compatible_variation`, `drift`, `conflict` and `insufficient_evidence` states.
+- **Semantic numeric comparison** for exact values, ranges, approximations and lower/upper bounds.
+- **Representation drift and stale-metadata detection** across source, structured and visible layers.
+- **Temporal consistency** through provenance-aware snapshots, ETag/Last-Modified capture and claim history.
+- **Evidence integrity** with SHA-256 hashes and W3C PROV-shaped export.
+- New machine actions: **`inspect_provenance`** and **`verify_claim`**.
+- MCP support for **2026-07-28** while retaining compatibility with earlier supported protocol revisions.
+- A new **Evidence Inspector** in the hosted Hugging Face Space.
+- A dedicated **provenance consistency benchmark track** in the Hugging Face dataset.
+
+Example:
+
+```text
+Open Graph:      80,000+
+Rendered value:  100,502
+```
+
+`80,000+` is a lower bound, so `100,502` is not automatically a logical contradiction. v1.2 can distinguish **compatible values** from **representation drift**, **precision differences**, **freshness divergence** and **suspected stale metadata**.
+
+👉 **[Read the provenance and consistency guide](docs/PROVENANCE.md)**  
+👉 **[See the v1.2.0 changelog](CHANGELOG.md)**  
+👉 **[Versioning policy](VERSIONING.md)**
+
+---
+
 ## 🤗 Try URL Intelligence Agent live on Hugging Face
 
 The official **URL Intelligence Agent Hugging Face Space** runs the real open-source agent inside a live Docker environment, so you can test the project directly from your browser without installing anything locally.
@@ -67,6 +104,7 @@ The official **URL Intelligence Agent Hugging Face Space** runs the real open-so
 - **Choose the external search/index provider** available in the hosted environment for wider-web discovery.
 - Run focused actions for **SEO, security, trust, social discovery, technology detection, brand intelligence, domain intelligence and structured data**.
 - Inspect **evidence, confidence, source provenance, timestamps and explicit contradictions** instead of receiving only a model-generated summary.
+- Use the new **Evidence Inspector** to review observations, resolved claims, conflicts, drift, stale metadata signals, evidence layers and resolution explanations.
 - Open supporting public sources and see which evidence was actually fetched and verified.
 - Export completed investigations as a **human-readable branded PDF report**, plus **JSON, Markdown and HTML** for technical workflows.
 - Explore the complete action catalog and understand what is available in the hosted demo versus the full self-hosted runtime.
@@ -157,7 +195,7 @@ It is especially useful for:
 
 ## Navigation
 
-[Quick Start](#-5-minute-quick-start) · [How it works](#-how-the-agent-works) · [Capabilities](#-what-it-can-do) · [CLI](#-cli-command-reference) · [MCP](#-use-it-as-an-mcp-server) · [HTTP API](#-run-it-as-an-http-api) · [Docker](#-deploy-it) · [SDK](#-use-it-as-a-typescript-library) · [Reports](#-reports-and-exports) · [Monitoring](#-monitoring-and-change-detection) · [Configuration](#%EF%B8%8F-configuration) · [Security](#-security-model) · [Support](#-support-open-source-development)
+[Quick Start](#-5-minute-quick-start) · [How it works](#-how-the-agent-works) · [Capabilities](#-what-it-can-do) · [CLI](#-cli-command-reference) · [MCP](#-use-it-as-an-mcp-server) · [HTTP API](#-run-it-as-an-http-api) · [Docker](#-deploy-it) · [SDK](#-use-it-as-a-typescript-library) · [Reports](#-reports-and-exports) · [Monitoring](#-monitoring-and-change-detection) · [Provenance](docs/PROVENANCE.md) · [Configuration](#%EF%B8%8F-configuration) · [Security](#-security-model) · [Support](#-support-open-source-development)
 
 ---
 
@@ -276,17 +314,18 @@ Every major resolved field can carry:
 }
 ```
 
-That provenance model is one of the central differences between this project and a basic scraper or model-only web summary.
+In v1.2.0, this evidence model is extended by claim-level observations that can preserve representation, source layer, locators, raw/normalized values, temporal context and integrity hashes. See **[docs/PROVENANCE.md](docs/PROVENANCE.md)**.
 
 ---
 
 # 🧩 What it can do
 
-The 1.1.0 runtime exposes **34 machine-callable core actions** through the action registry. The interactive CLI combines them with reporting, watching, benchmarking, server and plugin operations for **39 menu choices**. Plugins can extend the action surface further.
+The 1.2.0 runtime exposes **36 machine-callable core actions** through the action registry. The interactive CLI combines them with reporting, watching, benchmarking, server and plugin operations for **39 menu choices**. Plugins can extend the action surface further.
 
 | Intelligence area | What the agent does |
 | --- | --- |
 | **Safe URL collection** | HTTP/HTTPS validation, CIDR-aware public-address policy, preflight DNS checks, connect-time DNS-rebinding/TOCTOU protection, mixed-answer rejection, redirect re-validation, bounded time/bytes |
+| **Claim provenance & consistency** | Field-level observations, source layers/representations, normalization, conflict vs compatible-variation reasoning, drift, stale-metadata signals and claim verification |
 | **Crawl & map** | robots.txt, sitemaps, sitemap indexes, same-origin crawl, important-page discovery |
 | **Entity resolution** | Person, creator, startup, organization, product, service, software, business, event and website inference |
 | **Metadata** | title, description, canonical, Open Graph, headings, JSON-LD, images, favicons |
@@ -315,7 +354,7 @@ The 1.1.0 runtime exposes **34 machine-callable core actions** through the actio
 | **Rendering** | optional Playwright or remote renderer fallback for JavaScript-heavy pages |
 | **AI reasoning** | optional OpenAI-compatible evidence-only synthesis |
 | **Plugins** | runtime enrichers and custom actions |
-| **MCP** | native stdio MCP server exposing the runtime action registry |
+| **MCP** | native stdio and Remote MCP server exposing the runtime action registry |
 | **HTTP API** | authenticated/rate-limited JSON action server |
 | **Reports** | Markdown, standalone HTML, PDF and JSON output with attribution |
 
@@ -420,13 +459,15 @@ Machine-oriented output:
 url-agent investigate https://example.com --raw > result.json
 ```
 
-Full usage reference: **[docs/USAGE.md](docs/USAGE.md)**
+For provenance-specific machine calls, use the action registry/API/MCP tools `inspect_provenance` and `verify_claim`. Full usage reference: **[docs/USAGE.md](docs/USAGE.md)**
 
 ---
 
 # 🤖 Use it as an MCP server
 
-URL Intelligence Agent includes a native **stdio MCP server**.
+URL Intelligence Agent includes a native **stdio MCP server** and a hosted **Remote MCP** endpoint.
+
+Version 1.2.0 supports MCP **2026-07-28** and retains compatibility with **2025-11-25**, **2025-06-18** and **2025-03-26**. The tool surface includes action-specific input/output schemas and the provenance tools `inspect_provenance` and `verify_claim`.
 
 ## Start MCP
 
@@ -480,11 +521,14 @@ If the MCP client cannot resolve your shell PATH, use an absolute Node/file path
 
 The server supports:
 
-- MCP initialization
+- MCP initialization / compatibility handshakes where required
+- stateless modern MCP operation
 - ping
 - tool listing
 - tool calls
+- structured tool input/output schemas
 - resource listing/read
+- optional MCP Tasks support for selected long-running operations
 - `horno://about` project/ecosystem resource
 - structured tool results with attribution
 
@@ -545,6 +589,8 @@ GET  /investigate?url=...
 POST /investigate
 GET  /action/:name
 POST /action/:name
+POST /mcp
+GET  /.well-known/mcp.json
 ```
 
 **Complete API reference:**  
@@ -557,10 +603,10 @@ POST /action/:name
 ## Docker CLI
 
 ```bash
-docker build -t url-intelligence-agent:1.1.0 .
+docker build -t url-intelligence-agent:1.2.0 .
 
 docker run --rm \
-  url-intelligence-agent:1.1.0 \
+  url-intelligence-agent:1.2.0 \
   investigate https://example.com
 ```
 
@@ -575,7 +621,7 @@ docker run -d \
   --env-file .env \
   -p 8787:8787 \
   -v url_agent_data:/app/.url-agent \
-  url-intelligence-agent:1.1.0 \
+  url-intelligence-agent:1.2.0 \
   serve --host 0.0.0.0 --port 8787
 ```
 
@@ -618,12 +664,20 @@ const intelligence = await investigate("https://example.com");
 console.log(intelligence.entity.name.value);
 console.log(intelligence.entity.name.confidence);
 console.log(intelligence.entity.name.sources);
+console.log(intelligence.provenance?.summary);
 
-const tech = await runAction("detect_technologies", {
+const provenance = await runAction("inspect_provenance", {
   url: "https://example.com"
 });
 
-console.log(tech);
+const verification = await runAction("verify_claim", {
+  url: "https://example.com",
+  predicate: "pages_indexed",
+  value: 100502
+});
+
+console.log(provenance);
+console.log(verification);
 ```
 
 Install as a GitHub dependency:
@@ -652,15 +706,16 @@ Generate all standard report formats:
 url-agent report https://example.com --out company-intelligence
 ```
 
-Output:
+Output can include:
 
 ```text
 company-intelligence.md
 company-intelligence.html
 company-intelligence.json
+company-intelligence.pdf
 ```
 
-Reports include project attribution and structured evidence from the investigation.
+Reports include project attribution and structured evidence from the investigation. JSON output preserves the full machine-readable provenance result when available.
 
 Other export workflows:
 
@@ -701,7 +756,7 @@ URL_AGENT_WEBHOOK_URL=https://your-app.example/hooks/url-intelligence
 URL_AGENT_WEBHOOK_SECRET=replace-with-a-secret
 ```
 
-Monitoring can surface meaningful changes between normalized intelligence snapshots instead of forcing downstream systems to compare raw HTML.
+Monitoring can surface meaningful changes between normalized intelligence snapshots instead of forcing downstream systems to compare raw HTML. In v1.2.0, snapshots can also preserve claim values/statuses, provenance fingerprints, HTTP validators and observation times for temporal consistency analysis.
 
 ---
 
@@ -737,7 +792,7 @@ Direct render action:
 url-agent render https://example.com
 ```
 
-Keep rendering disabled when you do not need it; browser automation is significantly heavier than deterministic HTTP collection. Playwright/Chromium also has its own network stack, so production rendering should be isolated with infrastructure-level egress controls. The connect-time DNS guard used by `safeFetch()` does not automatically intercept browser subresource requests.
+Keep rendering disabled when you do not need it; browser automation is significantly heavier than deterministic HTTP collection. v1.2.0 adds browser request bounds, private-address checks, download/service-worker restrictions and bounded same-origin runtime JSON capture, but Playwright/Chromium still has its own network stack. Security-sensitive production rendering should therefore remain isolated with infrastructure-level egress controls.
 
 ---
 
@@ -822,7 +877,7 @@ The default settings intentionally bound network and crawl behavior. Increase th
 
 Every submitted URL is treated as untrusted input.
 
-Version 1.1.0 uses a two-stage network boundary for core HTTP collection:
+Version 1.2.0 uses a two-stage network boundary for core HTTP collection:
 
 - HTTP/HTTPS-only policy
 - embedded credential rejection
@@ -838,8 +893,12 @@ Version 1.1.0 uses a two-stage network boundary for core HTTP collection:
 - bounded response bytes
 - timeouts
 - explicit User-Agent
+- charset-aware HTTP decoding
+- ETag / Last-Modified capture for temporal evidence
 
 The guarded dispatcher is scoped to the untrusted `safeFetch()` path rather than changing the process-global fetch behavior. The protection is connection-scoped, not long-lived DNS pinning, so hostnames remain intact for TLS SNI, certificates, virtual hosting and normal CDN behavior.
+
+Browser rendering is a separate network trust boundary. The v1.2.0 browser layer adds request bounds and private-address protections, but production rendering should still use infrastructure-level egress controls.
 
 The crawler is designed for **public web intelligence**. It does not intentionally bypass authentication, CAPTCHAs or access controls.
 
@@ -859,18 +918,19 @@ src/
 ├── net.ts          URL safety / guarded fetching / SSRF + DNS-rebinding boundary
 ├── crawler.ts      robots / sitemap / bounded crawling
 ├── extract.ts      deterministic page extraction
+├── provenance.ts   field-level observations / claim resolution / drift + conflict engine
 ├── render.ts       Playwright / remote render adapters
 ├── domain.ts       DNS / mail / TLS intelligence
 ├── analyzers.ts    SEO / security / quality / trust / tech / brand
 ├── extensions.ts   API / commerce / people / links / knowledge
-├── monitor.ts      snapshots / diff / webhook
+├── monitor.ts      snapshots / diff / provenance-aware history / webhook
 ├── watch.ts        continuous monitoring
 ├── adapters.ts     cache / persistence / worker adapters
 ├── ai.ts           optional OpenAI-compatible reasoning
 ├── plugins.ts      plugin SDK/runtime
-├── report.ts       terminal / Markdown / HTML reports
+├── report.ts       terminal / Markdown / HTML / PDF reports
 ├── server.ts       HTTP API + hosted service
-├── mcp.ts          MCP server
+├── mcp.ts          stdio + Remote MCP server
 ├── benchmark.ts    reliability benchmark runner
 └── cli.ts          interactive + command-line experience
 ```
@@ -884,13 +944,16 @@ More detail: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 | Guide | Use it when... |
 | --- | --- |
 | **[Complete Usage Guide](docs/USAGE.md)** | You want every main command, recipe and integration example |
+| **[Provenance Guide](docs/PROVENANCE.md)** | You want field-level observations, normalization, claim resolution, drift/conflict semantics and PROV export |
 | **[MCP Guide](docs/MCP.md)** | You want to connect the agent to an MCP-compatible AI client |
+| **[Remote MCP Guide](docs/REMOTE_MCP.md)** | You want the hosted Streamable HTTP MCP endpoint and discovery details |
 | **[Deployment Guide](docs/DEPLOYMENT.md)** | You want Docker, Compose, systemd, Nginx or production API deployment |
 | **[HTTP API Guide](docs/API.md)** | You want endpoint, auth, curl, JS and Python examples |
 | **[Action Reference](docs/ACTIONS.md)** | You want the runtime action catalog |
 | **[Architecture](docs/ARCHITECTURE.md)** | You want to understand internal modules and design |
 | **[Network Security](docs/NETWORK_SECURITY.md)** | You want the SSRF, DNS-rebinding and connect-time destination model |
 | **[Security](SECURITY.md)** | You want the public-URL/network safety policy |
+| **[Versioning](VERSIONING.md)** | You want application, provenance-schema and protocol versioning rules |
 | **[Changelog](CHANGELOG.md)** | You want release-by-release changes |
 | **[Contributing](CONTRIBUTING.md)** | You want to improve the project |
 
@@ -917,6 +980,8 @@ URL Intelligence Agent is designed for applications such as:
 - RAG ingestion
 - knowledge pipelines
 - public trust/transparency analysis
+- claim verification and source-provenance inspection
+- metadata / structured-data drift monitoring
 - broken-link and web quality workflows
 
 The listing-generation and URL enrichment workflows are especially useful when a user pastes a URL and your product needs to turn it into an editable, evidence-backed profile instead of asking the user to fill every field manually.
@@ -943,7 +1008,9 @@ Benchmark:
 npm run benchmark
 ```
 
-The repository includes a benchmark fixture under `benchmarks/urls.json` for repeatable reliability testing. The automated test suite also includes address-classification and mixed-DNS-answer regression checks for the v1.1.0 SSRF boundary.
+The repository includes a benchmark fixture under `benchmarks/urls.json` for repeatable reliability testing. The automated test suite also includes address-classification and mixed-DNS-answer regression checks for the SSRF boundary plus v1.2.0 provenance/consistency cases, including correct lower-bound semantics such as `80,000+` vs `100,502`.
+
+The public Hugging Face benchmark dataset now includes a dedicated provenance configuration and deterministic fixture/validator track.
 
 ---
 
@@ -952,6 +1019,7 @@ The repository includes a benchmark fixture under `benchmarks/urls.json` for rep
 Contributions are welcome, particularly around:
 
 - deterministic extraction
+- field-level provenance and claim normalization
 - entity resolution
 - new evidence signals
 - technology fingerprints
@@ -993,6 +1061,7 @@ Built as part of the technology work behind the **HORNO Network ecosystem** and 
 - Easy HORNO: https://easy.horno.net
 - HORNO Space: https://space.horno.net
 - URL Metadata & Social Profile Fetcher: https://github.com/vpicciuolo/url-metadata-social-fetcher
+- Hugging Face: https://huggingface.co/vpicciuolo
 - X: https://x.com/vpicciuolo
 - X: https://x.com/hornonetwork
 - X: https://x.com/BeHotNow2026
