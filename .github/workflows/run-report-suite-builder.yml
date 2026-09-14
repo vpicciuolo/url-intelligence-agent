@@ -40,6 +40,20 @@ jobs:
           print('report test bytes',len(data['report-test']))
           PY
 
+      - name: Make footer pagination-safe
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/report-suite.ts')
+          s=p.read_text(encoding='utf-8')
+          pattern=r'function footer\(doc:any,page:number,count:number\)\{.*?\}\nfunction pdata'
+          replacement='''function footer(doc:any,page:number,count:number){const w=doc.page.width,h=doc.page.height,line=`${EXPORT_BRAND.name} | ${EXPORT_BRAND.github} | ${EXPORT_BRAND.huggingFace} | Creator: ${EXPORT_BRAND.creator}`,oldY=doc.y,oldBottom=doc.page.margins.bottom;doc.page.margins.bottom=0;doc.save();doc.fillColor(C.text).fillOpacity(.04).font("Helvetica-Bold").fontSize(9).rotate(-28,{origin:[w/2,h/2]}).text(line,54,h/2-8,{width:w-108,align:"center",lineBreak:false});doc.restore();doc.save();doc.strokeColor("#CBD5E1").lineWidth(.5).moveTo(42,h-58).lineTo(w-42,h-58).stroke();doc.fillColor(C.muted).font("Helvetica").fontSize(6).text(line,42,h-50,{width:w-150,lineBreak:false});doc.fillColor(C.muted).font("Helvetica-Bold").fontSize(6.1).text(`Page ${page} / ${count}`,w-116,h-50,{width:74,align:"right",lineBreak:false});doc.restore();doc.page.margins.bottom=oldBottom;doc.y=oldY}\nfunction pdata'''
+          s2,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+          if n!=1: raise SystemExit(f'Footer replacement failed: {n}')
+          p.write_text(s2,encoding='utf-8')
+          PY
+
       - name: Update docs
         run: |
           python3 - <<'PY'
@@ -68,6 +82,7 @@ jobs:
           grep -q 'Semantic cross-field reconciliation' src/report-suite.ts
           grep -q 'Suspected stale metadata' src/report-suite.ts
           grep -q 'footer/watermark regression' tests/report.test.ts
+          grep -q 'margins.bottom=0' src/report-suite.ts
 
       - name: Commit tested report suite to branch
         run: |
