@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-v1.4.0-00c853?style=for-the-badge" alt="v1.4.0">
+  <a href="https://github.com/vpicciuolo/url-intelligence-agent/releases/tag/v1.4.0"><img src="https://img.shields.io/badge/release-v1.4.0-00c853?style=for-the-badge" alt="v1.4.0 release"></a>
   <img src="https://img.shields.io/badge/provenance_schema-1.0-0ea5e9?style=for-the-badge" alt="Provenance schema 1.0">
   <img src="https://img.shields.io/badge/TypeScript-first-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Node-18.17%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18.17+">

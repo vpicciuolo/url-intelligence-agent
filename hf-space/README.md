@@ -60,7 +60,7 @@ Open-source URL and web intelligence agent created by **Vincenzo Picciuolo / HRN
 v1.4.0 builds on the **Claim Provenance & Temporal Consistency Engine** with semantic cross-field reconciliation, stronger stale-metadata detection, bound-aware claim comparison and typed source-verification contracts. Original observations remain traceable even when the resolver selects a preferred value.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-v1.4.0-00c853?style=for-the-badge" alt="v1.4.0">
+  <a href="https://github.com/vpicciuolo/url-intelligence-agent/releases/tag/v1.4.0"><img src="https://img.shields.io/badge/release-v1.4.0-00c853?style=for-the-badge" alt="v1.4.0 release"></a>
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/"><img src="https://img.shields.io/badge/TRY%20LIVE-Evidence%20Inspector-2563EB?style=for-the-badge" alt="Try live"></a>
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/mcp"><img src="https://img.shields.io/badge/REMOTE%20MCP-2026--07--28-7C3AED?style=for-the-badge" alt="Remote MCP"></a>
   <a href="https://github.com/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/GITHUB-Open%20Source-111827?style=for-the-badge&logo=github" alt="GitHub"></a>
