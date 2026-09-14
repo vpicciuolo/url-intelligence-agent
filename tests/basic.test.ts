@@ -4,8 +4,9 @@ import { PROJECT, creditsLine } from "../src/credits.js";
 import { parsePage, classifyImportant, pagePriority } from "../src/extract.js";
 import { detectTechnologies, extractBrand } from "../src/analyzers.js";
 import { discoverApiSurfaces, extractCommerceSignals, structuredDataInventory } from "../src/extensions.js";
-import { analyzeRepresentation, buildProvenanceReport, exportProvJson, normalizeEvidenceValue, verifyClaim } from "../src/provenance.js";
+import { analyzeRepresentation, buildProvenanceReport, exportProvJson, inspectProvenance, normalizeEvidenceValue, verifyClaim } from "../src/provenance.js";
 import { diffSnapshots } from "../src/monitor.js";
+import { mcpTools } from "../src/mcp.js";
 import { assertPublicAddresses, isBlockedIp } from "../src/net.js";
 import type { PageSignal, Snapshot } from "../src/types.js";
 
@@ -13,8 +14,8 @@ test("credits are embedded in the provenance release", () => {
   assert.match(creditsLine(), /Vincenzo Picciuolo/);
   assert.match(creditsLine(), /horno\.net/);
   assert.match(creditsLine(), /HORNO Network/);
-  assert.equal(PROJECT.version, "1.3.0");
-  assert.equal(PROJECT.release, "Semantic Conflict Intelligence Release");
+  assert.equal(PROJECT.version, "1.4.0");
+  assert.equal(PROJECT.release, "Semantic Reconciliation & Source Verification Release");
   assert.equal(PROJECT.website, "https://horno.net");
 });
 
@@ -87,6 +88,66 @@ test("80,000+ metadata vs 100,502 rendered is drift, not logical contradiction",
   assert.ok(claim?.flags.includes("stale_metadata_suspected"));
   assert.equal(claim?.displayValue, 100502);
   assert.equal(report.summary.conflictClaims, 0);
+});
+
+test("v1.4 reconciles semantically equivalent cross-field metrics while preserving original observations", () => {
+  const page = provenancePage(
+    `<html><head><meta property="og:description" content="80,000+ curated MCPs"></head><body><h1>Stats</h1></body></html>`,
+    `<html><head><meta property="og:description" content="80,000+ curated MCPs"></head><body><div>100,502 servers</div></body></html>`
+  );
+  const report = buildProvenanceReport([page]);
+  const claim = report.claims.find(x => x.predicate === "metric:mcp_servers");
+  assert.ok(claim);
+  assert.notEqual(claim?.status, "conflict");
+  assert.ok(claim?.flags.includes("semantic_cross_field_reconciliation"));
+  assert.ok(claim?.flags.includes("precision_difference"));
+  assert.ok(claim?.flags.includes("stale_metadata_suspected"));
+  assert.equal(claim?.displayValue, 100502);
+  const originals = new Set(report.observations.filter(x => claim?.observationIds.includes(x.id)).map(x => x.predicate));
+  assert.ok(originals.has("metric:curated_mcps"));
+  assert.ok(originals.has("metric:mcp_servers") || originals.has("metric:servers"));
+});
+
+test("v1.4 does not merge explicitly scoped active metrics with unscoped totals", () => {
+  const page = provenancePage(
+    `<html><head><meta property="og:description" content="80,000 active servers"></head><body></body></html>`,
+    `<html><body><div>100,502 servers</div></body></html>`
+  );
+  const report = buildProvenanceReport([page]);
+  assert.ok(report.claims.some(x => x.predicate === "metric:active_mcp_servers"));
+  assert.ok(report.claims.some(x => x.predicate === "metric:mcp_servers"));
+});
+
+test("v1.4 keeps lower-bound numbers inside prose from becoming a hard factual disagreement", () => {
+  const url = "https://bounds.test/";
+  const html = `<html><head><meta name="description" content="80,000+ servers available"><meta property="og:description" content="100,502 servers available"></head><body></body></html>`;
+  const rep = analyzeRepresentation(html, url, "source_html", { finalUrl: url });
+  const page: PageSignal = { ...parsePage(html, url, 200), representations: [rep], observations: rep.observations };
+  const report = buildProvenanceReport([page]);
+  const description = report.claims.find(x => x.predicate === "description");
+  assert.ok(description);
+  assert.notEqual(description?.status, "conflict");
+});
+
+test("v1.4 provenance inspection reports truncation instead of looking complete", () => {
+  const url = "https://selection.test/";
+  const html = `<html><head><meta name="description" content="Example"><meta property="og:title" content="Example"></head><body>42 users</body></html>`;
+  const rep = analyzeRepresentation(html, url, "source_html", { finalUrl: url });
+  const page: PageSignal = { ...parsePage(html, url, 200), representations: [rep], observations: rep.observations };
+  const report = buildProvenanceReport([page]);
+  const inspected = inspectProvenance(report, undefined, 1) as any;
+  assert.equal(inspected.selection.returnedClaims, 1);
+  assert.equal(inspected.selection.truncated, report.claims.length > 1);
+  assert.equal(inspected.selection.totalMatchedClaims, report.claims.length);
+});
+
+test("v1.4 MCP provenance schemas describe nested claims and observations", () => {
+  const tools = mcpTools(undefined, true) as any[];
+  const inspect = tools.find(tool => tool.name === "inspect_provenance");
+  const verify = tools.find(tool => tool.name === "verify_claim");
+  assert.ok(inspect?.outputSchema?.properties?.provenance?.properties?.claims?.items?.properties?.predicate);
+  assert.ok(inspect?.outputSchema?.properties?.provenance?.properties?.observations?.items?.properties?.source);
+  assert.ok(verify?.outputSchema?.properties?.verification?.properties?.matches?.items?.properties?.relation);
 });
 
 test("structured exact price disagreement becomes a field-level conflict", () => {

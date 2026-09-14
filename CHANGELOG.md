@@ -3,6 +3,27 @@
 All notable changes to URL Intelligence Agent are documented here.
 
 
+## 1.4.0 — Semantic Reconciliation & Source Verification Release
+
+### Semantic cross-field reconciliation
+- Reconciles semantically equivalent metric predicates across metadata, structured data, rendered content and runtime/API evidence.
+- Preserves every original observation predicate, raw value, normalized value, source layer and timestamp.
+- Keeps explicit scope qualifiers such as active/daily/monthly/paid separate to reduce false merges.
+
+### Stale metadata and claim comparison
+- Expands stale-metadata detection to Meta, Open Graph, Twitter Cards, JSON-LD, Microdata and RDFa against visible/API evidence.
+- Keeps staleness as a suspected evidence state rather than asserting it as fact.
+- Fixes free-text factual-anchor handling so lower/upper bounds and approximations do not become false exact contradictions.
+
+### Source verification and machine contracts
+- Claim verification now understands reconciled metric aliases.
+- Provenance inspection exposes selection/truncation metadata.
+- MCP output schemas now describe nested observations, claims, conflicts and verification matches instead of opaque object placeholders.
+
+### Tests and hosted release
+- Adds regression coverage for cross-field aliases, scope separation, lower-bound prose, completeness metadata and MCP schema depth.
+- Updates GitHub/Hugging Face release metadata and live deployment checks to v1.4.0.
+
 ## 1.3.0 — Semantic Conflict Intelligence Release
 
 ### Conflict intelligence

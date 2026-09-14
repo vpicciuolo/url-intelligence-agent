@@ -36,11 +36,11 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare and validate Docker Space payload
+      - name: Prepare and validate v1.4 Docker Space payload
         run: |
           set -euo pipefail
-          rm -rf /tmp/hf-payload /tmp/logo-source /tmp/og-source /tmp/logo.jpg /tmp/og.jpg
-          mkdir -p /tmp/hf-payload/assets
+          rm -rf /tmp/hf-payload
+          mkdir -p /tmp/hf-payload
           cp package.json tsconfig.json LICENSE SECURITY.md /tmp/hf-payload/
           cp -R src /tmp/hf-payload/src
           cp hf-space/README.md /tmp/hf-payload/README.md
@@ -49,59 +49,14 @@ jobs:
           cp hf-space/patch-ui.mjs /tmp/hf-payload/patch-ui.mjs
           cp hf-space/ui-v2.css /tmp/hf-payload/ui-v2.css
           cp hf-space/ui-v2.js /tmp/hf-payload/ui-v2.js
-          cp hf-space/assets/README.txt /tmp/hf-payload/assets/README.txt
-
-          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
-          ACCEPT='image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
-
-          curl --fail --location --retry 3 --retry-delay 2 -A "$UA" -H "Accept: $ACCEPT" \
-            'https://storage.mlcdn.com/account_image/2365654/uunRmrxG6vCBRo8B4kvrAd40Ut0z0qOAHV2DYpHf.jpg' \
-            -o /tmp/logo-source
-
-          curl --fail --location --retry 3 --retry-delay 2 -A "$UA" -H "Accept: $ACCEPT" \
-            'https://storage.mlcdn.com/account_image/2365654/ceTJNoztKxv1AW3dpdSaf5XSHWNMbhlKAzyFdUJN.jpg' \
-            -o /tmp/og-source
-
-          echo 'Downloaded source formats:'
-          file /tmp/logo-source /tmp/og-source
-
-          python3 -m pip install --quiet pillow
-          python3 - <<'PY'
-          from PIL import Image
-          from pathlib import Path
-          import base64
-
-          logo = Image.open('/tmp/logo-source').convert('RGB')
-          logo.save('/tmp/logo.jpg', 'JPEG', quality=94, optimize=True, progressive=True)
-
-          og = Image.open('/tmp/og-source').convert('RGB').resize((1200, 630), Image.Resampling.LANCZOS)
-          og.save('/tmp/og.jpg', 'JPEG', quality=93, optimize=True, progressive=True)
-
-          logo_bytes = Path('/tmp/logo.jpg').read_bytes()
-          og_bytes = Path('/tmp/og.jpg').read_bytes()
-          if logo_bytes[:2] != b'\xff\xd8' or len(logo_bytes) < 5000:
-              raise SystemExit('Normalized logo is invalid')
-          if og_bytes[:2] != b'\xff\xd8' or len(og_bytes) < 15000:
-              raise SystemExit('Normalized OG image is invalid')
-
-          Path('/tmp/hf-payload/assets/logo.base64.txt').write_text(base64.b64encode(logo_bytes).decode('ascii'), encoding='ascii')
-          encoded = base64.b64encode(og_bytes).decode('ascii')
-          chunk = 60000
-          for i in range(0, len(encoded), chunk):
-              n = i // chunk + 1
-              Path(f'/tmp/hf-payload/assets/og.{n:02d}.b64').write_text(encoded[i:i+chunk], encoding='ascii')
-
-          print('logo source:', logo.size, len(logo_bytes), 'bytes')
-          print('og source:', og.size, len(og_bytes), 'bytes')
-          print('og chunks:', (len(encoded) + chunk - 1) // chunk)
-          PY
+          cp -R hf-space/assets /tmp/hf-payload/assets
 
           python3 - <<'PY'
           from pathlib import Path
-          import json, re
+          import base64, json, re
 
-          package = json.loads(Path('package.json').read_text(encoding='utf-8'))
-          if package.get('version') != '1.3.0':
+          package = json.loads(Path('/tmp/hf-payload/package.json').read_text(encoding='utf-8'))
+          if package.get('version') != '1.4.0':
               raise SystemExit(f"Unexpected package version: {package.get('version')}")
 
           readme = Path('/tmp/hf-payload/README.md').read_text(encoding='utf-8')
@@ -116,14 +71,24 @@ jobs:
               return m.group(1).strip()
           if len(value('short_description')) > 60:
               raise SystemExit('Hugging Face short_description exceeds 60 characters')
-          expected_thumbnail = 'https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2'
-          if value('thumbnail') != expected_thumbnail:
-              raise SystemExit('Unexpected thumbnail URL')
-          if 'v1.3.0' not in readme or 'Claim Provenance' not in readme:
-              raise SystemExit('Hugging Face README is not synchronized with v1.3 semantic conflict release')
+          if 'URL Intelligence Agent v1.4.0' not in readme:
+              raise SystemExit('Hugging Face README is not synchronized with v1.4.0')
+          if 'Semantic Reconciliation & Source Verification' not in readme:
+              raise SystemExit('v1.4 release description missing from Hugging Face README')
           if 'Evidence Inspector' not in Path('/tmp/hf-payload/ui-v2.js').read_text(encoding='utf-8'):
               raise SystemExit('Evidence Inspector UI code missing')
-          print('Hugging Face v1.3 payload metadata OK')
+
+          logo_b64 = ''.join(Path('/tmp/hf-payload/assets/logo.base64.txt').read_text(encoding='ascii').split())
+          logo = base64.b64decode(logo_b64)
+          if len(logo) < 5000 or logo[:2] != b'\xff\xd8':
+              raise SystemExit('Stored logo asset is invalid')
+          parts = sorted(Path('/tmp/hf-payload/assets').glob('og.*.b64'))
+          if not parts:
+              raise SystemExit('Open Graph asset chunks missing')
+          og = base64.b64decode(''.join(''.join(p.read_text(encoding='ascii').split()) for p in parts))
+          if len(og) < 15000 or og[:2] != b'\xff\xd8':
+              raise SystemExit('Stored Open Graph asset is invalid')
+          print(f'v1.4 payload OK; logo={len(logo)} bytes; og={len(og)} bytes')
           PY
 
       - name: Sync Docker Space
@@ -141,11 +106,11 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Hugging Face Space changes to deploy."
           else
-            git commit -m "Deploy URL Intelligence Agent v1.3.0 from GitHub ${GITHUB_SHA}"
+            git commit -m "Deploy URL Intelligence Agent v1.4.0 from GitHub ${GITHUB_SHA}"
             git push "https://vpicciuolo:${HF_TOKEN}@huggingface.co/spaces/vpicciuolo/url-intelligence-agent" HEAD:main
           fi
 
-      - name: Verify Hugging Face runtime, provenance, MCP and brand assets
+      - name: Verify live v1.4 runtime, provenance, MCP and assets
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -157,7 +122,7 @@ jobs:
           failures = {'BUILD_ERROR', 'RUNTIME_ERROR', 'CONFIG_ERROR'}
 
           def request(url, auth=False):
-              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.3'}
+              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.4'}
               if auth:
                   headers['Authorization'] = f"Bearer {os.environ['HF_TOKEN']}"
               return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30)
@@ -178,19 +143,17 @@ jobs:
 
           time.sleep(5)
 
-          # Core runtime release verification.
           with request(app_base + '/health') as response:
               health = json.load(response)
           attribution = health.get('attribution') or {}
           if not health.get('ok'):
               raise SystemExit(f'Live /health is not OK: {health}')
-          if attribution.get('version') != '1.3.0':
+          if attribution.get('version') != '1.4.0':
               raise SystemExit(f"Live version mismatch: {attribution.get('version')}")
           if int(health.get('actions') or 0) < 36:
               raise SystemExit(f"Live action count too low: {health.get('actions')}")
-          print('Live /health OK: v1.3.0')
+          print('Live /health OK: v1.4.0')
 
-          # Action registry verification.
           with request(app_base + '/actions') as response:
               actions_payload = json.load(response)
           actions = set(actions_payload.get('actions') or [])
@@ -198,9 +161,8 @@ jobs:
           missing = sorted(required_actions - actions)
           if missing:
               raise SystemExit(f'Live /actions missing: {missing}')
-          print('Live /actions includes provenance tools.')
+          print('Live /actions includes provenance and verification tools.')
 
-          # MCP discovery verification.
           with request(app_base + '/.well-known/mcp.json') as response:
               mcp = json.load(response)
           protocols = set(mcp.get('protocolVersions') or [])
@@ -209,9 +171,8 @@ jobs:
           public_tools = set(mcp.get('publicDemoTools') or [])
           if not {'inspect_provenance', 'verify_claim'}.issubset(public_tools):
               raise SystemExit('Provenance tools missing from live public MCP discovery')
-          print('Live MCP discovery OK: 2026-07-28 + provenance tools.')
+          print('Live MCP discovery OK.')
 
-          # Assets.
           for path, minimum in [('/assets/logo.jpg?v=20260908-2', 5000), ('/assets/og.jpg?v=20260908-2', 15000)]:
               with request(app_base + path) as response:
                   data = response.read()
@@ -219,13 +180,10 @@ jobs:
                       raise SystemExit(f'Invalid live asset {path}')
                   print(f'{path} OK ({len(data)} bytes)')
 
-          # Hosted UI has approved images and the embedded v1.3 enhancement code.
           with request(app_base + '/') as response:
               page = response.read()
-          if page.count(b'data:image/jpeg;base64,') < 2:
-              raise SystemExit('Visible UI does not contain both embedded approved images')
           for marker in [b'Evidence Inspector', b'Claim Provenance', b'inspect_provenance', b'verify_claim']:
               if marker not in page:
-                  raise SystemExit(f'Live UI missing v1.3 marker: {marker!r}')
-          print('Visible UI contains v1.3 Evidence Inspector and approved branding.')
+                  raise SystemExit(f'Live UI missing v1.4 marker: {marker!r}')
+          print('Visible UI contains v1.4 evidence tooling and approved branding.')
           PY

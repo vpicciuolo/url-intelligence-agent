@@ -27,6 +27,63 @@ const DATE_PREDICATES = /(?:date|published|modified|created|updated|start_at|end
 const URL_PREDICATES = /(?:^url$|_url$|canonical|image|logo|favicon|same_as|feed_url)/i;
 const MONEY_PREDICATES = /(?:price|cost|amount|fee|revenue)/i;
 
+const METRIC_STRONG_SCOPE = new Set([
+  "active", "inactive", "daily", "weekly", "monthly", "annual", "yearly", "paid", "free",
+  "verified", "online", "offline", "available", "concurrent", "unique"
+]);
+
+const METRIC_BASE_ALIASES: Record<string, string> = {
+  server: "mcp_servers", servers: "mcp_servers", mcp: "mcp_servers", mcps: "mcp_servers",
+  mcpserver: "mcp_servers", mcpservers: "mcp_servers",
+  follower: "followers", followers: "followers",
+  user: "users", users: "users", customer: "customers", customers: "customers",
+  member: "members", members: "members", employee: "employees", employees: "employees",
+  review: "reviews", reviews: "reviews", rating: "ratings", ratings: "ratings",
+  download: "downloads", downloads: "downloads", view: "views", views: "views",
+  like: "likes", likes: "likes", subscriber: "subscribers", subscribers: "subscribers",
+  install: "installs", installs: "installs", page: "pages", pages: "pages",
+  url: "urls", urls: "urls", item: "items", items: "items", product: "products", products: "products"
+};
+
+function metricWords(value: string): string[] {
+  return value
+    .replace(/^metric:/i, "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "_")
+    .split("_")
+    .filter(Boolean);
+}
+
+function canonicalMetricPredicate(predicate: string): string {
+  const words = metricWords(predicate);
+  if (!words.length) return predicate;
+
+  const strongScope = [...new Set(words.filter(word => METRIC_STRONG_SCOPE.has(word)))].sort();
+  let base: string | undefined;
+
+  if (words.includes("page") || words.includes("pages")) {
+    if (words.includes("indexed") || words.includes("index")) base = "pages_indexed";
+  }
+  if (!base && words.some(word => ["server", "servers", "mcp", "mcps", "mcpserver", "mcpservers"].includes(word))) base = "mcp_servers";
+  if (!base) {
+    const candidates = words.filter(word => !METRIC_STRONG_SCOPE.has(word) && !["count", "number", "of", "total", "curated", "indexed", "index", "metric"].includes(word));
+    for (const word of candidates) {
+      if (METRIC_BASE_ALIASES[word]) { base = METRIC_BASE_ALIASES[word]; break; }
+    }
+    if (!base && candidates.length) base = candidates.join("_");
+  }
+  if (!base) return predicate;
+  return `metric:${strongScope.length ? strongScope.join("_") + "_" : ""}${base}`;
+}
+
+function canonicalPredicateForGrouping(observation: EvidenceObservation): string {
+  const predicate = observation.predicate;
+  const metricLike = predicate.startsWith("metric:") || /(?:_count|count$|followers?|following|views?|likes?|downloads?|users?|customers?|members?|employees?|reviews?|ratings?|pages?|urls?|items?|products?|subscribers?|installs?|servers?|mcps?)/i.test(predicate);
+  return metricLike ? canonicalMetricPredicate(predicate) : predicate;
+}
+
 const SOURCE_AUTHORITY: Record<EvidenceLayer, number> = {
   api: 0.98,
   visible_dom: 0.94,
@@ -557,13 +614,53 @@ function setMetrics(a: string[], b: string[]) {
 
 function factualAnchors(input: string): string[] {
   const out = new Set<string>();
-  for (const match of input.matchAll(/(?:^|[^\p{L}\p{N}])([-+]?\d[\d\s,.]*)(?:\s*([kmb]))?(?:\b|\+|$)/giu)) {
-    const normalized = numericCore(`${match[1]}${match[2] || ""}`);
-    if (normalized?.kind === "number") out.add(`n:${normalized.value}`);
+  for (const match of input.matchAll(/(?:^|[^\p{L}\p{N}])([-+]?\d[\d\s,.]*)(?:\s*([kmb]))?(\+)?(?!\+)(?:\b|$)/giu)) {
+    const normalized = numericCore(`${match[1]}${match[2] || ""}${match[3] || ""}`);
+    // A lower/upper bound or approximation is not an incompatible factual anchor by itself.
+    // Exact-vs-bound compatibility is handled by the numeric claim resolver.
+    if (normalized?.kind === "number" && normalized.exact) out.add(`n:${normalized.value}`);
   }
   for (const match of input.matchAll(/https?:\/\/[^\s)\]}>]+/gi)) out.add(`u:${normalizeUrl(match[0]) || match[0]}`);
   for (const match of input.matchAll(/\b(?:USD|EUR|GBP|AED)\b|[$€£]/gi)) out.add(`c:${match[0].toUpperCase()}`);
   return [...out].sort();
+}
+
+const EMBEDDED_NUMBER_PATTERN = /(?:about|approximately|around|roughly|over|under|more than|less than|at least|at most|minimum|maximum|min\.?|max\.?|>=|<=|>|<|~|≈)?\s*[-+]?\d[\d\s,.]*(?:\s*[kmb])?\+?/giu;
+
+function embeddedNumericValues(input: string): Extract<NormalizedEvidenceValue, { kind: "number" }>[] {
+  const out: Extract<NormalizedEvidenceValue, { kind: "number" }>[] = [];
+  for (const match of input.matchAll(EMBEDDED_NUMBER_PATTERN)) {
+    const raw = String(match[0] || "").trim();
+    if (!raw) continue;
+    const normalized = numericCore(raw);
+    if (normalized?.kind === "number") out.push(normalized);
+  }
+  return out;
+}
+
+function stripEmbeddedNumbers(input: string): string {
+  return input.replace(EMBEDDED_NUMBER_PATTERN, " ").replace(/\s+/g, " ").trim();
+}
+
+function embeddedNumericStatementsCompatible(a: string, b: string): boolean {
+  const av = embeddedNumericValues(a);
+  const bv = embeddedNumericValues(b);
+  if (!av.length || av.length !== bv.length) return false;
+  const used = new Set<number>();
+  for (const left of av) {
+    let found = -1;
+    for (let i = 0; i < bv.length; i++) {
+      if (used.has(i)) continue;
+      const right = bv[i];
+      if (overlaps({ min: left.min ?? null, max: left.max ?? null }, { min: right.min ?? null, max: right.max ?? null })) {
+        found = i;
+        break;
+      }
+    }
+    if (found < 0) return false;
+    used.add(found);
+  }
+  return true;
 }
 
 function sameStringSet(a: string[], b: string[]): boolean {
@@ -584,6 +681,15 @@ function compareTextValues(a: Extract<NormalizedEvidenceValue, { kind: "string" 
   const aAnchors = factualAnchors(a.value), bAnchors = factualAnchors(b.value);
   const anchorsDiffer = aAnchors.length > 0 && bAnchors.length > 0 && !sameStringSet(aAnchors, bAnchors);
   const negationDiffers = hasNegation(at) !== hasNegation(bt);
+  const embeddedNumbersCompatible = embeddedNumericStatementsCompatible(a.value, b.value);
+  if (embeddedNumbersCompatible && !negationDiffers) {
+    const aWithoutNumbers = semanticTokens(stripEmbeddedNumbers(a.value));
+    const bWithoutNumbers = semanticTokens(stripEmbeddedNumbers(b.value));
+    const textOnlyMetrics = setMetrics(aWithoutNumbers, bWithoutNumbers);
+    if (textOnlyMetrics.sameSet || textOnlyMetrics.containment >= 0.8 || textOnlyMetrics.jaccard >= 0.7) {
+      return { relation: "compatible_range", conflict: false, severity: "none", explanation: "Embedded numeric statements are range-compatible and the surrounding semantic content aligns; the difference is precision/detail rather than contradiction." };
+    }
+  }
 
   if (anchorsDiffer) {
     return { relation: "factual_disagreement", conflict: true, severity: "high", explanation: `Free-text values contain different factual anchors (${aAnchors.join(", ")} vs ${bAnchors.join(", ")}).` };
@@ -690,6 +796,8 @@ function resolveGroup(subject: string, predicate: string, observations: Evidence
   }
 
   const flags: string[] = [];
+  const originalPredicates = unique(observations.map(x => x.predicate));
+  if (originalPredicates.length > 1) flags.push("semantic_cross_field_reconciliation");
   const relations = new Set(comparisons.map(x => x.relation));
   if (relations.has("semantic_equivalent")) flags.push("semantic_equivalence");
   if (relations.has("wording_variation")) flags.push("wording_variation");
@@ -705,13 +813,25 @@ function resolveGroup(subject: string, predicate: string, observations: Evidence
   if (numberKinds.some(x => x.exact) && numberKinds.some(x => !x.exact)) flags.push("precision_difference");
   if (VOLATILE_PREDICATES.test(predicate) && flags.includes("representation_drift")) flags.push("freshness_divergence");
 
-  const renderedExact = observations.filter(x => x.source.representation === "rendered_dom" && x.source.layer === "visible_dom" && x.normalizedValue.kind === "number" && x.normalizedValue.exact).sort((a, b) => observationScore(b, predicate) - observationScore(a, predicate))[0];
-  const staticNumeric = observations.filter(x => ["meta", "open_graph", "twitter_card", "source_html"].includes(x.source.layer) && x.normalizedValue.kind === "number").sort((a, b) => observationScore(b, predicate) - observationScore(a, predicate))[0];
-  if (renderedExact && staticNumeric && renderedExact.normalizedValue.kind === "number" && staticNumeric.normalizedValue.kind === "number") {
-    const current = renderedExact.normalizedValue.value;
-    const previous = staticNumeric.normalizedValue.value;
-    const delta = Math.abs(current - previous);
-    if (current > previous && delta / Math.max(1, previous) >= 0.05) flags.push("stale_metadata_suspected");
+  const dynamicExact = observations
+    .filter(x => ["visible_dom", "api"].includes(x.source.layer) && x.normalizedValue.kind === "number" && x.normalizedValue.exact)
+    .sort((a, b) => observationScore(b, predicate) - observationScore(a, predicate))[0];
+  const metadataNumeric = observations
+    .filter(x => ["meta", "open_graph", "twitter_card", "json_ld", "microdata", "rdfa"].includes(x.source.layer) && x.normalizedValue.kind === "number")
+    .sort((a, b) => observationScore(b, predicate) - observationScore(a, predicate))[0];
+  if (dynamicExact && metadataNumeric && dynamicExact.normalizedValue.kind === "number" && metadataNumeric.normalizedValue.kind === "number") {
+    const current = dynamicExact.normalizedValue.value;
+    const previous = metadataNumeric.normalizedValue.value;
+    const deltaRatio = Math.abs(current - previous) / Math.max(1, Math.abs(previous));
+    const metadataIsBound = !metadataNumeric.normalizedValue.exact;
+    const compatibleWithBound = metadataIsBound && overlaps(
+      { min: metadataNumeric.normalizedValue.min ?? null, max: metadataNumeric.normalizedValue.max ?? null },
+      { min: current, max: current }
+    );
+    const dynamicTime = Date.parse(dynamicExact.temporal.observedAt || "");
+    const metadataTime = Date.parse(metadataNumeric.temporal.observedAt || "");
+    const notOlderObservation = !Number.isFinite(dynamicTime) || !Number.isFinite(metadataTime) || dynamicTime >= metadataTime;
+    if (notOlderObservation && current > previous && (compatibleWithBound || deltaRatio >= 0.02)) flags.push("stale_metadata_suspected");
   }
 
   const ranked = [...observations].sort((a, b) => observationScore(b, predicate) - observationScore(a, predicate));
@@ -721,7 +841,8 @@ function resolveGroup(subject: string, predicate: string, observations: Evidence
     `Selected ${preferred.source.layer}/${preferred.source.representation} using extraction, source-authority and freshness dimensions.`,
     observations.length > 1 ? `${observations.length} observations compared across ${representations.size} representation(s) and ${layers.size} evidence layer(s).` : "Only one observation is available for this claim."
   ];
-  if (flags.includes("stale_metadata_suspected")) explanation.push("A higher exact rendered value materially exceeds a static metadata value; metadata staleness is suspected, not asserted as fact.");
+  if (flags.includes("semantic_cross_field_reconciliation")) explanation.push(`Semantically equivalent metric labels were reconciled across fields while preserving the original predicates on each observation: ${originalPredicates.join(", ")}.`);
+  if (flags.includes("stale_metadata_suspected")) explanation.push("A newer/dynamic exact value materially advances beyond metadata or structured evidence; metadata staleness is suspected, not asserted as fact.");
   if (flags.includes("precision_difference")) explanation.push("Approximate/lower-bound and exact values are treated as compatible when their numeric ranges overlap.");
   if (flags.includes("semantic_equivalence")) explanation.push("Surface wording differs, but deterministic semantic-token comparison found equivalent meaning without conflicting factual anchors.");
   if (flags.includes("wording_variation")) explanation.push("Free-text wording/detail varies without evidence of a factual or logical contradiction.");
@@ -746,7 +867,8 @@ export function buildProvenanceReport(pages: PageSignal[]): ProvenanceReport {
   const observations = [...new Map(pages.flatMap(page => page.observations || page.representations?.flatMap(rep => rep.observations) || []).map(obs => [obs.id, obs])).values()];
   const groups = new Map<string, EvidenceObservation[]>();
   for (const observation of observations) {
-    const key = `${observation.subject}\u0000${observation.predicate}`;
+    const groupedPredicate = canonicalPredicateForGrouping(observation);
+    const key = `${observation.subject}\u0000${groupedPredicate}`;
     const current = groups.get(key) || [];
     current.push(observation);
     groups.set(key, current);
@@ -784,14 +906,27 @@ export function buildProvenanceReport(pages: PageSignal[]): ProvenanceReport {
 
 export function inspectProvenance(report: ProvenanceReport, predicate?: string, limit = 100) {
   const query = String(predicate || "").trim().toLowerCase();
-  const claims = report.claims.filter(claim => !query || claim.predicate.toLowerCase() === query || claim.predicate.toLowerCase().includes(query)).slice(0, Math.max(1, Math.min(500, limit)));
+  const canonicalQuery = query ? canonicalMetricPredicate(query.startsWith("metric:") ? query : `metric:${query}`) : "";
+  const matched = report.claims.filter(claim => {
+    if (!query) return true;
+    const value = claim.predicate.toLowerCase();
+    return value === query || value.includes(query) || value === canonicalQuery;
+  });
+  const effectiveLimit = Math.max(1, Math.min(500, limit));
+  const claims = matched.slice(0, effectiveLimit);
   const ids = new Set(claims.flatMap(claim => claim.observationIds));
-  return { schemaVersion: report.schemaVersion, generatedAt: report.generatedAt, summary: report.summary, claims, observations: report.observations.filter(obs => ids.has(obs.id)), warnings: report.warnings };
+  return {
+    schemaVersion: report.schemaVersion, generatedAt: report.generatedAt, summary: report.summary,
+    selection: { predicate: predicate || null, totalMatchedClaims: matched.length, returnedClaims: claims.length, limit: effectiveLimit, truncated: matched.length > claims.length },
+    claims, observations: report.observations.filter(obs => ids.has(obs.id)), warnings: report.warnings
+  };
 }
 
 export function verifyClaim(report: ProvenanceReport, predicate: string, claimedValue: JsonValue) {
-  const normalized = normalizeEvidenceValue(claimedValue, predicate);
-  const matches = report.claims.filter(claim => claim.predicate.toLowerCase() === predicate.toLowerCase() || claim.predicate.toLowerCase().includes(predicate.toLowerCase()));
+  const canonicalPredicate = canonicalMetricPredicate(predicate.startsWith("metric:") ? predicate : `metric:${predicate}`);
+  const normalized = normalizeEvidenceValue(claimedValue, canonicalPredicate);
+  const query = predicate.toLowerCase();
+  const matches = report.claims.filter(claim => claim.predicate.toLowerCase() === query || claim.predicate.toLowerCase().includes(query) || claim.predicate === canonicalPredicate);
   if (!matches.length) return { status: "not_found" as const, predicate, claimedValue, normalized, explanation: "No matching predicate was observed in collected evidence." };
   const evaluated = matches.map(claim => {
     const comparison = compareValues(claim.value, normalized, claim.predicate);
