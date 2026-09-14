@@ -61,6 +61,9 @@ jobs:
       - name: Provenance fixtures
         run: npm run test:provenance-fixtures
 
+      - name: Normalize generated Markdown whitespace
+        run: sed -i 's/[[:space:]]\+$//' VERSIONING.md
+
       - name: Validate release
         run: |
           git diff --check
