@@ -9,6 +9,7 @@ on:
       - scripts/apply-v1.4-release.mjs
       - scripts/fix-v1.4-mcp.mjs
       - scripts/fix-v1.4-bound-anchors.mjs
+      - scripts/fix-v1.4-text-numeric-compat.mjs
       - .github/workflows/apply-v1.4-release.yml
   workflow_dispatch:
 
@@ -42,6 +43,9 @@ jobs:
       - name: Preserve lower-bound qualifiers in free-text anchors
         run: node scripts/fix-v1.4-bound-anchors.mjs
 
+      - name: Compare numeric ranges embedded in free text
+        run: node scripts/fix-v1.4-text-numeric-compat.mjs
+
       - name: Normalize typed MCP output schemas
         run: node scripts/fix-v1.4-mcp.mjs
 
@@ -66,7 +70,17 @@ jobs:
           grep -q 'version: "1.4.0"' src/credits.ts
           grep -q semantic_cross_field_reconciliation src/provenance.ts
           grep -q totalMatchedClaims src/provenance.ts
+          grep -q embeddedNumericStatementsCompatible src/provenance.ts
           grep -q normalizedEvidenceSchema src/mcp.ts
+
+      - name: Remove one-shot release tooling
+        run: |
+          rm -f .github/workflows/apply-v1.4-release.yml
+          rm -f scripts/apply-v1.4-release.mjs
+          rm -f scripts/fix-v1.4-mcp.mjs
+          rm -f scripts/fix-v1.4-bound-anchors.mjs
+          rm -f scripts/fix-v1.4-text-numeric-compat.mjs
+          rm -f package-lock.json
 
       - name: Commit tested release
         run: |
