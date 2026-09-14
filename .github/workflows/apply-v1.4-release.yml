@@ -28,11 +28,14 @@ jobs:
         with:
           node-version: 22
 
+      - name: Normalize provenance documentation heading for release patch
+        run: node -e 'const fs=require("fs");const p="docs/PROVENANCE.md";let s=fs.readFileSync(p,"utf8");const a="# Claim Provenance & Temporal Consistency Engine";const b="# Claim provenance and temporal consistency";if(!s.includes(a))throw new Error("provenance heading missing");fs.writeFileSync(p,s.replace(a,b));'
+
       - name: Apply v1.4 implementation
         run: node scripts/apply-v1.4-release.mjs
 
       - name: Preserve original metric predicates in observation ledger
-        run: node -e "const fs=require('fs');const p='src/provenance.ts';let s=fs.readFileSync(p,'utf8');const a='return canonicalMetricPredicate(`metric:${slug}`);';const b='return `metric:${slug}`;';if(!s.includes(a))throw new Error('metric predicate patch target missing');fs.writeFileSync(p,s.replace(a,b));"
+        run: node -e 'const fs=require("fs");const p="src/provenance.ts";let s=fs.readFileSync(p,"utf8");const a="return canonicalMetricPredicate(`metric:${slug}`);";const b="return `metric:${slug}`;";if(!s.includes(a))throw new Error("metric predicate patch target missing");fs.writeFileSync(p,s.replace(a,b));'
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
