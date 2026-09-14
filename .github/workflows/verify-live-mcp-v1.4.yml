@@ -1,0 +1,106 @@
+name: Verify Live MCP v1.4
+
+on:
+  workflow_run:
+    workflows: ["Deploy Hugging Face Space"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-mcp:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify live MCP 2026-07-28 handshake and v1.4 tools
+        run: |
+          python3 - <<'PY'
+          import json
+          import urllib.request
+
+          base = 'https://vpicciuolo-url-intelligence-agent.hf.space'
+          protocol = '2026-07-28'
+
+          def get_json(path):
+              req = urllib.request.Request(
+                  base + path,
+                  headers={'User-Agent': 'url-intelligence-agent-mcp-v1.4-ci/1.0'}
+              )
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  return json.load(response), dict(response.headers)
+
+          def mcp(method, params, name=None, request_id=1):
+              headers = {
+                  'User-Agent': 'url-intelligence-agent-mcp-v1.4-ci/1.0',
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json, text/event-stream',
+                  'MCP-Protocol-Version': protocol,
+                  'Mcp-Method': method,
+              }
+              if name:
+                  headers['Mcp-Name'] = name
+              payload = json.dumps({
+                  'jsonrpc': '2.0',
+                  'id': request_id,
+                  'method': method,
+                  'params': params,
+              }).encode('utf-8')
+              req = urllib.request.Request(base + '/mcp', data=payload, headers=headers, method='POST')
+              with urllib.request.urlopen(req, timeout=45) as response:
+                  body = json.load(response)
+                  powered = response.headers.get('x-powered-by', '')
+              if 'error' in body:
+                  raise SystemExit(f'MCP {method} returned JSON-RPC error: {body["error"]}')
+              if 'URL Intelligence Agent/1.4.0' not in powered:
+                  raise SystemExit(f'Unexpected live MCP server header: {powered!r}')
+              return body.get('result') or {}
+
+          discovery, _ = get_json('/.well-known/mcp.json')
+          protocols = set(discovery.get('protocolVersions') or [])
+          if protocol not in protocols:
+              raise SystemExit(f'MCP {protocol} missing from live discovery: {sorted(protocols)}')
+          public = set(discovery.get('publicDemoTools') or [])
+          expected_public = {'investigate_url', 'inspect_provenance', 'verify_claim', 'structured_data'}
+          if not expected_public.issubset(public):
+              raise SystemExit(f'Live MCP discovery missing tools: {sorted(expected_public - public)}')
+          print('Discovery OK:', protocol, sorted(expected_public))
+
+          initialized = mcp('initialize', {
+              'protocolVersion': protocol,
+              'capabilities': {},
+              'clientInfo': {'name': 'github-live-mcp-check', 'version': '1.0'},
+          }, request_id=1)
+          server = initialized.get('serverInfo') or {}
+          if initialized.get('protocolVersion') != protocol:
+              raise SystemExit(f'Negotiated protocol mismatch: {initialized.get("protocolVersion")}')
+          if server.get('name') != 'url-intelligence-agent' or server.get('version') != '1.4.0':
+              raise SystemExit(f'Unexpected serverInfo: {server}')
+          print('Initialize OK:', server)
+
+          listed = mcp('tools/list', {}, request_id=2)
+          tools = {tool.get('name'): tool for tool in listed.get('tools') or [] if tool.get('name')}
+          required = {'investigate_url', 'inspect_provenance', 'verify_claim'}
+          if not required.issubset(tools):
+              raise SystemExit(f'tools/list missing v1.4 tools: {sorted(required - set(tools))}')
+
+          inspect_schema = ((tools['inspect_provenance'].get('outputSchema') or {}).get('properties') or {}).get('provenance') or {}
+          inspect_props = inspect_schema.get('properties') or {}
+          for key in ['summary', 'selection', 'claims', 'observations', 'warnings']:
+              if key not in inspect_props:
+                  raise SystemExit(f'inspect_provenance output schema missing {key}')
+
+          verify_schema = ((tools['verify_claim'].get('outputSchema') or {}).get('properties') or {}).get('verification') or {}
+          verify_props = verify_schema.get('properties') or {}
+          for key in ['status', 'predicate', 'matches']:
+              if key not in verify_props:
+                  raise SystemExit(f'verify_claim output schema missing {key}')
+
+          investigate_props = (tools['investigate_url'].get('outputSchema') or {}).get('properties') or {}
+          if 'provenance' not in investigate_props:
+              raise SystemExit('investigate_url output schema missing provenance')
+
+          print('tools/list OK: typed v1.4 provenance and verification contracts are live.')
+          print('LIVE MCP v1.4 VERIFICATION PASSED')
+          PY
