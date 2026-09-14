@@ -1,6 +1,6 @@
 # URL Intelligence Benchmark Results
 
-Generated: **2026-09-08T09:16:11Z**  
+Generated: **2026-09-14T15:05:00Z**  
 Benchmark cases: **55**  
 Overall assertion score: **100.00%**  
 Deterministic assertion score: **100.00%**
