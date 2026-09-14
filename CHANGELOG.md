@@ -24,6 +24,12 @@ All notable changes to URL Intelligence Agent are documented here.
 - Adds regression coverage for cross-field aliases, scope separation, lower-bound prose, completeness metadata and MCP schema depth.
 - Updates GitHub/Hugging Face release metadata and live deployment checks to v1.4.0.
 
+### Report suite upgrade
+- Rebuilds PDF, HTML, Markdown and JSON reporting around the v1.4 evidence model.
+- Adds visual KPI cards, assessment bars, evidence-layer distribution, semantic reconciliation tables, stale-metadata tables, conflict/drift registers, source-diversity summaries and structured crawl/RAG/provenance appendices.
+- Fixes PDF footer pagination so watermark/page-number rendering no longer creates duplicate blank pages.
+- Adds regression coverage for bounded PDF page counts and v1.4 report sections.
+
 ## 1.3.0 — Semantic Conflict Intelligence Release
 
 ### Conflict intelligence
