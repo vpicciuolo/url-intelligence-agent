@@ -68,6 +68,10 @@ Version **1.4.0** strengthens the existing provenance engine so downstream agent
 
 Selecting a preferred value never deletes the alternatives. If the evidence cannot resolve a disagreement, the claim remains a conflict or drift state and the evidence trail stays intact.
 
+### Reporting suite
+
+The v1.4 report suite presents the evidence model in polished PDF, HTML, Markdown and JSON exports. PDF and HTML include visual summaries, structured tables, semantic reconciliation, stale-metadata analysis, conflict/drift registers, source-diversity summaries and traceable appendices. PDF footer pagination is regression-tested to prevent blank-page multiplication.
+
 ### Previous release: v1.3.0 — Semantic Conflict Intelligence
 
 Version **1.3.0** makes conflict detection meaning-aware and substantially reduces false positives in free-text metadata.
