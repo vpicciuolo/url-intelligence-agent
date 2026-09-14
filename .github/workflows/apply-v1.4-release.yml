@@ -1,0 +1,88 @@
+name: Build URL Intelligence Agent v1.4.0
+
+on:
+  push:
+    branches: [release/v1.4.0]
+    paths:
+      - 'scripts/apply-v1.4-release.mjs'
+      - '.github/workflows/apply-v1.4-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-v1.4-release
+  cancel-in-progress: true
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release/v1.4.0
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Preserve original extracted metric labels
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/apply-v1.4-release.mjs')
+          s = p.read_text(encoding='utf-8')
+          old = '''  const metricReturn = `  return \\`metric:\\${slug}\\`;\\n}`;
+          const metricReturnNew = `  return canonicalMetricPredicate(\\`metric:\\${slug}\\`);\\n}`;
+          s = replaceOnce(s, metricReturn, metricReturnNew, "metricPredicate canonicalization");
+
+'''
+          if old not in s:
+              raise SystemExit('Expected metricPredicate patch block not found')
+          p.write_text(s.replace(old, ''), encoding='utf-8')
+          PY
+
+      - name: Apply v1.4 implementation
+        run: node scripts/apply-v1.4-release.mjs
+
+      - name: Restore one-shot patch source
+        run: git checkout -- scripts/apply-v1.4-release.mjs
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build and deterministic tests
+        run: npm test
+
+      - name: Provenance fixtures
+        run: npm run test:provenance-fixtures
+
+      - name: Validate release diff
+        run: |
+          git diff --check
+          test "$(cat VERSION)" = "1.4.0"
+          test "$(cat hf-space/VERSION)" = "1.4.0"
+          node -e "const p=require('./package.json'); if(p.version!=='1.4.0') process.exit(1)"
+          grep -q 'version: "1.4.0"' src/credits.ts
+          grep -q 'semantic_cross_field_reconciliation' src/provenance.ts
+          grep -q 'totalMatchedClaims' src/provenance.ts
+          grep -q 'normalizedEvidenceSchema' src/mcp.ts
+
+      - name: Commit tested v1.4 release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No release changes to commit."
+            exit 0
+          fi
+          git commit -m "feat: release v1.4.0 semantic reconciliation and source verification"
+          git push origin HEAD:release/v1.4.0
