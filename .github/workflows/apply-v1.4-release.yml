@@ -7,6 +7,7 @@ on:
       - release/v1.4.0
     paths:
       - scripts/apply-v1.4-release.mjs
+      - scripts/fix-v1.4-mcp.mjs
       - .github/workflows/apply-v1.4-release.yml
   workflow_dispatch:
 
@@ -36,6 +37,9 @@ jobs:
 
       - name: Preserve original metric predicates in observation ledger
         run: node -e 'const fs=require("fs");const p="src/provenance.ts";let s=fs.readFileSync(p,"utf8");const a="return canonicalMetricPredicate(`metric:${slug}`);";const b="return `metric:${slug}`;";if(!s.includes(a))throw new Error("metric predicate patch target missing");fs.writeFileSync(p,s.replace(a,b));'
+
+      - name: Normalize typed MCP output schemas
+        run: node scripts/fix-v1.4-mcp.mjs
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
