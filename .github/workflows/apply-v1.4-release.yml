@@ -76,9 +76,13 @@ jobs:
           grep -q embeddedNumericStatementsCompatible src/provenance.ts
           grep -q normalizedEvidenceSchema src/mcp.ts
 
-      - name: Remove one-shot release tooling
+      - name: Keep workflow changes out of the Actions-authenticated push
         run: |
-          rm -f .github/workflows/apply-v1.4-release.yml
+          git checkout HEAD -- .github/workflows/deploy-huggingface.yml
+          git checkout HEAD -- .github/workflows/apply-v1.4-release.yml
+
+      - name: Remove one-shot release scripts
+        run: |
           rm -f scripts/apply-v1.4-release.mjs
           rm -f scripts/fix-v1.4-mcp.mjs
           rm -f scripts/fix-v1.4-bound-anchors.mjs
