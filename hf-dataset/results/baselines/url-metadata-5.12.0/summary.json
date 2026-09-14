@@ -3,8 +3,8 @@
   "benchmark_cases": 55,
   "predictions": 55,
   "missing": [],
-  "generated_at": "2026-09-14T15:05:32Z",
-  "git_sha": "d9335e653eddf92f6d4d9749ed2e3b2dcc9cfa26",
+  "generated_at": "2026-09-14T17:50:50Z",
+  "git_sha": "59578f37f3ef3b7c997ba4abaf39382056e4df7e",
   "overall_score": 100.0,
   "deterministic_score": 100.0,
   "metrics": {
@@ -141,6 +141,6 @@
       "pct": 100.0
     }
   },
-  "average_network_elapsed_ms": 87,
+  "average_network_elapsed_ms": 55,
   "failures": []
 }

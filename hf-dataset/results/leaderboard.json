@@ -1,13 +1,13 @@
 {
   "benchmark": "vpicciuolo/url-intelligence-benchmark",
   "benchmark_version": "v0.1",
-  "generated_at": "2026-09-14T15:05:33.019Z",
+  "generated_at": "2026-09-14T17:50:51.096Z",
   "ranking_policy": "Only entries with 100% reject/block safety accuracy receive a rank. Eligible entries are ordered by overall assertion score; equal scores share the same rank. Full-agent completion is shown separately because library baselines do not implement the full agent pipeline.",
   "entries": [
     {
       "id": "url-intelligence-agent",
       "name": "URL Intelligence Agent",
-      "version": "commit cad25314",
+      "version": "commit 44416e67",
       "source": "https://github.com/vpicciuolo/url-intelligence-agent",
       "hugging_face": "https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent",
       "license": "MIT",
@@ -19,8 +19,8 @@
         "benchmark_cases": 55,
         "predictions": 55,
         "missing": [],
-        "generated_at": "2026-09-14T15:05:00Z",
-        "git_sha": "cad253141dc9329e6a87862edc585e306eb38594",
+        "generated_at": "2026-09-14T17:50:24Z",
+        "git_sha": "44416e678ba571ebed33545c6aa15f391a352b5d",
         "overall_score": 100,
         "deterministic_score": 100,
         "metrics": {
@@ -157,7 +157,7 @@
             "pct": 100
           }
         },
-        "average_network_elapsed_ms": 148,
+        "average_network_elapsed_ms": 32,
         "failures": []
       },
       "safety_gate_passed": true,
@@ -178,8 +178,8 @@
         "benchmark_cases": 55,
         "predictions": 55,
         "missing": [],
-        "generated_at": "2026-09-14T15:05:32Z",
-        "git_sha": "d9335e653eddf92f6d4d9749ed2e3b2dcc9cfa26",
+        "generated_at": "2026-09-14T17:50:50Z",
+        "git_sha": "59578f37f3ef3b7c997ba4abaf39382056e4df7e",
         "overall_score": 100,
         "deterministic_score": 100,
         "metrics": {
@@ -316,7 +316,7 @@
             "pct": 100
           }
         },
-        "average_network_elapsed_ms": 87,
+        "average_network_elapsed_ms": 55,
         "failures": []
       },
       "safety_gate_passed": true,
@@ -337,8 +337,8 @@
         "benchmark_cases": 55,
         "predictions": 55,
         "missing": [],
-        "generated_at": "2026-09-14T15:05:32Z",
-        "git_sha": "d9335e653eddf92f6d4d9749ed2e3b2dcc9cfa26",
+        "generated_at": "2026-09-14T17:50:51Z",
+        "git_sha": "59578f37f3ef3b7c997ba4abaf39382056e4df7e",
         "overall_score": 71.67,
         "deterministic_score": 72.9,
         "metrics": {
@@ -475,7 +475,7 @@
             "pct": 0
           }
         },
-        "average_network_elapsed_ms": 86,
+        "average_network_elapsed_ms": 39,
         "failures": [
           {
             "id": "web-001",
