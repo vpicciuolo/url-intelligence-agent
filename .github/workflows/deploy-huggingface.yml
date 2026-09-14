@@ -39,8 +39,8 @@ jobs:
       - name: Prepare and validate v1.4 Docker Space payload
         run: |
           set -euo pipefail
-          rm -rf /tmp/hf-payload
-          mkdir -p /tmp/hf-payload
+          rm -rf /tmp/hf-payload /tmp/logo-source /tmp/og-source /tmp/logo.jpg /tmp/og.jpg
+          mkdir -p /tmp/hf-payload/assets
           cp package.json tsconfig.json LICENSE SECURITY.md /tmp/hf-payload/
           cp -R src /tmp/hf-payload/src
           cp hf-space/README.md /tmp/hf-payload/README.md
@@ -49,11 +49,44 @@ jobs:
           cp hf-space/patch-ui.mjs /tmp/hf-payload/patch-ui.mjs
           cp hf-space/ui-v2.css /tmp/hf-payload/ui-v2.css
           cp hf-space/ui-v2.js /tmp/hf-payload/ui-v2.js
-          cp -R hf-space/assets /tmp/hf-payload/assets
+          cp hf-space/assets/README.txt /tmp/hf-payload/assets/README.txt
 
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          ACCEPT='image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+
+          curl --fail --location --retry 3 --retry-delay 2 -A "$UA" -H "Accept: $ACCEPT" \
+            'https://storage.mlcdn.com/account_image/2365654/uunRmrxG6vCBRo8B4kvrAd40Ut0z0qOAHV2DYpHf.jpg' \
+            -o /tmp/logo-source
+
+          curl --fail --location --retry 3 --retry-delay 2 -A "$UA" -H "Accept: $ACCEPT" \
+            'https://storage.mlcdn.com/account_image/2365654/ceTJNoztKxv1AW3dpdSaf5XSHWNMbhlKAzyFdUJN.jpg' \
+            -o /tmp/og-source
+
+          python3 -m pip install --quiet pillow
           python3 - <<'PY'
+          from PIL import Image
           from pathlib import Path
           import base64, json, re
+
+          logo = Image.open('/tmp/logo-source').convert('RGB')
+          logo.save('/tmp/logo.jpg', 'JPEG', quality=94, optimize=True, progressive=True)
+
+          og = Image.open('/tmp/og-source').convert('RGB').resize((1200, 630), Image.Resampling.LANCZOS)
+          og.save('/tmp/og.jpg', 'JPEG', quality=93, optimize=True, progressive=True)
+
+          logo_bytes = Path('/tmp/logo.jpg').read_bytes()
+          og_bytes = Path('/tmp/og.jpg').read_bytes()
+          if logo_bytes[:2] != b'\xff\xd8' or len(logo_bytes) < 5000:
+              raise SystemExit('Normalized logo is invalid')
+          if og_bytes[:2] != b'\xff\xd8' or len(og_bytes) < 15000:
+              raise SystemExit('Normalized OG image is invalid')
+
+          Path('/tmp/hf-payload/assets/logo.base64.txt').write_text(base64.b64encode(logo_bytes).decode('ascii'), encoding='ascii')
+          encoded = base64.b64encode(og_bytes).decode('ascii')
+          chunk = 60000
+          for i in range(0, len(encoded), chunk):
+              n = i // chunk + 1
+              Path(f'/tmp/hf-payload/assets/og.{n:02d}.b64').write_text(encoded[i:i+chunk], encoding='ascii')
 
           package = json.loads(Path('/tmp/hf-payload/package.json').read_text(encoding='utf-8'))
           if package.get('version') != '1.4.0':
@@ -78,17 +111,7 @@ jobs:
           if 'Evidence Inspector' not in Path('/tmp/hf-payload/ui-v2.js').read_text(encoding='utf-8'):
               raise SystemExit('Evidence Inspector UI code missing')
 
-          logo_b64 = ''.join(Path('/tmp/hf-payload/assets/logo.base64.txt').read_text(encoding='ascii').split())
-          logo = base64.b64decode(logo_b64)
-          if len(logo) < 5000 or logo[:2] != b'\xff\xd8':
-              raise SystemExit('Stored logo asset is invalid')
-          parts = sorted(Path('/tmp/hf-payload/assets').glob('og.*.b64'))
-          if not parts:
-              raise SystemExit('Open Graph asset chunks missing')
-          og = base64.b64decode(''.join(''.join(p.read_text(encoding='ascii').split()) for p in parts))
-          if len(og) < 15000 or og[:2] != b'\xff\xd8':
-              raise SystemExit('Stored Open Graph asset is invalid')
-          print(f'v1.4 payload OK; logo={len(logo)} bytes; og={len(og)} bytes')
+          print(f'v1.4 payload OK; logo={len(logo_bytes)} bytes; og={len(og_bytes)} bytes; og_chunks={(len(encoded) + chunk - 1) // chunk}')
           PY
 
       - name: Sync Docker Space
