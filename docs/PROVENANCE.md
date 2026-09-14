@@ -1,4 +1,13 @@
-# Claim Provenance & Temporal Consistency Engine
+# Claim provenance and temporal consistency
+
+## v1.4 semantic reconciliation and source verification
+
+v1.4 adds a reconciliation layer before claim resolution. Metric labels from different evidence surfaces can be grouped when they are semantically equivalent, while strong scope qualifiers remain separate. The original predicates are never rewritten in the observation ledger; only the derived claim grouping is canonicalized.
+
+Stale metadata is evaluated across Meta/Open Graph/Twitter Cards/JSON-LD/Microdata/RDFa against visible or runtime/API evidence. A stale signal is explicitly probabilistic evidence: it does not delete the older value and does not convert compatible lower bounds into contradictions.
+
+Inspection responses include selection metadata so a limited response cannot be mistaken for the complete evidence set.
+
 
 URL Intelligence Agent v1.2.0 treats web extraction as an evidence-resolution problem rather than a single-value scraping problem.
 

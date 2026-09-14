@@ -1,3 +1,5 @@
+> **v1.4:** provenance/verification output schemas now expose typed nested claims, observations, conflicts and selection metadata for downstream agents.
+
 # URL Intelligence Agent — MCP integration
 
 URL Intelligence Agent v1.2.0 exposes the evidence engine through local stdio MCP and Remote MCP.

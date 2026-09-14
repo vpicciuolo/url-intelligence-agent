@@ -46,7 +46,12 @@ tags:
   <img src="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2" alt="URL Intelligence Agent — evidence-first URL and web intelligence" width="100%">
 </p>
 
-# 🧠 URL Intelligence Agent v1.3.0
+# 🧠 URL Intelligence Agent v1.4.0
+
+**v1.4 — Semantic Reconciliation & Source Verification**
+
+The live Space now reconciles equivalent metrics across metadata/structured/rendered/runtime evidence, expands suspected stale-metadata detection, preserves lower-bound semantics such as `80,000+`, exposes complete source reasoning, and publishes typed provenance/verification MCP contracts. Competing observations remain visible even when a preferred value is selected.
+
 
 ### Public URL in. Evidence, provenance, consistency and intelligence out.
 

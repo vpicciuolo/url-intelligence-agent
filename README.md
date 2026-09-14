@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-v1.3.0-00c853?style=for-the-badge" alt="v1.3.0">
+  <img src="https://img.shields.io/badge/release-v1.4.0-00c853?style=for-the-badge" alt="v1.4.0">
   <img src="https://img.shields.io/badge/provenance_schema-1.0-0ea5e9?style=for-the-badge" alt="Provenance schema 1.0">
   <img src="https://img.shields.io/badge/TypeScript-first-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Node-18.17%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18.17+">
@@ -55,7 +55,20 @@ The repository is continuously measured against the public **URL Intelligence Be
 **Detailed results:** [hf-dataset/results/latest.md](hf-dataset/results/latest.md)
 <!-- HF_BENCHMARK_END -->
 
-## 🧬 What's new in v1.3.0 — Semantic Conflict Intelligence
+## 🧬 What's new in v1.4.0 — Semantic Reconciliation & Source Verification
+
+Version **1.4.0** strengthens the existing provenance engine so downstream agents inherit evidence they can inspect rather than certainty they must trust.
+
+- **Semantic cross-field reconciliation** connects the same metric across Open Graph, Twitter Cards, JSON-LD, API/runtime evidence and rendered content even when labels differ, while preserving each original observation and keeping explicit scope differences separate.
+- **Stronger stale-metadata detection** compares dynamic visible/API values against Meta, Open Graph, Twitter Cards, JSON-LD, Microdata and RDFa evidence without treating freshness as certainty.
+- **Bound-aware factual comparison** prevents values such as `80,000+` and `100,502` from becoming false contradictions when the lower bound is logically compatible.
+- **Traceable source resolution** keeps competing raw/normalised values, timestamps, confidence dimensions, source layers and reasoning attached to the resolved claim.
+- **Complete inspection metadata** states when a filtered/limited provenance response is truncated.
+- **Typed MCP output contracts** now describe nested provenance observations, claims, conflicts and verification matches for `inspect_provenance`, `verify_claim` and the provenance portion of `investigate_url`.
+
+Selecting a preferred value never deletes the alternatives. If the evidence cannot resolve a disagreement, the claim remains a conflict or drift state and the evidence trail stays intact.
+
+### Previous release: v1.3.0 — Semantic Conflict Intelligence
 
 Version **1.3.0** makes conflict detection meaning-aware and substantially reduces false positives in free-text metadata.
 
