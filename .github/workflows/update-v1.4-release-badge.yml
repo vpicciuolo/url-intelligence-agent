@@ -1,0 +1,51 @@
+name: Link v1.4.0 release badges
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update-v1.4-release-badge.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update_badges:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Link release badges
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          release = 'https://github.com/vpicciuolo/url-intelligence-agent/releases/tag/v1.4.0'
+          old = '  <img src="https://img.shields.io/badge/release-v1.4.0-00c853?style=for-the-badge" alt="v1.4.0">'
+          new = f'  <a href="{release}"><img src="https://img.shields.io/badge/release-v1.4.0-00c853?style=for-the-badge" alt="v1.4.0 release"></a>'
+
+          for filename in ['README.md', 'hf-space/README.md']:
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'Expected v1.4.0 badge not found in {filename}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+              print(f'Updated {filename}')
+          PY
+
+      - name: Validate links
+        run: |
+          grep -q 'href="https://github.com/vpicciuolo/url-intelligence-agent/releases/tag/v1.4.0"' README.md
+          grep -q 'href="https://github.com/vpicciuolo/url-intelligence-agent/releases/tag/v1.4.0"' hf-space/README.md
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md hf-space/README.md
+          git commit -m "docs: link v1.4.0 badges to release"
+          git push origin HEAD:main
