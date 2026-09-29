@@ -91,6 +91,14 @@ export function parsePage(html: string, url: string, status = 200, fetchResult?:
   const favicon = absolute(one(html, /<link[^>]+rel=["'][^"']*(?:icon|shortcut icon)[^"']*["'][^>]+href=["']([^"']+)["']/i) || one(html, /<link[^>]+href=["']([^"']+)["'][^>]+rel=["'][^"']*(?:icon|shortcut icon)[^"']*["']/i), url) || absolute("/favicon.ico", url);
   const language = one(html, /<html[^>]+lang=["']([^"']+)["']/i) || meta["content-language"];
   const robots = meta.robots;
+  const alternateCandidates = [...html.matchAll(/<link\b[^>]*>/gi)].map(match => {
+    const attrs = parseAttributes(match[0]);
+    if (!/\balternate\b/i.test(attrs.rel || "") || !attrs.href) return undefined;
+    const href = absolute(attrs.href, url);
+    if (!href) return undefined;
+    return { href, ...(attrs.hreflang ? { hreflang: attrs.hreflang } : {}), ...(attrs.media ? { media: attrs.media } : {}) };
+  }).filter((x): x is { href: string; hreflang?: string; media?: string } => Boolean(x));
+  const alternates = [...new Map(alternateCandidates.map(x => [`${x.hreflang || ""}|${x.media || ""}|${x.href}`, x])).values()].slice(0, 100);
   const headings = all(html, /<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi).map(stripTags).filter(Boolean).slice(0, 50);
   const rawLinks = all(html, /<a[^>]+href=["']([^"']+)["']/gi);
   const links = unique(rawLinks.map(x => absolute(x, url)).filter((x): x is string => Boolean(x && /^https?:/i.test(x))));
@@ -122,6 +130,7 @@ export function parsePage(html: string, url: string, status = 200, fetchResult?:
     favicon,
     language,
     robots,
+    alternates,
     jsonLdTypes: jsonLd.types,
     jsonLd: jsonLd.documents,
     headings,
