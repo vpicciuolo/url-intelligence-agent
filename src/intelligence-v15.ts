@@ -393,7 +393,7 @@ function buildSecurityPosture(result: IntelligenceResult) {
   if (!headers["cross-origin-opener-policy"]) score -= 5;
   if (!headers["cross-origin-resource-policy"]) score -= 4;
   if (!headers["permissions-policy"]) score -= 4;
-  const securityTxtLinked = result.pages.some(page => page.links.some(link => /\/\.well-known\/security\.txt(?:$|\?)/i.test(link))) || Boolean(result.importantPages.security);
+  const securityTxtLinked = result.pages.some(page => page.links.some(link => /\/\.well-known\/security\.txt(?:$|\?)/i.test(link)));
 
   return {
     score: clamp(score),
@@ -405,7 +405,7 @@ function buildSecurityPosture(result: IntelligenceResult) {
       coep: headers["cross-origin-embedder-policy"],
       corp: headers["cross-origin-resource-policy"]
     },
-    securityTxtSignal: securityTxtLinked
+    securityTxtLinked
   };
 }
 
@@ -486,7 +486,6 @@ export function buildUrlIntelligenceExtension(result: IntelligenceResult) {
   if (searchDiscovery.hreflang.declared > searchDiscovery.hreflang.reciprocal) reasonCodes.add("HREFLANG_CONFLICT");
   if (security.csp.present && (security.csp.unsafeEval || security.csp.unsafeInline || security.csp.wildcardSource)) reasonCodes.add("CSP_WEAK_POLICY");
   if (!security.hsts.present || security.hsts.maxAge < 15552000) reasonCodes.add("HSTS_WEAK_POLICY");
-  if (!security.securityTxtSignal) reasonCodes.add("SECURITY_TXT_MISSING");
 
   const topScore = Math.max(0, ...claimAssessments.map(x => x.score), ...[...reasonCodes].map(reasonWeight));
   const classification = buildClassification(result);
