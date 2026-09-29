@@ -32,19 +32,17 @@ jobs:
             capture { print }
           ' CHANGELOG.md > /tmp/release-notes.md
           test -s /tmp/release-notes.md
-          cat >> /tmp/release-notes.md <<'EOF'
-
-## Compatibility promise
-
-v1.4 remains the frozen compatibility contract. New v1.5 intelligence is additive under `meta.extensions.urlIntelligence`.
-
-## Live
-
-- Hugging Face Space: https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent
-- Remote MCP: https://vpicciuolo-url-intelligence-agent.hf.space/mcp
-- Benchmark dataset: https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark
-EOF
-
+          printf '%s\n' '' \
+            '## Compatibility promise' \
+            '' \
+            'v1.4 remains the frozen compatibility contract. New v1.5 intelligence is additive under `meta.extensions.urlIntelligence`.' \
+            '' \
+            '## Live' \
+            '' \
+            '- Hugging Face Space: https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent' \
+            '- Remote MCP: https://vpicciuolo-url-intelligence-agent.hf.space/mcp' \
+            '- Benchmark dataset: https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark' \
+            >> /tmp/release-notes.md
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
