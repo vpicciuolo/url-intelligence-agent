@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vpicciuolo/url-intelligence-agent/schemas/v1.5/url-intelligence-extension.schema.json",
+  "title": "URL Intelligence Agent v1.5 namespaced intelligence extension",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion","compatibilityBase","classification","severityAssessment","reasonCodes","evidenceMetrics","claimAssessments","commerce","sourceIndependence","webPosture"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "compatibilityBase": { "const": "1.4.0" },
+    "classification": { "type": "object" },
+    "severityAssessment": {
+      "type": "object",
+      "required": ["score","band","legacyEquivalent"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "band": { "enum": ["info","low","medium","high","critical"] },
+        "legacyEquivalent": { "enum": ["none","low","medium","high"] }
+      }
+    },
+    "reasonCodes": { "type": "array", "items": { "type": "string" } },
+    "evidenceMetrics": { "type": "object" },
+    "claimAssessments": { "type": "array" },
+    "commerce": { "type": "object" },
+    "sourceIndependence": { "type": "object" },
+    "webPosture": { "type": "object" },
+    "technologyChangeBaseline": { "type": "object" }
+  }
+}
