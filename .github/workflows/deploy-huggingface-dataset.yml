@@ -129,7 +129,7 @@ jobs:
           token = os.environ["HF_TOKEN"]
           headers = {
               "Authorization": f"Bearer {token}",
-              "User-Agent": "url-intelligence-benchmark-deploy-check/1.2",
+              "User-Agent": "url-intelligence-benchmark-deploy-check/1.5",
           }
 
           api_url = "https://huggingface.co/api/datasets/vpicciuolo/url-intelligence-benchmark"
@@ -155,6 +155,6 @@ jobs:
                       raise SystemExit(f"Hugging Face dataset file verification failed: {path}")
                   print(f"Verified {path}")
 
-          print("Hugging Face dataset verified with provenance track.")
+          print("Hugging Face dataset verified with v1.5 provenance and commerce fixtures.")
           print("https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark")
           PY
