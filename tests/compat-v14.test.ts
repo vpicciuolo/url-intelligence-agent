@@ -152,3 +152,22 @@ test("v1.5 MCP investigate schema exposes the optional namespaced extension", ()
   assert.equal(ext?.properties?.compatibilityBase?.const, "1.4.0");
   assert.ok(ext?.properties?.severityAssessment?.properties?.band?.enum?.includes("critical"));
 });
+
+
+test("v1.5 RAG evidence inventory links documents to provenance observations", () => {
+  const result = pricingResult();
+  result.rag = [{
+    id: "url:fixture",
+    url: result.finalUrl,
+    title: "Pricing",
+    text: "Pricing US$29 per month",
+    wordCount: 4,
+    checksum: "fixture-checksum",
+    metadata: {}
+  }];
+  const extension = buildUrlIntelligenceExtension(result) as any;
+  assert.equal(extension.ragEvidence.documents, 1);
+  assert.equal(extension.ragEvidence.blocks[0].url, result.finalUrl);
+  assert.ok(Array.isArray(extension.ragEvidence.blocks[0].evidenceObservationIds));
+  assert.ok(extension.ragEvidence.blocks[0].evidenceObservationIds.length > 0);
+});
