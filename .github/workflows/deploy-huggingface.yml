@@ -108,8 +108,10 @@ jobs:
               raise SystemExit('Hugging Face README is not synchronized with v1.5.0')
           if 'Evidence Intelligence & Compatibility' not in readme:
               raise SystemExit('v1.5 release description missing from Hugging Face README')
-          if 'Evidence Inspector' not in Path('/tmp/hf-payload/ui-v2.js').read_text(encoding='utf-8'):
-              raise SystemExit('Evidence Inspector UI code missing')
+          ui = Path('/tmp/hf-payload/ui-v2.js').read_text(encoding='utf-8')
+          for marker in ['Evidence Inspector', 'Evidence Intelligence', 'urlIntelligencePanel']:
+              if marker not in ui:
+                  raise SystemExit(f'v1.5 UI code missing marker: {marker}')
 
           print(f'v1.5 payload OK; logo={len(logo_bytes)} bytes; og={len(og_bytes)} bytes; og_chunks={(len(encoded) + chunk - 1) // chunk}')
           PY
