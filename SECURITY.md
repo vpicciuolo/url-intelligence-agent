@@ -2,7 +2,7 @@
 
 URL Intelligence Agent is designed for public web intelligence. Security controls focus on preventing the agent itself from becoming a route to private/internal services while keeping collection bounded and observable.
 
-Current release: **1.4.0**
+Current release: **1.5.0**
 
 ## Security scope
 
@@ -16,6 +16,12 @@ The project intentionally analyzes public HTTP/HTTPS resources. It does not inte
 - paywalls or protected application state.
 
 Security audit output describes observable response/header posture. It is not penetration testing.
+
+## v1.5 posture intelligence
+
+v1.5 adds explainable quality checks for CSP, HSTS, cookie flags and cross-origin response policies. These remain **observable posture signals**, not penetration testing or a guarantee of security.
+
+The `domain_intelligence` action also exposes bounded public RDAP metadata and additional mail-security DNS signals. It intentionally avoids returning registrant contact PII. RDAP collection uses the same guarded public-URL transport and can be disabled with `URL_AGENT_RDAP=false`.
 
 ## Core HTTP trust boundary
 
