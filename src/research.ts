@@ -1,4 +1,5 @@
 import { safeFetch } from "./net.js";
+import { getDomain } from "tldts";
 import { parsePage } from "./extract.js";
 import type { PageSignal, WebEvidenceSource, WebResearchReport } from "./types.js";
 
@@ -70,12 +71,7 @@ function canonicalUrl(raw: string): string | undefined {
 
 function registrableDomain(hostname: string): string {
   const host = hostname.toLowerCase().replace(/^www\./, "");
-  const parts = host.split(".").filter(Boolean);
-  if (parts.length <= 2) return host;
-  const twoLevel = new Set(["co.uk", "org.uk", "gov.uk", "ac.uk", "com.au", "net.au", "org.au", "co.nz", "com.br", "com.sg", "com.hk", "co.jp", "co.in", "com.mx", "com.tr", "com.cn"]);
-  const suffix2 = parts.slice(-2).join(".");
-  if (twoLevel.has(suffix2) && parts.length >= 3) return parts.slice(-3).join(".");
-  return parts.slice(-2).join(".");
+  return getDomain(host, { allowPrivateDomains: true }) || host;
 }
 
 function isSameSite(host: string, rootDomain: string): boolean {
