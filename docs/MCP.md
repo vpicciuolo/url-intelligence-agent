@@ -1,8 +1,8 @@
-> **v1.4:** provenance/verification output schemas now expose typed nested claims, observations, conflicts and selection metadata for downstream agents.
+> **v1.5:** richer intelligence is additive under `meta.extensions.urlIntelligence`; the v1.4 result and legacy severity contract remains frozen.
 
 # URL Intelligence Agent — MCP integration
 
-URL Intelligence Agent v1.2.0 exposes the evidence engine through local stdio MCP and Remote MCP.
+URL Intelligence Agent v1.5.0 exposes the evidence engine through local stdio MCP and Remote MCP.
 
 Repository: https://github.com/vpicciuolo/url-intelligence-agent  
 Remote MCP: https://vpicciuolo-url-intelligence-agent.hf.space/mcp
@@ -20,7 +20,7 @@ The 2026-07-28 path uses per-request/stateless behavior and modern discovery/rou
 
 The server exposes `server/discover`, `ping`, `tools/list`, `tools/call`, `resources/list` and `resources/read`. Legacy clients also use `initialize` and `notifications/initialized`.
 
-## v1.2 provenance tools
+## Provenance tools
 
 ### `inspect_provenance`
 
@@ -55,9 +55,27 @@ Possible statuses are `supported`, `compatible`, `contradicted` and `not_found`.
 
 ## Strict tool schemas
 
-v1.2 advertises per-tool input and output schemas rather than giving every action the same generic argument shape. This improves autonomous tool selection and allows clients to validate structured results.
+v1.5 advertises per-tool input and output schemas rather than giving every action the same generic argument shape. This improves autonomous tool selection and allows clients to validate structured results.
 
 The normal tool result contains both text content and `structuredContent`.
+
+## v1.5 tool annotations and compatibility
+
+The v1.5 output contract adds intelligence at:
+
+```text
+meta.extensions.urlIntelligence
+```
+
+Clients written for v1.4 can ignore this namespace.
+
+MCP annotations describe side effects:
+
+- public-web investigation tools are `readOnlyHint: true` and remain open-world observations whose answers can change as websites change;
+- `create_snapshot` and `diff_snapshot` write persisted state and advertise `idempotentHint: false`;
+- `list_plugins` is read-only and closed-world.
+
+`idempotentHint` is not used as a promise that repeated web reads return equal content.
 
 ## MCP Tasks extension
 
@@ -172,6 +190,7 @@ The MCP server exposes:
 ```text
 url-intelligence://about
 url-intelligence://provenance-schema
+url-intelligence://v1.5-extension-schema
 ```
 
 The provenance-schema resource documents claim statuses and notable drift flags for machine consumers.
@@ -196,7 +215,7 @@ Rendering can preserve a separate `rendered_dom` representation and capture boun
 
 ## Hosted demo limits
 
-The public Remote MCP endpoint is deliberately abuse-limited. v1.2 additionally enforces the analysis limit by IP so creating a new legacy MCP session does not reset the allowance. Clone/self-host for unrestricted use.
+The public Remote MCP endpoint is deliberately abuse-limited. The hosted runtime additionally enforces the analysis limit by IP so creating a new legacy MCP session does not reset the allowance. Clone/self-host for unrestricted use.
 
 ## Security
 
