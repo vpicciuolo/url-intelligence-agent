@@ -265,6 +265,7 @@ const urlIntelligenceExtensionSchema: Record<string, unknown> = {
     claimAssessments: { type: "array", items: { type: "object" } },
     commerce: { type: "object" },
     sourceIndependence: { type: "object" },
+    ragEvidence: { type: "object" },
     webPosture: { type: "object" }
   }
 };
@@ -583,7 +584,7 @@ export async function processMcpMessage(req: McpMessage, options: McpProcessOpti
           path: "meta.extensions.urlIntelligence",
           severityBands: ["info", "low", "medium", "high", "critical"],
           legacySeverityUnchanged: ["none", "low", "medium", "high"],
-          sections: ["classification", "severityAssessment", "reasonCodes", "evidenceMetrics", "claimAssessments", "commerce", "sourceIndependence", "webPosture", "technologyChangeBaseline"],
+          sections: ["classification", "severityAssessment", "reasonCodes", "evidenceMetrics", "claimAssessments", "commerce", "sourceIndependence", "ragEvidence", "webPosture", "technologyChangeBaseline"],
           note: "Read-only open-world tools may return different observations across calls without producing environmental side effects. idempotentHint is only advertised on mutating tools where retry semantics are meaningful."
         }, null, 2)
       }],
