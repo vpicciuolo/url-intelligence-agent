@@ -1,0 +1,62 @@
+name: Publish GitHub Release v1.5.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-v1.5-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate release version
+        run: |
+          set -euo pipefail
+          test "$(cat VERSION)" = "1.5.0"
+          test "$(node -p "require('./package.json').version")" = "1.5.0"
+
+      - name: Prepare v1.5 release notes
+        run: |
+          set -euo pipefail
+          awk '
+            /^## 1\.5\.0 / { capture=1 }
+            /^## 1\.4\.0 / { capture=0 }
+            capture { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          test -s /tmp/release-notes.md
+          cat >> /tmp/release-notes.md <<'EOF'
+
+## Compatibility promise
+
+v1.4 remains the frozen compatibility contract. New v1.5 intelligence is additive under `meta.extensions.urlIntelligence`.
+
+## Live
+
+- Hugging Face Space: https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent
+- Remote MCP: https://vpicciuolo-url-intelligence-agent.hf.space/mcp
+- Benchmark dataset: https://huggingface.co/datasets/vpicciuolo/url-intelligence-benchmark
+EOF
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: 1e68296e43bfe28b9db8c64b5cc92abb2ab8146c
+        run: |
+          set -euo pipefail
+          if gh release view v1.5.0 >/dev/null 2>&1; then
+            echo "Release v1.5.0 already exists."
+            exit 0
+          fi
+          gh release create v1.5.0 \
+            --target "$TARGET_SHA" \
+            --title "URL Intelligence Agent v1.5.0 — Evidence Intelligence & Compatibility" \
+            --notes-file /tmp/release-notes.md
+          gh release view v1.5.0 --json tagName,name,url,targetCommitish
