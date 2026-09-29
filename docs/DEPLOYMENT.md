@@ -1,8 +1,8 @@
 # URL Intelligence Agent — Deployment Guide
 
-This guide covers URL Intelligence Agent v1.4.0.
+This guide covers URL Intelligence Agent v1.5.0.
 
-Application version: **1.3.0**  
+Application version: **1.5.0**  
 Provenance schema: **1.0**
 
 ## Deployment modes
@@ -78,6 +78,7 @@ URL_AGENT_OBEY_ROBOTS=true
 URL_AGENT_CACHE=memory
 URL_AGENT_CACHE_TTL_MS=300000
 URL_AGENT_RENDER_MODE=off
+URL_AGENT_RDAP=true
 URL_AGENT_AI_AUTO=false
 ```
 
