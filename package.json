@@ -1,6 +1,6 @@
 {
   "name": "url-intelligence-agent",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Evidence-first AI URL intelligence agent with claim-level provenance, semantic conflict classification, representation drift detection, deep crawl, entity resolution, web corroboration, SEO/security/trust audits, monitoring, RAG, MCP, API, batch workers and reports.",
   "type": "module",
   "main": "./dist/src/index.js",
@@ -33,7 +33,8 @@
     "benchmark": "npm run build && node dist/src/cli.js benchmark --raw",
     "benchmark:hf": "npm run build && node scripts/run-hf-benchmark.mjs && python3 hf-dataset/evaluate.py hf-dataset/results/predictions.jsonl --json-out hf-dataset/results/latest.json --markdown-out hf-dataset/results/latest.md",
     "mcp": "npm run build && node dist/src/cli.js mcp",
-    "serve": "npm run build && node dist/src/cli.js serve"
+    "serve": "npm run build && node dist/src/cli.js serve",
+    "test:compat-v14": "npm run build && node --test dist/tests/compat-v14.test.js"
   },
   "engines": {
     "node": ">=18.17"
@@ -81,7 +82,8 @@
   "dependencies": {
     "parse5": "^7.3.0",
     "pdfkit": "^0.17.2",
-    "undici": "^6.28.1"
+    "undici": "^6.28.1",
+    "tldts": "^7.4.16"
   },
   "peerDependencies": {
     "pg": ">=8",
