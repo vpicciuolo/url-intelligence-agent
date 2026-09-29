@@ -95,7 +95,7 @@ test("Markdown and JSON reports include v1.4 reconciliation and summary data", (
   const json = JSON.parse(generateJson(report));
   assert.match(markdown, /Semantic cross-field reconciliation/);
   assert.match(markdown, /Suspected stale metadata/);
-  assert.equal(json.report.version, "1.4.0");
+  assert.equal(json.report.version, "1.5.0");
   assert.equal(json.summary.conflicts, 0);
   assert.equal(json.summary.staleMetadataSuspected, 1);
 });

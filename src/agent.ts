@@ -12,6 +12,7 @@ import { checkLinks, complianceSignals, contentFreshness, discoverApiSurfaces, e
 import { exportProvJson, buildProvenanceReport, inspectProvenance, provenanceContradictions, provenanceWarnings, verifyClaim } from "./provenance.js";
 import { renderUrl } from "./render.js";
 import { researchExternalWeb } from "./research.js";
+import { buildUrlIntelligenceExtension } from "./intelligence-v15.js";
 import type { CrawlPolicy, EvidenceField, IntelligenceResult, JsonValue, PageSignal, ProvenanceReport, Snapshot, WebResearchReport } from "./types.js";
 
 const cache = createCache();
@@ -184,7 +185,10 @@ export async function investigate(rawUrl: string, profileOrOptions: string | Inv
   const fingerprint = createHash("sha256").update(JSON.stringify({ finalUrl: root.url, name: name.value, type: type.value, socials: socials.sort(), contacts: [...emails, ...phones].sort(), importantPages: crawl.importantPages, technologies: technologies.map(x => x.name).sort(), contentFingerprint, provenanceFingerprint })).digest("hex");
   const webWarnings = webResearch.notes.filter(x => /search query failed|unverified/i.test(x)).map(x => `Web research: ${x}`);
   let result: IntelligenceResult = { meta: { ...projectMeta(), provenanceSchema: provenance.schemaVersion }, inputUrl: rawUrl, finalUrl: root.url, profile, entity: { type, name, description }, confidenceAssessment, webResearch, provenance, seo, security, quality, trust, socials, contacts: { emails, phones }, importantPages: crawl.importantPages, pages, sitemapUrls: crawl.sitemapUrls, technologies, brand, graph: { nodes: [], edges: [] }, competitors: competitorList, rag, contradictions: findContradictions(pages, name, provenance), warnings: [...crawl.errors.map(x => `${x.url}: ${x.error}`), ...(crawl.robotsText ? [] : ["robots.txt was not available or could not be read"]), ...provenanceWarnings(provenance), ...webWarnings].slice(0, 150), fingerprint, contentFingerprint, observedAt: new Date().toISOString() };
-  result.graph = buildEntityGraph(result); result = await applyPluginEnrichers(result, { profile });
+  result.graph = buildEntityGraph(result);
+  result = await applyPluginEnrichers(result, { profile });
+  const currentExtensions = result.meta && typeof result.meta.extensions === "object" && result.meta.extensions ? result.meta.extensions as Record<string, unknown> : {};
+  result.meta = { ...result.meta, extensions: { ...currentExtensions, urlIntelligence: buildUrlIntelligenceExtension(result) } };
   if (process.env.URL_AGENT_AI_AUTO === "true") result.meta.ai = await reasonWithOpenAICompatible(result, "Produce a concise evidence-based intelligence summary. Use claim-level provenance and distinguish consensus, compatible variation, drift and contradiction. Distinguish first-party claims from independent third-party corroboration and flag uncertainty.") as unknown as JsonValue;
   await cache.set(cacheKey, result, Number(process.env.URL_AGENT_CACHE_TTL_MS || 300000)); return result;
 }

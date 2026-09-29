@@ -14,8 +14,8 @@ test("credits are embedded in the provenance release", () => {
   assert.match(creditsLine(), /Vincenzo Picciuolo/);
   assert.match(creditsLine(), /horno\.net/);
   assert.match(creditsLine(), /HORNO Network/);
-  assert.equal(PROJECT.version, "1.4.0");
-  assert.equal(PROJECT.release, "Semantic Reconciliation & Source Verification Release");
+  assert.equal(PROJECT.version, "1.5.0");
+  assert.equal(PROJECT.release, "Evidence Intelligence & Compatibility Release");
   assert.equal(PROJECT.website, "https://horno.net");
 });
 

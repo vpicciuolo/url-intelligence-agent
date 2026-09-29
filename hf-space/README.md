@@ -46,9 +46,9 @@ tags:
   <img src="https://vpicciuolo-url-intelligence-agent.hf.space/assets/og.jpg?v=20260908-2" alt="URL Intelligence Agent — evidence-first URL and web intelligence" width="100%">
 </p>
 
-# 🧠 URL Intelligence Agent v1.4.0
+# 🧠 URL Intelligence Agent v1.5.0
 
-**v1.4 — Semantic Reconciliation & Source Verification**
+**v1.5 — Evidence Intelligence & Compatibility**
 
 The live Space now reconciles equivalent metrics across metadata/structured/rendered/runtime evidence, expands suspected stale-metadata detection, preserves lower-bound semantics such as `80,000+`, exposes complete source reasoning, and publishes typed provenance/verification MCP contracts. Competing observations remain visible even when a preferred value is selected.
 
@@ -60,11 +60,27 @@ Open-source URL and web intelligence agent created by **Vincenzo Picciuolo / HRN
 v1.4.0 builds on the **Claim Provenance & Temporal Consistency Engine** with semantic cross-field reconciliation, stronger stale-metadata detection, bound-aware claim comparison and typed source-verification contracts. Original observations remain traceable even when the resolver selects a preferred value.
 
 <p align="center">
-  <a href="https://github.com/vpicciuolo/url-intelligence-agent/releases/tag/v1.4.0"><img src="https://img.shields.io/badge/release-v1.4.0-00c853?style=for-the-badge" alt="v1.4.0 release"></a>
+  <a href="https://github.com/vpicciuolo/url-intelligence-agent/releases/tag/v1.5.0"><img src="https://img.shields.io/badge/release-v1.5.0-00c853?style=for-the-badge" alt="v1.5.0 release"></a>
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/"><img src="https://img.shields.io/badge/TRY%20LIVE-Evidence%20Inspector-2563EB?style=for-the-badge" alt="Try live"></a>
   <a href="https://vpicciuolo-url-intelligence-agent.hf.space/mcp"><img src="https://img.shields.io/badge/REMOTE%20MCP-2026--07--28-7C3AED?style=for-the-badge" alt="Remote MCP"></a>
   <a href="https://github.com/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/GITHUB-Open%20Source-111827?style=for-the-badge&logo=github" alt="GitHub"></a>
 </p>
+
+## v1.5 Evidence Intelligence
+
+The hosted result now includes a dedicated **Evidence Intelligence** panel showing:
+
+- 0–100 impact severity plus `info / low / medium / high / critical`;
+- stable machine reason codes;
+- page classification;
+- evidence-layer coverage;
+- independent source groups and diversity;
+- global currency and commerce context;
+- canonical/indexability and hreflang posture;
+- CSP/HSTS quality signals;
+- highest-impact claim assessments.
+
+The richer data lives under `meta.extensions.urlIntelligence`. Existing v1.4 consumers can ignore it and continue reading the same top-level fields.
 
 ## Semantic reconciliation and source verification
 

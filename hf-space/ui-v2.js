@@ -210,6 +210,70 @@
     return card;
   }
 
+  function urlIntelligencePanel(result) {
+    const ext = result?.meta?.extensions?.urlIntelligence;
+    if (!ext) return null;
+    const severity = ext.severityAssessment || {}, classification = ext.classification || {}, primary = classification.primary || {};
+    const evidence = ext.evidenceMetrics || {}, sources = ext.sourceIndependence || {}, commerce = ext.commerce || {}, posture = ext.webPosture || {};
+    const panel = document.createElement("section"); panel.className = "open-web-panel intelligence-v15-panel";
+    const head = document.createElement("div"); head.className = "open-web-head";
+    const hgroup = document.createElement("div"), h3 = document.createElement("h3"), intro = document.createElement("p"), badge = document.createElement("span");
+    h3.textContent = "v1.5 · Evidence Intelligence";
+    intro.textContent = "A richer machine-actionable layer built on the frozen v1.4 evidence contract: impact severity, stable reason codes, page classification, commerce context, source independence and web posture.";
+    badge.className = "web-badge"; badge.textContent = `Extension schema ${ext.schemaVersion || "1.0"} · v1.4 compatible`;
+    hgroup.append(h3, intro); head.append(hgroup, badge); panel.appendChild(head);
+
+    const severityClass = severity.band === "critical" || severity.band === "high" ? "status-bad" : severity.band === "medium" ? "status-warn" : "status-good";
+    const metrics = document.createElement("div"); metrics.className = "open-web-metrics";
+    metrics.append(
+      makeMetric("Impact severity", `${String(severity.band || "info").toUpperCase()} · ${severity.score ?? 0}/100`, severityClass),
+      makeMetric("Primary page", titleCaseLocal(primary.type || "unknown")),
+      makeMetric("Source diversity", Number.isFinite(Number(sources.sourceDiversity)) ? `${Math.round(Number(sources.sourceDiversity) * 100)}%` : "—"),
+      makeMetric("Independent groups", text(sources.independentGroups ?? 0)),
+      makeMetric("Evidence layers", Number.isFinite(Number(evidence.layerCoverage)) ? `${Math.round(Number(evidence.layerCoverage) * 100)}%` : "—"),
+      makeMetric("Currencies", Array.isArray(commerce.currencies) && commerce.currencies.length ? commerce.currencies.join(", ") : "—")
+    );
+    panel.appendChild(metrics);
+
+    const explanation = document.createElement("div"); explanation.className = "web-explanation";
+    explanation.textContent = `The v1.5 score is additive and never replaces legacy conflict severity. Legacy equivalent: ${severity.legacyEquivalent || "none"}. FX is not silently applied to observed prices. Search indexability: ${posture.searchDiscovery?.indexable === false ? "review recommended" : "no blocking signal observed"}.`;
+    panel.appendChild(explanation);
+
+    const reasons = Array.isArray(ext.reasonCodes) ? ext.reasonCodes : [];
+    if (reasons.length) {
+      const details = document.createElement("details"); details.className = "web-source-section"; details.open = true;
+      const summary = document.createElement("summary"); summary.textContent = `Machine reason codes (${reasons.length})`;
+      const grid = document.createElement("div"); grid.className = "web-source-grid";
+      reasons.slice(0, 30).forEach(code => {
+        const info = ext.reasonCodeRegistry?.[code] || {};
+        const card = document.createElement("article"); card.className = "web-source-card";
+        const top = document.createElement("div"); top.className = "web-source-top";
+        const pill = document.createElement("span"); pill.className = "web-source-pill"; pill.textContent = titleCaseLocal(info.category || "intelligence"); top.appendChild(pill);
+        const title = document.createElement("div"); title.className = "web-source-title"; title.textContent = code;
+        const meta = document.createElement("div"); meta.className = "web-source-meta"; meta.textContent = info.description || "Machine-actionable v1.5 intelligence signal.";
+        card.append(top, title, meta); grid.appendChild(card);
+      });
+      details.append(summary, grid); panel.appendChild(details);
+    }
+
+    const assessments = Array.isArray(ext.claimAssessments) ? ext.claimAssessments : [];
+    if (assessments.length) {
+      const details = document.createElement("details"); details.className = "web-source-section";
+      const summary = document.createElement("summary"); summary.textContent = `Highest-impact claim assessments (${assessments.length})`;
+      const grid = document.createElement("div"); grid.className = "web-source-grid";
+      assessments.slice(0, 20).forEach(item => {
+        const card = document.createElement("article"); card.className = "web-source-card provenance-claim";
+        const top = document.createElement("div"); top.className = "web-source-top";
+        const band = document.createElement("span"); band.className = `web-source-pill ${item.band === "critical" || item.band === "high" ? "status-bad" : item.band === "medium" ? "status-warn" : "verified"}`; band.textContent = `${String(item.band || "info").toUpperCase()} · ${item.score ?? 0}/100`; top.appendChild(band);
+        const title = document.createElement("div"); title.className = "web-source-title"; title.textContent = titleCaseLocal(item.predicate || "claim");
+        const meta = document.createElement("div"); meta.className = "web-source-meta"; meta.textContent = `Legacy severity: ${item.legacySeverity || "none"} · Reasons: ${(item.reasonCodes || []).join(", ") || "none"}`;
+        card.append(top, title, meta); grid.appendChild(card);
+      });
+      details.append(summary, grid); panel.appendChild(details);
+    }
+    return panel;
+  }
+
   function provenancePanel(result) {
     const provenance = result?.provenance;
     if (!provenance?.summary) return null;
@@ -367,9 +431,10 @@
         originalRenderEvidenceSummary(result);
         const target = document.getElementById("evidenceSummary"); if (!target) return;
         enhanceLegacyConflictSection(result, target);
-        const prov = provenancePanel(result), web = openWebPanel(result);
+        const prov = provenancePanel(result), web = openWebPanel(result), intel = urlIntelligencePanel(result);
         if (web) target.insertBefore(web, target.firstChild);
         if (prov) target.insertBefore(prov, target.firstChild);
+        if (intel) target.insertBefore(intel, target.firstChild);
       };
     }
   } catch { /* enhancement only */ }
@@ -379,7 +444,7 @@
     const loading = document.getElementById("loading"); if (loading) loading.textContent = "Collecting source layers, resolving claim provenance, checking drift/conflicts and searching independent public evidence… this can take a little time.";
     const run = document.getElementById("runBtn"); if (run) run.textContent = "Run Analysis";
     const input = document.getElementById("urlInput"); if (input) input.placeholder = "https://example.com — paste any public URL";
-    const lead = document.querySelector(".hero .lead"); if (lead) lead.textContent = "Evidence-first URL and web intelligence for AI agents, developers and research workflows. v1.3 adds Semantic Conflict Intelligence on top of claim-level provenance, distinguishing harmless wording variation from factual disagreement and logical contradiction while separating target-side extraction from independent public corroboration.";
+    const lead = document.querySelector(".hero .lead"); if (lead) lead.textContent = "Evidence-first URL and web intelligence for AI agents, developers and research workflows. v1.5 adds a backward-compatible Evidence Intelligence layer with richer severity, stable reason codes, page classification, global commerce context, source independence and search/security posture while preserving the v1.4 contract.";
     const faq = document.querySelector("#faq .faq");
     if (faq && !document.getElementById("faq-provenance")) {
       const provenance = document.createElement("details"); provenance.className = "faq-item"; provenance.id = "faq-provenance";

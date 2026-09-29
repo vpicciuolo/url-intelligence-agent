@@ -1,4 +1,4 @@
-name: Verify Live MCP v1.4
+name: Verify Live MCP v1.5
 
 on:
   workflow_run:
@@ -14,7 +14,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Verify live MCP 2026-07-28 handshake and v1.4 tools
+      - name: Verify live MCP 2026-07-28 handshake and v1.5 tools
         run: |
           python3 - <<'PY'
           import json
@@ -26,14 +26,14 @@ jobs:
           def get_json(path):
               req = urllib.request.Request(
                   base + path,
-                  headers={'User-Agent': 'url-intelligence-agent-mcp-v1.4-ci/1.0'}
+                  headers={'User-Agent': 'url-intelligence-agent-mcp-v1.5-ci/1.0'}
               )
               with urllib.request.urlopen(req, timeout=30) as response:
                   return json.load(response), dict(response.headers)
 
           def mcp(method, params, name=None, request_id=1):
               headers = {
-                  'User-Agent': 'url-intelligence-agent-mcp-v1.4-ci/1.0',
+                  'User-Agent': 'url-intelligence-agent-mcp-v1.5-ci/1.0',
                   'Content-Type': 'application/json',
                   'Accept': 'application/json, text/event-stream',
                   'MCP-Protocol-Version': protocol,
@@ -83,7 +83,7 @@ jobs:
           tools = {tool.get('name'): tool for tool in listed.get('tools') or [] if tool.get('name')}
           required = {'investigate_url', 'inspect_provenance', 'verify_claim'}
           if not required.issubset(tools):
-              raise SystemExit(f'tools/list missing v1.4 tools: {sorted(required - set(tools))}')
+              raise SystemExit(f'tools/list missing v1.5 tools: {sorted(required - set(tools))}')
 
           inspect_schema = ((tools['inspect_provenance'].get('outputSchema') or {}).get('properties') or {}).get('provenance') or {}
           inspect_props = inspect_schema.get('properties') or {}
@@ -100,7 +100,15 @@ jobs:
           investigate_props = (tools['investigate_url'].get('outputSchema') or {}).get('properties') or {}
           if 'provenance' not in investigate_props:
               raise SystemExit('investigate_url output schema missing provenance')
+          meta_props = ((investigate_props.get('meta') or {}).get('properties') or {})
+          extension_props = (((meta_props.get('extensions') or {}).get('properties') or {}).get('urlIntelligence') or {}).get('properties') or {}
+          if not {'compatibilityBase', 'severityAssessment', 'reasonCodes', 'evidenceMetrics', 'commerce', 'sourceIndependence', 'webPosture'}.issubset(extension_props):
+              raise SystemExit('investigate_url output schema missing v1.5 extension fields')
 
-          print('tools/list OK: typed v1.4 provenance and verification contracts are live.')
-          print('LIVE MCP v1.4 VERIFICATION PASSED')
+          investigate_annotations = tools['investigate_url'].get('annotations') or {}
+          if investigate_annotations.get('readOnlyHint') is not True or 'idempotentHint' in investigate_annotations:
+              raise SystemExit(f'Unexpected investigate_url annotations: {investigate_annotations}')
+
+          print('tools/list OK: typed v1.5 provenance, intelligence extension and MCP annotations are live.')
+          print('LIVE MCP v1.5 VERIFICATION PASSED')
           PY

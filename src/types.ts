@@ -174,6 +174,7 @@ export type PageSignal = {
   favicon?: string;
   language?: string;
   robots?: string;
+  alternates?: { hreflang?: string; href: string; media?: string }[];
   jsonLdTypes: string[];
   jsonLd: JsonValue[];
   headings: string[];

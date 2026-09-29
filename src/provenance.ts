@@ -259,12 +259,28 @@ function dateCore(input: string): NormalizedEvidenceValue | undefined {
   return { kind: "date", value: new Date(timestamp).toISOString(), precision };
 }
 
+const MONEY_CODES = ["USD","EUR","GBP","AED","JPY","CNY","RMB","CAD","AUD","NZD","SGD","HKD","INR","KRW","CHF","SEK","NOK","DKK","PLN","CZK","HUF","RON","BGN","TRY","SAR","QAR","KWD","BHD","OMR","ZAR","BRL","MXN","ARS","CLP","COP","PEN","IDR","MYR","THB","VND","PHP","PKR","BDT","ILS","EGP","NGN","KES","RUB"] as const;
+
+function currencyFromText(source: string): string | undefined {
+  const upper = source.toUpperCase();
+  const explicit = MONEY_CODES.find(code => new RegExp(`\\b${code}\\b`, "i").test(upper));
+  if (explicit) return explicit === "RMB" ? "CNY" : explicit;
+  const localized: Array<[RegExp, string]> = [
+    [/\bUS\s*\$/i, "USD"], [/\bCA\s*\$/i, "CAD"], [/\bA(?:U)?\s*\$/i, "AUD"], [/\bNZ\s*\$/i, "NZD"],
+    [/\bSG\s*\$/i, "SGD"], [/\bHK\s*\$/i, "HKD"], [/₹/, "INR"], [/₩/, "KRW"], [/₺/, "TRY"], [/₫/, "VND"],
+    [/₱/, "PHP"], [/₪/, "ILS"], [/₽/, "RUB"], [/د\.إ|دإ/, "AED"], [/€/, "EUR"], [/£/, "GBP"]
+  ];
+  for (const [pattern, currency] of localized) if (pattern.test(source)) return currency;
+  if (/\$/.test(source)) return "USD"; // preserve the frozen v1.4 bare-dollar assumption; v1.5 ambiguity is exposed only in the namespaced extension.
+  return undefined;
+}
+
 function moneyCore(input: string): NormalizedEvidenceValue | undefined {
   const source = input.replace(/\u00a0/g, " ").trim();
   const numeric = numericCore(source);
   if (!numeric || numeric.kind !== "number") return undefined;
-  const currency = /\bUSD\b|\$/i.test(source) ? "USD" : /\bEUR\b|€/i.test(source) ? "EUR" : /\bGBP\b|£/i.test(source) ? "GBP" : /\bAED\b/i.test(source) ? "AED" : undefined;
-  const cadence = /(?:\/|per\s+)(month|mo\b)/i.test(source) ? "month" : /(?:\/|per\s+)(year|yr|annual)/i.test(source) ? "year" : /(?:\/|per\s+)(week|wk)/i.test(source) ? "week" : undefined;
+  const currency = currencyFromText(source);
+  const cadence = /(?:\/|per\s+)(hour|hr\b)/i.test(source) ? "hour" : /(?:\/|per\s+)(day|daily)/i.test(source) ? "day" : /(?:\/|per\s+)(month|mo\b|monthly)/i.test(source) ? "month" : /(?:\/|per\s+)(year|yr\b|annual|annually)/i.test(source) ? "year" : /(?:\/|per\s+)(week|wk\b|weekly)/i.test(source) ? "week" : undefined;
   return { kind: "money", amount: numeric.value, currency, cadence, exact: numeric.exact, min: numeric.min, max: numeric.max };
 }
 
@@ -282,7 +298,7 @@ export function normalizeEvidenceValue(raw: JsonValue, predicate = ""): Normaliz
     const normalized = dateCore(source);
     if (normalized) return normalized;
   }
-  if (MONEY_PREDICATES.test(predicate) || /(?:\bUSD\b|\bEUR\b|\bGBP\b|\bAED\b|[$€£])\s*\d/i.test(source)) {
+  if (MONEY_PREDICATES.test(predicate) || /(?:\b(?:USD|EUR|GBP|AED|JPY|CNY|RMB|CAD|AUD|NZD|SGD|HKD|INR|KRW|CHF|SEK|NOK|DKK|PLN|CZK|HUF|RON|BGN|TRY|SAR|QAR|KWD|BHD|OMR|ZAR|BRL|MXN|ARS|CLP|COP|PEN|IDR|MYR|THB|VND|PHP|PKR|BDT|ILS|EGP|NGN|KES|RUB)\b|[$€£₹₩₺₫₱₪₽])\s*\d/i.test(source)) {
     const normalized = moneyCore(source);
     if (normalized) return normalized;
   }

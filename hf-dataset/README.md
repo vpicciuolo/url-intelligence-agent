@@ -43,7 +43,7 @@ It is an evaluation asset, not a training corpus and not a scraped web dump.
 
 <p align="center">
   <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-benchmark-leaderboard"><img src="https://img.shields.io/badge/LEADERBOARD-Independent%20Baselines-7C3AED?style=for-the-badge" alt="Leaderboard"></a>
-  <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/LIVE%20AGENT-v1.2.0-2563EB?style=for-the-badge" alt="Live agent"></a>
+  <a href="https://huggingface.co/spaces/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/LIVE%20AGENT-v1.5.0-2563EB?style=for-the-badge" alt="Live agent"></a>
   <a href="https://github.com/vpicciuolo/url-intelligence-agent"><img src="https://img.shields.io/badge/GITHUB-Source-111827?style=for-the-badge&logo=github" alt="GitHub"></a>
 </p>
 
@@ -84,7 +84,7 @@ File:
 data/provenance.jsonl
 ```
 
-Introduced for URL Intelligence Agent v1.2.0.
+Introduced in v1.2.0 and extended through URL Intelligence Agent v1.5.0.
 
 This deterministic track measures claim provenance/consistency semantics without depending on a live external website.
 
@@ -155,6 +155,14 @@ Tests date precision normalization.
 
 Tests that duplicate metadata observations are preserved instead of silently overwritten before conflict analysis.
 
+### `currency-conflict`
+
+Tests same-scope price observations that use incompatible currencies.
+
+### `billing-cadence-conflict`
+
+Tests same-currency prices with incompatible recurring billing cadences.
+
 ## Core benchmark transparency
 
 The core benchmark intentionally measures a bounded set of URL/network fundamentals. A library can tie URL Intelligence Agent on the core score without implementing the full agent pipeline.
@@ -218,7 +226,7 @@ npm run typecheck
 npm test
 ```
 
-The v1.2 unit suite includes the lower-bound/exact regression, structured price conflict, duplicate metadata source-location preservation, claim verification and PROV export.
+The current unit suite includes the lower-bound/exact regression, structured price conflict, duplicate metadata source-location preservation, claim verification and PROV export.
 
 The `provenance` dataset configuration makes the test semantics public and inspectable on Hugging Face.
 
@@ -246,7 +254,7 @@ Future provenance/agent intelligence expansions are expected to include more det
 - source HTML vs rendered DOM differences;
 - JSON-LD vs visible content;
 - Microdata/RDFa disagreements;
-- currency/cadence conflicts;
+- richer localized pricing and tax-scope variants;
 - locale/device variants;
 - publication/modification date disagreement;
 - source independence and external corroboration;

@@ -14,7 +14,7 @@ export const toolDescriptions: Record<string, string> = {
   inspect_provenance: "Inspect field-level observations, resolved claims, source layers, representations, conflicts and provenance export.",
   verify_claim: "Verify a supplied claim value against normalized collected observations and return supported, compatible or contradicted status.",
   probe_url: "Safely probe a public URL and its redirect/status chain.",
-  domain_intelligence: "Inspect public DNS, TLS and mail/domain signals.",
+  domain_intelligence: "Inspect public DNS, TLS, RDAP, mail-security DNS and RFC security.txt signals.",
   render_page: "Render a JavaScript-heavy public page with bounded browser networking and optional same-origin runtime API evidence.",
   map_site: "Map important pages, sitemap URLs and crawled page signals.",
   deep_crawl: "Bounded multi-page crawl with robots policy, depth, rendering fallback and evidence representations.",
@@ -242,6 +242,34 @@ const provenanceSchema: Record<string, unknown> = {
   }
 };
 
+const urlIntelligenceExtensionSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: true,
+  required: ["schemaVersion", "compatibilityBase", "classification", "severityAssessment", "reasonCodes", "evidenceMetrics", "claimAssessments", "commerce", "sourceIndependence", "ragEvidence", "webPosture"],
+  properties: {
+    schemaVersion: { type: "string", const: "1.0" },
+    compatibilityBase: { type: "string", const: "1.4.0" },
+    classification: { type: "object" },
+    severityAssessment: {
+      type: "object",
+      additionalProperties: true,
+      required: ["score", "band", "legacyEquivalent"],
+      properties: {
+        score: { type: "integer", minimum: 0, maximum: 100 },
+        band: { type: "string", enum: ["info", "low", "medium", "high", "critical"] },
+        legacyEquivalent: { type: "string", enum: ["none", "low", "medium", "high"] }
+      }
+    },
+    reasonCodes: { type: "array", items: { type: "string" } },
+    evidenceMetrics: { type: "object" },
+    claimAssessments: { type: "array", items: { type: "object" } },
+    commerce: { type: "object" },
+    sourceIndependence: { type: "object" },
+    ragEvidence: { type: "object" },
+    webPosture: { type: "object" }
+  }
+};
+
 const verificationMatchSchema: Record<string, unknown> = {
   type: "object",
   additionalProperties: true,
@@ -281,7 +309,24 @@ function outputSchemaFor(name: string): Record<string, unknown> {
     return objectSchema({ meta: { type: "object" }, provenance: provenanceSchema, prov: { type: "object" } }, ["provenance"]);
   }
   if (name === "investigate_url") {
-    return { type: "object", additionalProperties: true, properties: { provenance: provenanceSchema } };
+    return {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        meta: {
+          type: "object",
+          additionalProperties: true,
+          properties: {
+            extensions: {
+              type: "object",
+              additionalProperties: true,
+              properties: { urlIntelligence: urlIntelligenceExtensionSchema }
+            }
+          }
+        },
+        provenance: provenanceSchema
+      }
+    };
   }
   return { type: "object", additionalProperties: true };
 }
@@ -323,6 +368,16 @@ function clientSupportsTasks(req: McpMessage): boolean {
   return all.some(meta => Boolean(meta?.extensions?.[MCP_TASKS_EXTENSION] || meta?.["io.modelcontextprotocol/clientCapabilities"]?.extensions?.[MCP_TASKS_EXTENSION] || meta?.clientCapabilities?.extensions?.[MCP_TASKS_EXTENSION]));
 }
 
+function annotationsFor(name: string): Record<string, boolean> {
+  const readOnlyHint = !["create_snapshot", "diff_snapshot"].includes(name);
+  return {
+    readOnlyHint,
+    destructiveHint: false,
+    openWorldHint: name !== "list_plugins",
+    ...(!readOnlyHint ? { idempotentHint: false } : {})
+  };
+}
+
 export function mcpTools(allowedTools?: Set<string>, modern = false): Array<Record<string, unknown>> {
   return actionNames()
     .filter((name) => !allowedTools || allowedTools.has(name))
@@ -333,11 +388,7 @@ export function mcpTools(allowedTools?: Set<string>, modern = false): Array<Reco
       description: toolDescriptions[name] || name,
       inputSchema: schemaFor(name),
       outputSchema: outputSchemaFor(name),
-      annotations: {
-        readOnlyHint: !["create_snapshot", "diff_snapshot"].includes(name),
-        destructiveHint: false,
-        openWorldHint: true
-      },
+      annotations: annotationsFor(name),
       ...(modern && ["investigate_url", "deep_crawl", "compare_urls", "batch_investigate"].includes(name) ? { execution: { taskSupport: "optional" } } : {})
     }));
 }
@@ -481,7 +532,8 @@ export async function processMcpMessage(req: McpMessage, options: McpProcessOpti
     return modernEnvelope({
       resources: [
         { uri: "url-intelligence://about", name: "URL Intelligence Agent", description: "Project attribution, public MCP endpoint and ecosystem links", mimeType: "application/json" },
-        { uri: "url-intelligence://provenance-schema", name: "Provenance schema", description: "Claim-level provenance model and consistency taxonomy", mimeType: "application/json" }
+        { uri: "url-intelligence://provenance-schema", name: "Provenance schema", description: "Claim-level provenance model and consistency taxonomy", mimeType: "application/json" },
+        { uri: "url-intelligence://v1.5-extension-schema", name: "v1.5 intelligence extension", description: "Additive namespaced intelligence contract layered on the frozen v1.4 result", mimeType: "application/json" }
       ],
       ...(modern ? { ttlMs: 300000, cacheScope: "public" } : {})
     }, modern);
@@ -515,6 +567,25 @@ export async function processMcpMessage(req: McpMessage, options: McpProcessOpti
           observation: ["subject", "predicate", "rawValue", "normalizedValue", "source", "temporal", "integrity", "quality"],
           claimStatus: ["consensus", "compatible_variation", "drift", "conflict", "insufficient_evidence"],
           notableFlags: ["representation_drift", "structured_vs_visible_mismatch", "metadata_vs_visible_mismatch", "precision_difference", "freshness_divergence", "stale_metadata_suspected"]
+        }, null, 2)
+      }],
+      ...(modern ? { ttlMs: 300000, cacheScope: "public" } : {})
+    }, modern);
+  }
+
+  if (req.method === "resources/read" && req.params?.uri === "url-intelligence://v1.5-extension-schema") {
+    return modernEnvelope({
+      contents: [{
+        uri: "url-intelligence://v1.5-extension-schema",
+        mimeType: "application/json",
+        text: JSON.stringify({
+          schemaVersion: "1.0",
+          compatibilityBase: "1.4.0",
+          path: "meta.extensions.urlIntelligence",
+          severityBands: ["info", "low", "medium", "high", "critical"],
+          legacySeverityUnchanged: ["none", "low", "medium", "high"],
+          sections: ["classification", "severityAssessment", "reasonCodes", "evidenceMetrics", "claimAssessments", "commerce", "sourceIndependence", "ragEvidence", "webPosture", "technologyChangeBaseline"],
+          note: "Read-only open-world tools may return different observations across calls without producing environmental side effects. idempotentHint is only advertised on mutating tools where retry semantics are meaningful."
         }, null, 2)
       }],
       ...(modern ? { ttlMs: 300000, cacheScope: "public" } : {})

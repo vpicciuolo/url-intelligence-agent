@@ -1,6 +1,6 @@
 # URL Intelligence Agent — HTTP API Guide
 
-URL Intelligence Agent v1.2.0 exposes the same intelligence engine used by the CLI and MCP server through a lightweight HTTP service.
+URL Intelligence Agent v1.5.0 exposes the same intelligence engine used by the CLI and MCP server through a lightweight HTTP service.
 
 ## Start the API
 
@@ -48,7 +48,7 @@ The Hugging Face Space adds OAuth based hosted-demo controls around analysis/rep
 curl http://127.0.0.1:8787/health
 ```
 
-The response includes runtime status, action count, Remote MCP metadata and release attribution. A correct v1.4.0 deployment must report version `1.4.0` through the attribution object.
+The response includes runtime status, action count, Remote MCP metadata and release attribution. A correct v1.5.0 deployment must report version `1.5.0` through the attribution object.
 
 ## Action catalog
 
@@ -80,6 +80,30 @@ result.provenance.summary
 ```
 
 Existing flattened fields such as `entity`, `seo`, `security`, `trust`, `pages`, `technologies`, `brand`, `rag`, `contradictions` and `warnings` remain available for v1.x compatibility.
+
+## v1.5 additive intelligence
+
+Full investigations now include an optional additive extension:
+
+```text
+result.meta.extensions.urlIntelligence
+```
+
+Important sections include:
+
+```text
+classification
+severityAssessment
+reasonCodes
+evidenceMetrics
+claimAssessments
+commerce
+sourceIndependence
+webPosture
+technologyChangeBaseline
+```
+
+The v1.4 top-level contract remains valid. Clients that do not understand v1.5 can ignore `meta.extensions.urlIntelligence` and continue reading the fields they already use.
 
 ## Inspect provenance
 

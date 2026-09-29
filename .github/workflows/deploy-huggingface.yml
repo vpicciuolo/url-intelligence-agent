@@ -36,7 +36,7 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare and validate v1.4 Docker Space payload
+      - name: Prepare and validate v1.5 Docker Space payload
         run: |
           set -euo pipefail
           rm -rf /tmp/hf-payload /tmp/logo-source /tmp/og-source /tmp/logo.jpg /tmp/og.jpg
@@ -89,7 +89,7 @@ jobs:
               Path(f'/tmp/hf-payload/assets/og.{n:02d}.b64').write_text(encoded[i:i+chunk], encoding='ascii')
 
           package = json.loads(Path('/tmp/hf-payload/package.json').read_text(encoding='utf-8'))
-          if package.get('version') != '1.4.0':
+          if package.get('version') != '1.5.0':
               raise SystemExit(f"Unexpected package version: {package.get('version')}")
 
           readme = Path('/tmp/hf-payload/README.md').read_text(encoding='utf-8')
@@ -104,14 +104,14 @@ jobs:
               return m.group(1).strip()
           if len(value('short_description')) > 60:
               raise SystemExit('Hugging Face short_description exceeds 60 characters')
-          if 'URL Intelligence Agent v1.4.0' not in readme:
-              raise SystemExit('Hugging Face README is not synchronized with v1.4.0')
-          if 'Semantic Reconciliation & Source Verification' not in readme:
-              raise SystemExit('v1.4 release description missing from Hugging Face README')
+          if 'URL Intelligence Agent v1.5.0' not in readme:
+              raise SystemExit('Hugging Face README is not synchronized with v1.5.0')
+          if 'Evidence Intelligence & Compatibility' not in readme:
+              raise SystemExit('v1.5 release description missing from Hugging Face README')
           if 'Evidence Inspector' not in Path('/tmp/hf-payload/ui-v2.js').read_text(encoding='utf-8'):
               raise SystemExit('Evidence Inspector UI code missing')
 
-          print(f'v1.4 payload OK; logo={len(logo_bytes)} bytes; og={len(og_bytes)} bytes; og_chunks={(len(encoded) + chunk - 1) // chunk}')
+          print(f'v1.5 payload OK; logo={len(logo_bytes)} bytes; og={len(og_bytes)} bytes; og_chunks={(len(encoded) + chunk - 1) // chunk}')
           PY
 
       - name: Sync Docker Space
@@ -129,11 +129,11 @@ jobs:
           if git diff --cached --quiet; then
             echo "No Hugging Face Space changes to deploy."
           else
-            git commit -m "Deploy URL Intelligence Agent v1.4.0 from GitHub ${GITHUB_SHA}"
+            git commit -m "Deploy URL Intelligence Agent v1.5.0 from GitHub ${GITHUB_SHA}"
             git push "https://vpicciuolo:${HF_TOKEN}@huggingface.co/spaces/vpicciuolo/url-intelligence-agent" HEAD:main
           fi
 
-      - name: Verify live v1.4 runtime, provenance, MCP and assets
+      - name: Verify live v1.5 runtime, provenance, MCP and assets
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -145,7 +145,7 @@ jobs:
           failures = {'BUILD_ERROR', 'RUNTIME_ERROR', 'CONFIG_ERROR'}
 
           def request(url, auth=False):
-              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.4'}
+              headers = {'User-Agent': 'url-intelligence-agent-deploy-check/1.5'}
               if auth:
                   headers['Authorization'] = f"Bearer {os.environ['HF_TOKEN']}"
               return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30)
@@ -171,11 +171,11 @@ jobs:
           attribution = health.get('attribution') or {}
           if not health.get('ok'):
               raise SystemExit(f'Live /health is not OK: {health}')
-          if attribution.get('version') != '1.4.0':
+          if attribution.get('version') != '1.5.0':
               raise SystemExit(f"Live version mismatch: {attribution.get('version')}")
           if int(health.get('actions') or 0) < 36:
               raise SystemExit(f"Live action count too low: {health.get('actions')}")
-          print('Live /health OK: v1.4.0')
+          print('Live /health OK: v1.5.0')
 
           with request(app_base + '/actions') as response:
               actions_payload = json.load(response)
@@ -207,6 +207,11 @@ jobs:
               page = response.read()
           for marker in [b'Evidence Inspector', b'Claim Provenance', b'inspect_provenance', b'verify_claim']:
               if marker not in page:
-                  raise SystemExit(f'Live UI missing v1.4 marker: {marker!r}')
-          print('Visible UI contains v1.4 evidence tooling and approved branding.')
+                  raise SystemExit(f'Live UI missing v1.5 marker: {marker!r}')
+          with request(app_base + '/ui-v2.js') as response:
+              ui = response.read()
+          for marker in [b'v1.5', b'Evidence Intelligence', b'urlIntelligencePanel']:
+              if marker not in ui:
+                  raise SystemExit(f'Live v1.5 UI extension missing marker: {marker!r}')
+          print('Visible UI contains v1.5 evidence tooling, intelligence extension and approved branding.')
           PY

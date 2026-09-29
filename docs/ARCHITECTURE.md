@@ -1,6 +1,6 @@
 # Architecture
 
-URL Intelligence Agent v1.2.0 is an evidence first web intelligence system. The canonical flow is collection → representation preservation → observation extraction → normalization → claim resolution → higher level intelligence → interfaces and exports.
+URL Intelligence Agent v1.5.0 is an evidence first web intelligence system. The canonical flow is collection → representation preservation → observation extraction → normalization → claim resolution → higher level intelligence → interfaces and exports.
 
 ## Design principles
 
@@ -135,7 +135,7 @@ Browser networking is not considered equivalent to the guarded Undici transport.
 
 ### `src/provenance.ts`
 
-The v1.2 provenance and consistency core.
+The provenance and consistency core.
 
 Responsibilities:
 
@@ -339,7 +339,28 @@ Repetition on the target domain does not become independent corroboration simply
 - link intelligence;
 - RAG/knowledge exports.
 
-v1.2 keeps these outputs backward compatible while adding provenance alongside them.
+v1.5 keeps the v1.4 outputs backward compatible while layering richer intelligence under a namespaced extension.
+
+## v1.5 intelligence extension
+
+`src/intelligence-v15.ts` consumes the resolved v1.4 evidence model and produces an additive extension:
+
+```text
+meta.extensions.urlIntelligence
+├── classification
+├── severityAssessment
+├── reasonCodes
+├── evidenceMetrics
+├── claimAssessments
+├── commerce
+├── sourceIndependence
+├── webPosture
+└── technologyChangeBaseline
+```
+
+This layer does not mutate legacy claim status or conflict severity. It is deliberately downstream of provenance resolution so v1.4 consumers and deterministic audit records remain stable.
+
+Source independence uses Public Suffix List-aware registrable domains. Commerce intelligence preserves observed prices and does not silently convert currencies through live FX. Search/security posture describes observed public signals rather than asserting legal compliance or security guarantees.
 
 ## MCP architecture
 
@@ -360,7 +381,7 @@ Strict input schemas are action specific. `inspect_provenance` and `verify_claim
 
 ## Compatibility strategy
 
-v1.2 is a MINOR release. Existing flattened fields remain in `IntelligenceResult` while the new `provenance` object carries the detailed evidence model.
+v1.5 is a MINOR release with a frozen v1.4 compatibility baseline. Existing top-level fields and legacy conflict severity semantics remain unchanged. New intelligence is namespaced under `meta.extensions.urlIntelligence` and validated independently in CI.
 
 A future v2 may make resolved claims the canonical public model. See `VERSIONING.md`.
 
