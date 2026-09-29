@@ -14,7 +14,7 @@ export const toolDescriptions: Record<string, string> = {
   inspect_provenance: "Inspect field-level observations, resolved claims, source layers, representations, conflicts and provenance export.",
   verify_claim: "Verify a supplied claim value against normalized collected observations and return supported, compatible or contradicted status.",
   probe_url: "Safely probe a public URL and its redirect/status chain.",
-  domain_intelligence: "Inspect public DNS, TLS and mail/domain signals.",
+  domain_intelligence: "Inspect public DNS, TLS, RDAP, mail-security DNS and RFC security.txt signals."
   render_page: "Render a JavaScript-heavy public page with bounded browser networking and optional same-origin runtime API evidence.",
   map_site: "Map important pages, sitemap URLs and crawled page signals.",
   deep_crawl: "Bounded multi-page crawl with robots policy, depth, rendering fallback and evidence representations.",
@@ -245,7 +245,7 @@ const provenanceSchema: Record<string, unknown> = {
 const urlIntelligenceExtensionSchema: Record<string, unknown> = {
   type: "object",
   additionalProperties: true,
-  required: ["schemaVersion", "compatibilityBase", "classification", "severityAssessment", "reasonCodes", "evidenceMetrics", "claimAssessments", "commerce", "sourceIndependence", "webPosture"],
+  required: ["schemaVersion", "compatibilityBase", "classification", "severityAssessment", "reasonCodes", "evidenceMetrics", "claimAssessments", "commerce", "sourceIndependence", "ragEvidence", "webPosture"],
   properties: {
     schemaVersion: { type: "string", const: "1.0" },
     compatibilityBase: { type: "string", const: "1.4.0" },
