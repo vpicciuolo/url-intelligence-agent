@@ -24,4 +24,6 @@ jobs:
       - run: npm install
       - run: npm run typecheck
       - run: npm test
+      - name: Frozen v1.4 compatibility profile
+        run: npm run test:compat-v14
       - run: python3 hf-dataset/validate_provenance.py
