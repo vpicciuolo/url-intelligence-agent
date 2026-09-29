@@ -81,6 +81,8 @@ def main() -> None:
         "normalized-url-match",
         "same-calendar-date",
         "duplicate-metadata-preserved",
+        "currency-conflict",
+        "billing-cadence-conflict",
     }
     missing = sorted(required_ids - seen)
     if missing:
