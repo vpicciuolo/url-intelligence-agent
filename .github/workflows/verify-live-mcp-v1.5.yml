@@ -53,7 +53,7 @@ jobs:
                   powered = response.headers.get('x-powered-by', '')
               if 'error' in body:
                   raise SystemExit(f'MCP {method} returned JSON-RPC error: {body["error"]}')
-              if 'URL Intelligence Agent/1.4.0' not in powered:
+              if 'URL Intelligence Agent/1.5.0' not in powered:
                   raise SystemExit(f'Unexpected live MCP server header: {powered!r}')
               return body.get('result') or {}
 
@@ -75,7 +75,7 @@ jobs:
           server = initialized.get('serverInfo') or {}
           if initialized.get('protocolVersion') != protocol:
               raise SystemExit(f'Negotiated protocol mismatch: {initialized.get("protocolVersion")}')
-          if server.get('name') != 'url-intelligence-agent' or server.get('version') != '1.4.0':
+          if server.get('name') != 'url-intelligence-agent' or server.get('version') != '1.5.0':
               raise SystemExit(f'Unexpected serverInfo: {server}')
           print('Initialize OK:', server)
 
