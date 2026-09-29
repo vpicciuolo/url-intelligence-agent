@@ -356,8 +356,8 @@ These results are generated automatically from the current open-source repositor
 | Reject/block safety accuracy | **100.00%** |
 | Full-agent HTML completion | **100.00%** |
 
-Generated: `2026-09-14T17:50:24Z`  
-Git commit: `44416e678ba571ebed33545c6aa15f391a352b5d`
+Generated: `2026-09-29T19:10:22Z`  
+Git commit: `d09ce040ca5ec452cc49337d2fdcffea97f57495`
 
 See `results/latest.md` for the group breakdown and failed-case list, and `results/latest.json` for machine-readable metrics.
 <!-- BENCHMARK_RESULTS_END -->
