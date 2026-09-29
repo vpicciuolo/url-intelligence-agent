@@ -409,6 +409,36 @@ function buildSecurityPosture(result: IntelligenceResult) {
   };
 }
 
+function buildRagEvidence(result: IntelligenceResult) {
+  const observations = result.provenance.observations;
+  const documents = result.rag.slice(0, 120).map(doc => {
+    const page = result.pages.find(p => p.url === doc.url || p.canonical === doc.url);
+    const evidenceObservationIds = observations
+      .filter(obs => obs.source.pageUrl === doc.url || obs.source.finalUrl === doc.url || obs.subject === doc.url)
+      .map(obs => obs.id)
+      .slice(0, 250);
+    return {
+      id: doc.id,
+      url: doc.url,
+      title: doc.title,
+      wordCount: doc.wordCount,
+      checksum: doc.checksum,
+      headings: page?.headings.slice(0, 40) || [],
+      evidenceObservationIds,
+      evidenceCount: evidenceObservationIds.length,
+      language: page?.language,
+      canonical: page?.canonical || doc.url,
+      contentBlockHash: createHash("sha256").update(doc.text).digest("hex")
+    };
+  });
+  return {
+    documents: documents.length,
+    traceableDocuments: documents.filter(x => x.evidenceCount > 0).length,
+    blocks: documents,
+    note: "RAG content remains in the legacy rag array; this extension adds a traceable block inventory linked to provenance observation IDs."
+  };
+}
+
 function evidenceMetrics(result: IntelligenceResult, sourceIndependence: ReturnType<typeof buildSourceIndependence>) {
   const summary = result.provenance.summary;
   const observations = result.provenance.observations;
@@ -477,6 +507,7 @@ export function buildUrlIntelligenceExtension(result: IntelligenceResult) {
     claimAssessments: claimAssessments.slice(0, 150),
     commerce,
     sourceIndependence,
+    ragEvidence: buildRagEvidence(result),
     webPosture: {
       searchDiscovery,
       security,
