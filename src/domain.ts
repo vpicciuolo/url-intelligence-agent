@@ -42,6 +42,21 @@ export type DomainIntelligence = {
     events?: { action?: string; date?: string }[];
     error?: string;
   };
+  securityTxt?: {
+    found: boolean;
+    status?: number;
+    url: string;
+    contacts: string[];
+    expires?: string;
+    expired?: boolean;
+    canonical: string[];
+    policy: string[];
+    encryption: string[];
+    acknowledgments: string[];
+    preferredLanguages: string[];
+    hiring: string[];
+    error?: string;
+  };
 };
 
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> { try { return await fn(); } catch { return fallback; } }
@@ -120,6 +135,46 @@ async function rdapInfo(hostname: string): Promise<DomainIntelligence["rdap"]> {
   }
 }
 
+function securityTxtFields(text: string): Record<string, string[]> {
+  const fields: Record<string, string[]> = {};
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const match = line.match(/^([A-Za-z-]+):\s*(.+)$/);
+    if (!match) continue;
+    const key = match[1].toLowerCase();
+    (fields[key] ||= []).push(match[2].trim());
+  }
+  return fields;
+}
+
+async function securityTxtInfo(hostname: string): Promise<NonNullable<DomainIntelligence["securityTxt"]>> {
+  const url = `https://${hostname}/.well-known/security.txt`;
+  try {
+    const response = await safeFetch(url, { timeoutMs: 7000, maxBytes: 200_000, maxRedirects: 3 });
+    if (response.status < 200 || response.status >= 300) return { found: false, status: response.status, url, contacts: [], canonical: [], policy: [], encryption: [], acknowledgments: [], preferredLanguages: [], hiring: [], error: `HTTP ${response.status}` };
+    const fields = securityTxtFields(response.text);
+    const expires = fields.expires?.[0];
+    const expiresAt = expires ? Date.parse(expires) : NaN;
+    return {
+      found: true,
+      status: response.status,
+      url: response.url || url,
+      contacts: fields.contact || [],
+      expires,
+      expired: Number.isFinite(expiresAt) ? expiresAt < Date.now() : undefined,
+      canonical: fields.canonical || [],
+      policy: fields.policy || [],
+      encryption: fields.encryption || [],
+      acknowledgments: fields.acknowledgments || [],
+      preferredLanguages: fields["preferred-languages"] || [],
+      hiring: fields.hiring || []
+    };
+  } catch (error) {
+    return { found: false, url, contacts: [], canonical: [], policy: [], encryption: [], acknowledgments: [], preferredLanguages: [], hiring: [], error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 function dmarcPolicy(records: string[]): string | undefined {
   const source = records.join(";");
   return source.match(/(?:^|;)\s*p\s*=\s*(none|quarantine|reject)\b/i)?.[1]?.toLowerCase();
@@ -128,7 +183,7 @@ function dmarcPolicy(records: string[]): string | undefined {
 export async function inspectDomain(rawUrl: string): Promise<DomainIntelligence> {
   const url = await assertPublicUrl(rawUrl);
   const hostname = url.hostname;
-  const [a, aaaa, mx, ns, txt, caa, tls, mtaStsRows, tlsRptRows, bimiRows, rdap] = await Promise.all([
+  const [a, aaaa, mx, ns, txt, caa, tls, mtaStsRows, tlsRptRows, bimiRows, rdap, securityTxt] = await Promise.all([
     safe(() => resolve4(hostname), [] as string[]),
     safe(() => resolve6(hostname), [] as string[]),
     safe(() => resolveMx(hostname), [] as { exchange: string; priority: number }[]),
@@ -139,7 +194,8 @@ export async function inspectDomain(rawUrl: string): Promise<DomainIntelligence>
     safe(() => resolveTxt(`_mta-sts.${hostname}`), [] as string[][]),
     safe(() => resolveTxt(`_smtp._tls.${hostname}`), [] as string[][]),
     safe(() => resolveTxt(`default._bimi.${hostname}`), [] as string[][]),
-    rdapInfo(hostname)
+    rdapInfo(hostname),
+    securityTxtInfo(hostname)
   ]);
   const spf = txt.flat().filter(x => /^v=spf1\b/i.test(x));
   const dmarc = await safe(() => resolveTxt(`_dmarc.${hostname}`), [] as string[][]).then(x => x.flat().filter(v => /^v=dmarc1\b/i.test(v)));
@@ -166,6 +222,7 @@ export async function inspectDomain(rawUrl: string): Promise<DomainIntelligence>
       }
     },
     tls,
-    rdap
+    rdap,
+    securityTxt
   };
 }
