@@ -1,6 +1,6 @@
 # Action Reference
 
-URL Intelligence Agent v1.2.0 exposes the same action registry through the library `runAction()`, CLI, HTTP API and MCP tool surface.
+URL Intelligence Agent v1.5.0 exposes the same action registry through the library `runAction()`, CLI, HTTP API and MCP tool surface.
 
 Current machine callable action count: **36**.
 
@@ -76,7 +76,7 @@ not_found
 | `inspect_provenance` | `url`, optional `predicate`, `limit`, `format`, `crawl` | Inspect observations, resolved claims, conflicts/drift and optional PROV export |
 | `verify_claim` | `url`, `predicate`, `value`, optional `crawl` | Compare a supplied value with normalized collected evidence |
 | `probe_url` | `url` | Safe public URL/status probe |
-| `domain_intelligence` | `url` | DNS, mail and TLS/domain signals |
+| `domain_intelligence` | Public DNS, TLS, RDAP registration metadata, SPF/DMARC/MTA-STS/TLS-RPT/BIMI and security.txt posture |
 | `render_page` | `url`, optional `includeHtml`, `captureNetwork` | Render JavaScript heavy public page through configured renderer |
 | `map_site` | `url`, optional `crawl` | Map important pages, sitemap URLs and page signals |
 | `deep_crawl` | `url`, optional `crawl` | Bounded multi page crawl with representation preservation |
