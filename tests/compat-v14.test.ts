@@ -28,6 +28,7 @@ function pricingResult(): IntelligenceResult {
     confidenceAssessment: {
       extractionConfidence: 0.8,
       externalCorroboration: 0,
+      externalCoverageLevel: "none",
       firstPartyEvidencePages: 1,
       thirdPartyEvidenceSources: 0,
       thirdPartyEvidenceDomains: 0,
