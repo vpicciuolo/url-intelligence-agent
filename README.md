@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/vpicciuolo/url-intelligence-agent/releases/tag/v1.4.0"><img src="https://img.shields.io/badge/release-v1.4.0-00c853?style=for-the-badge" alt="v1.4.0 release"></a>
+  <a href="https://github.com/vpicciuolo/url-intelligence-agent/releases/tag/v1.5.0"><img src="https://img.shields.io/badge/release-v1.5.0-00c853?style=for-the-badge" alt="v1.5.0 release"></a>
   <img src="https://img.shields.io/badge/provenance_schema-1.0-0ea5e9?style=for-the-badge" alt="Provenance schema 1.0">
   <img src="https://img.shields.io/badge/TypeScript-first-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Node-18.17%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18.17+">
@@ -55,7 +55,37 @@ The repository is continuously measured against the public **URL Intelligence Be
 **Detailed results:** [hf-dataset/results/latest.md](hf-dataset/results/latest.md)
 <!-- HF_BENCHMARK_END -->
 
-## 🧬 What's new in v1.4.0 — Semantic Reconciliation & Source Verification
+## 🚀 What's new in v1.5.0 — Evidence Intelligence & Compatibility
+
+Version **1.5.0** turns the v1.4 provenance foundation into a richer machine-actionable intelligence layer **without changing the v1.4 payload contract**.
+
+All new intelligence is namespaced under:
+
+```text
+meta.extensions.urlIntelligence
+```
+
+Key additions:
+
+- **Frozen v1.4 compatibility contract** with dedicated schemas, golden compatibility tests and CI validation on Node 18, 20 and 22.
+- **Severity Intelligence 2.0** with a 0–100 score and `info / low / medium / high / critical` bands while the legacy `none / low / medium / high` conflict field remains untouched.
+- **Stable reason codes** for contradictions, drift, stale metadata, pricing/currency issues, source concentration, canonical/indexability problems and security-posture findings.
+- **Global commerce intelligence** with broader ISO currency recognition, localized currency-symbol handling, cadence/unit context and explicit ambiguity reporting. The deterministic core never rewrites observed prices using live FX.
+- **Evidence Independence** using Public Suffix List-aware registrable domains, source-group diversity, concentration metrics and bounded syndication detection.
+- **Page classification** for homepages, pricing, products, documentation, articles, jobs, events, legal/security pages, login surfaces and more.
+- **Search & discovery posture** with canonical/indexability checks, `X-Robots-Tag`, hreflang extraction/reciprocity, soft-404 signals and emerging AI-discovery hints.
+- **Security quality analysis** for CSP/HSTS strength, cross-origin policies and cookie posture rather than header presence alone.
+- **Domain Intelligence 2.0** with RDAP registration metadata, TLS expiry context, SPF/DMARC policy, MTA-STS, TLS-RPT and BIMI signals.
+- **MCP retry semantics fixed explicitly**: read-only open-world investigations may change as the web changes; mutating snapshot tools advertise `idempotentHint: false`.
+- **v1.5 intelligence in PDF, HTML, Markdown and JSON reports**, while full raw provenance remains available for machine workflows.
+
+The rule for the entire v1.5 line is simple:
+
+> **v1.4 remains the stable compatibility contract. v1.5 adds intelligence through one controlled extension namespace.**
+
+### Previous release: v1.4.0 — Semantic Reconciliation & Source Verification
+
+### 🧬 What's new in v1.4.0 — Semantic Reconciliation & Source Verification
 
 Version **1.4.0** strengthens the existing provenance engine so downstream agents inherit evidence they can inspect rather than certainty they must trust.
 
