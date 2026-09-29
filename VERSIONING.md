@@ -2,7 +2,7 @@
 
 URL Intelligence Agent follows Semantic Versioning for the application/package surface and separately versions machine-readable evidence schemas and protocol compatibility.
 
-Current application release: **1.4.0**
+Current application release: **1.5.0**
 Current provenance schema: **1.0**
 
 ## Application versions
@@ -31,6 +31,31 @@ Schema policy:
 The v1.x application line preserves the existing flattened intelligence fields such as `entity`, `seo`, `security`, `trust`, `pages`, `technologies`, `brand`, `rag`, `contradictions` and `warnings`.
 
 v1.2.0 adds `provenance` as the detailed evidence layer. Existing fields remain available for compatibility. A future v2 may make resolved claims the canonical model and expose older flattened fields as compatibility aliases.
+
+## Frozen v1.4 compatibility contract
+
+v1.5 treats the v1.4 `IntelligenceResult` shape and legacy conflict semantics as a frozen compatibility baseline.
+
+Richer v1.5 intelligence is added only at:
+
+```text
+meta.extensions.urlIntelligence
+```
+
+The legacy conflict severity remains:
+
+```text
+none | low | medium | high
+```
+
+The v1.5 extension may expose a richer 0–100 assessment with `info | low | medium | high | critical`, but that value never replaces or widens the legacy enum.
+
+CI validates both profiles:
+
+1. the current v1.5 implementation and schemas;
+2. a frozen v1.4 compatibility profile that fails if legacy fields, meanings or severity enums change unexpectedly.
+
+The frozen schema lives under `compat/v1.4/`; current extension schemas live under `schemas/v1.5/`.
 
 ## MCP compatibility
 
