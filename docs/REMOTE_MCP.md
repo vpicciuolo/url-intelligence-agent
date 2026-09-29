@@ -12,7 +12,7 @@ Discovery:
 https://vpicciuolo-url-intelligence-agent.hf.space/.well-known/mcp.json
 ```
 
-Current application release: **1.4.0**
+Current application release: **1.5.0**
 
 ## Protocol versions
 
@@ -26,6 +26,18 @@ The runtime supports:
 ```
 
 For MCP 2026-07-28 the server supports the stateless protocol path, discovery, routing metadata, cache hints, structured tool schemas and optional Tasks behavior. Older clients retain legacy initialize/session compatibility.
+
+## v1.5 compatibility and annotations
+
+The v1.5 investigation output exposes richer intelligence under `meta.extensions.urlIntelligence` while retaining the v1.4 contract.
+
+A machine-readable summary is exposed as the MCP resource:
+
+```text
+url-intelligence://v1.5-extension-schema
+```
+
+Tool annotations describe side effects, not response equality. Public-web reads are observational and may change between calls. `create_snapshot` and `diff_snapshot` write state and therefore advertise `idempotentHint: false`.
 
 ## Public hosted tools
 
