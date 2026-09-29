@@ -3,6 +3,35 @@
 All notable changes to URL Intelligence Agent are documented here.
 
 
+## 1.5.0 — Evidence Intelligence & Compatibility Release
+
+### Compatibility and contracts
+- Freezes the v1.4 top-level result and legacy conflict severity contract.
+- Adds richer intelligence only under `meta.extensions.urlIntelligence`.
+- Adds frozen v1.4 and current v1.5 schemas plus dedicated compatibility regression tests.
+- Extends CI to validate both contracts on supported Node.js versions.
+
+### Evidence intelligence
+- Adds 0–100 severity scoring with `info`, `low`, `medium`, `high` and `critical` extension bands without changing legacy severity values.
+- Adds stable machine reason codes and per-claim assessment dimensions.
+- Adds page-type classification, evidence coverage metrics and technology-change fingerprints.
+- Adds source-independence grouping, source-diversity/concentration metrics and bounded syndication detection using Public Suffix List-aware domains.
+
+### Commerce and discovery
+- Expands currency normalization beyond USD/EUR/GBP/AED while preserving v1.4 bare-dollar behavior.
+- Adds localized-symbol ambiguity, billing cadence, commercial units and localized-pricing intelligence.
+- Adds hreflang/alternate extraction, canonical/indexability checks, X-Robots-Tag posture and soft-404 signals.
+- Keeps FX conversion out of deterministic normalization; any future FX comparison must remain timestamped external enrichment.
+
+### Security and domain intelligence
+- Adds CSP/HSTS quality analysis, cookie and cross-origin posture.
+- Expands domain intelligence with RDAP, TLS expiry context, MTA-STS, TLS-RPT, BIMI and DMARC policy interpretation.
+
+### MCP and reporting
+- Adds a machine-readable v1.5 extension schema to MCP output metadata/resources.
+- Uses tool-specific side-effect annotations: snapshot-writing tools are explicitly non-idempotent; read-only open-world tools do not claim response determinism.
+- Adds the v1.5 intelligence layer to PDF, HTML, Markdown and JSON exports.
+
 ## 1.4.0 — Semantic Reconciliation & Source Verification Release
 
 ### Semantic cross-field reconciliation
