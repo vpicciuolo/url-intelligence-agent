@@ -271,6 +271,7 @@ function currencyFromText(source: string): string | undefined {
     [/₱/, "PHP"], [/₪/, "ILS"], [/₽/, "RUB"], [/د\.إ|دإ/, "AED"], [/€/, "EUR"], [/£/, "GBP"]
   ];
   for (const [pattern, currency] of localized) if (pattern.test(source)) return currency;
+  if (/\$/.test(source)) return "USD"; // preserve the frozen v1.4 bare-dollar assumption; v1.5 ambiguity is exposed only in the namespaced extension.
   return undefined;
 }
 
