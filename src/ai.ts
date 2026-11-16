@@ -6,7 +6,7 @@ export async function reasonWithOpenAICompatible(result: IntelligenceResult, ins
   const key = process.env.AI_API_KEY;
   if (!key) return { enabled: false, reason: "AI_API_KEY not configured; deterministic intelligence remains available" };
   const base = (process.env.AI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-  const model = process.env.AI_MODEL || "gpt-5-mini";
+  const model = process.env.AI_MODEL || "gpt-6.1-terra";
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Number(process.env.AI_TIMEOUT_MS || 30000));
   const compact = {
